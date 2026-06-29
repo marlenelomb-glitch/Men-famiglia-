@@ -5093,8 +5093,9 @@ function OnboardingFamiglia(props) {
   var canAdd = !!nome.trim() && !!dataN;
   var showProt = patologie.indexOf("ipoproteica") >= 0;
   var showPhe = patologie.indexOf("fenilchetonuria") >= 0;
-  var inputStyle = {padding:"11px 12px",borderRadius:8,border:"1.5px solid #ddd",
-    fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10};
+  var inputStyle = {padding:"12px",borderRadius:12,border:"1px solid #E3EAEE",
+    fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10,
+    fontFamily:"'Nunito',system-ui,sans-serif"};
 
   return (
     <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",maxWidth:390,margin:"0 auto"}}>
@@ -5193,6 +5194,366 @@ function OnboardingFamiglia(props) {
             Aggiungi almeno un familiare per continuare
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+var GIORNI_ABBR = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+var MESI_ABBR = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+
+function lunediSettimana() {
+  var now = new Date();
+  var m = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  m.setDate(m.getDate() - ((now.getDay()+6)%7));
+  return m;
+}
+
+function MenuView(props) {
+  var menu = props.menu || {};
+  var setTab = props.setTab || function(){};
+  var lun = lunediSettimana();
+  var dom = new Date(lun.getTime()); dom.setDate(lun.getDate()+6);
+  var range = lun.getDate() + "-" + dom.getDate() + " " + MESI_ABBR[dom.getMonth()];
+
+  function nomePasto(giorno, m) {
+    var cell = menu[giorno+"-"+m];
+    if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) return DB_PASTI[cell.pastoId].nome;
+    return null;
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Menu</div>
+        <span style={{fontSize:13,color:"#2F6586",fontWeight:700}}>
+          <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{range}
+        </span>
+      </div>
+
+      <div className="mf-card flush">
+        {DAYS.map(function(d, i){
+          var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
+          var pranzo = nomePasto(d, "Pranzo");
+          var cena = nomePasto(d, "Cena");
+          var piatti = [pranzo, cena].filter(Boolean).join(" - ");
+          var vuoto = !piatti;
+          return (
+            <div key={d} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ setTab("builder"); }}>
+              <div style={{width:42}}>
+                <div style={{fontSize:14,fontWeight:700,color:vuoto?"#8A949B":"#2C3338"}}>{GIORNI_ABBR[i]}</div>
+                <div style={{fontSize:11,color:"#8A949B"}}>{data.getDate()}</div>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:vuoto?"#8A949B":"#2C3338"}}>{vuoto ? "Da pianificare" : piatti}</div>
+                {!vuoto&&<div style={{fontSize:11,color:"#8A949B"}}>+ colazione</div>}
+              </div>
+              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mf-card acc" onClick={function(){ setTab("ai"); }}
+        style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+        <i className="ti ti-sparkles" style={{fontSize:19}}/>
+        <div style={{flex:1,fontSize:13}}>Completa la settimana con un menu bilanciato (AI)</div>
+        <i className="ti ti-arrow-right"/>
+      </div>
+    </div>
+  );
+}
+
+var ICONE_PASTO = {Colazione:"ti-coffee", Spuntino:"ti-apple", Pranzo:"ti-tools-kitchen-2", Merenda:"ti-apple", Cena:"ti-soup"};
+
+function kcalPastoAdulto(id) {
+  var p = DB_PASTI[id];
+  if(p && p.adulto && typeof p.adulto.kcal === "number") return p.adulto.kcal;
+  return 0;
+}
+
+function SaluteView(props) {
+  var profili = props.profili || {};
+  var setTab = props.setTab || function(){};
+  var vals = Object.values(profili);
+  var tags = [];
+  vals.forEach(function(p){
+    var fin = getParametriFinali(p);
+    (fin.patologie || []).forEach(function(pid){
+      var pat = PATOLOGIE_LIST.find(function(x){ return x.id === pid; });
+      if(pat && pat.id !== "nessuna" && tags.indexOf(pat.label) < 0) tags.push(pat.label);
+    });
+  });
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Salute</div>
+
+      <div className="mf-card flush">
+        {vals.map(function(p){
+          var fin = getParametriFinali(p);
+          var eta = p.dataNascita ? calcolaEta(p.dataNascita).anni : (p.eta || "");
+          var sub = (eta ? (eta + " anni - ") : "") + fin.kcal + " kcal";
+          return (
+            <div key={p.id} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ setTab("impostazioni"); }}>
+              <div style={{width:38,height:38,borderRadius:"50%",background:p.colore||"#E2EEF5",color:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13}}>
+                {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500}}>{p.nome}</div>
+                <div style={{fontSize:11,color:"#8A949B"}}>{sub}</div>
+              </div>
+              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+            </div>
+          );
+        })}
+        {vals.length===0&&(
+          <div className="mf-row"><div style={{flex:1,fontSize:14,color:"#8A949B"}}>Nessun profilo</div></div>
+        )}
+      </div>
+
+      <div className="mf-card">
+        <div className="cap" style={{marginBottom:11}}>Patologie e restrizioni in famiglia</div>
+        {tags.length>0
+          ? <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{tags.map(function(t,i){ return <span key={i} className="pill low">{t}</span>; })}</div>
+          : <div style={{fontSize:13,color:"#8A949B"}}>Nessuna restrizione impostata</div>}
+      </div>
+
+      <div className="mf-card acc" style={{display:"flex",alignItems:"center",gap:11}}>
+        <i className="ti ti-heart" style={{fontSize:19}}/>
+        <div style={{flex:1,fontSize:13}}>Profili nutrizionali attivi per tutta la famiglia</div>
+      </div>
+    </div>
+  );
+}
+
+function dispensaLow(it) {
+  if(!it) return false;
+  var q = parseFloat(it.qty);
+  if(!isNaN(q) && q <= 1) return true;
+  if(it.scadenza) {
+    var d = new Date(it.scadenza);
+    if(!isNaN(d.getTime()) && (d.getTime() - new Date().getTime()) < 3*86400000) return true;
+  }
+  return false;
+}
+
+function DispensaView(props) {
+  var dispensa = props.dispensa || [];
+  var setDispensa = props.setDispensa || function(){};
+  var spesa = props.spesa || [];
+  var setSpesa = props.setSpesa || function(){};
+  var s_add = useState(false); var showAdd = s_add[0]; var setShowAdd = s_add[1];
+  var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
+  var s_qty = useState(""); var qty = s_qty[0]; var setQty = s_qty[1];
+
+  function aggiungi() {
+    if(!nome.trim()) return;
+    var nuovo = {nome:nome.trim(), qty:qty||"1", unita:"pz", cat:"dispensa", scadenza:""};
+    setDispensa(dispensa.concat([nuovo]));
+    setNome(""); setQty(""); setShowAdd(false);
+  }
+  function aggiungiAllaSpesa() {
+    var low = dispensa.filter(dispensaLow).map(function(it){ return it.nome; });
+    var nuovi = low.filter(function(n){ return spesa.indexOf(n) < 0; });
+    if(nuovi.length) setSpesa(spesa.concat(nuovi));
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Dispensa</div>
+        <i className="ti ti-plus" style={{fontSize:20,color:"#2F6586",cursor:"pointer"}}
+          onClick={function(){ setShowAdd(!showAdd); }}/>
+      </div>
+
+      {showAdd&&(
+        <div className="mf-card" style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input placeholder="Prodotto" value={nome} onChange={function(e){setNome(e.target.value);}}
+            style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <input placeholder="Qta" inputMode="numeric" value={qty} onChange={function(e){setQty(e.target.value);}}
+            style={{width:60,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <button onClick={aggiungi} style={{padding:"10px 14px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
+        </div>
+      )}
+
+      <div className="mf-card flush">
+        {dispensa.length===0&&(
+          <div className="mf-row"><div style={{flex:1,fontSize:14,color:"#8A949B"}}>Dispensa vuota</div></div>
+        )}
+        {dispensa.map(function(it, i){
+          var low = dispensaLow(it);
+          return (
+            <div key={i} className="mf-row">
+              <div className="mf-ic"><i className="ti ti-package"/></div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500}}>{it.nome}</div>
+                <div style={{fontSize:11,color:"#8A949B"}}>{(it.qty||"")+" "+(it.unita||"")}</div>
+              </div>
+              <span className={"pill "+(low?"low":"ok")}>{low?"In esaurimento":"OK"}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mf-card solid" onClick={aggiungiAllaSpesa}
+        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:9,fontSize:14,fontWeight:700,cursor:"pointer"}}>
+        <i className="ti ti-shopping-bag-plus" style={{fontSize:17}}/>Aggiungi in esaurimento alla lista spesa
+      </div>
+    </div>
+  );
+}
+
+function CalorieView(props) {
+  var menu = props.menu || {};
+  var profili = props.profili || {};
+  var now = new Date();
+  var oggiIdx = (now.getDay()+6)%7;
+  var oggiApp = DAYS[oggiIdx];
+  function kcalPasto(giorno, m) {
+    var cell = menu[giorno+"-"+m];
+    if(cell && cell.pastoId) return kcalPastoAdulto(cell.pastoId);
+    return 0;
+  }
+  var pasti = [
+    {m:"Colazione", k:kcalPasto(oggiApp,"Colazione")},
+    {m:"Pranzo", k:kcalPasto(oggiApp,"Pranzo")},
+    {m:"Cena", k:kcalPasto(oggiApp,"Cena")}
+  ];
+  var vals = Object.values(profili);
+  var target = vals.length ? Math.max.apply(null, vals.map(function(p){ return p.kcal_target || 2000; })) : 2000;
+  var totOggi = pasti.reduce(function(s,x){ return s + x.k; }, 0);
+  var pct = Math.min(100, Math.round(totOggi/target*100));
+  var settimana = DAYS.map(function(d){
+    return ["Colazione","Spuntino","Pranzo","Merenda","Cena"].reduce(function(s,m){ return s + kcalPasto(d,m); }, 0);
+  });
+  var maxSett = Math.max.apply(null, settimana.concat([1]));
+  var conDati = settimana.filter(function(x){ return x>0; });
+  var media = conDati.length ? Math.round(conDati.reduce(function(s,x){return s+x;},0)/conDati.length) : 0;
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Calorie</div>
+
+      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:18}}>
+        <div style={{position:"relative",width:90,height:90,flexShrink:0}}>
+          <svg viewBox="0 0 36 36" width="90" height="90">
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E3EAEE" strokeWidth="3.2"/>
+            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6BA6C9" strokeWidth="3.2"
+              pathLength="100" strokeDasharray={pct+" "+(100-pct)} strokeLinecap="round" transform="rotate(-90 18 18)"/>
+          </svg>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+            <span style={{fontSize:19,fontWeight:700}}>{totOggi}</span>
+            <span style={{fontSize:11,color:"#8A949B"}}>/ {target}</span>
+          </div>
+        </div>
+        <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
+          {pasti.map(function(p){
+            return (
+              <div key={p.m}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                  <span style={{color:"#8A949B"}}>{p.m}</span><span style={{color:"#8A949B"}}>{p.k}</span>
+                </div>
+                <div className="mf-track"><span style={{width:Math.min(100,p.k/target*100)+"%"}}/></div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mf-card">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <span className="cap">Andamento settimana</span>
+          <span style={{fontSize:11,color:"#8A949B"}}>media {media}</span>
+        </div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:9,height:72}}>
+          {settimana.map(function(v, i){
+            var h = v>0 ? Math.max(8, Math.round(v/maxSett*64)) : 6;
+            var oggi = i===oggiIdx;
+            return (
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                <div style={{width:"100%",borderRadius:6,height:h,
+                  background:oggi?"#E2EEF5":(v>0?"#6BA6C9":"#E3EAEE"),
+                  border:oggi?"1px solid #6BA6C9":"none"}}/>
+                <div style={{fontSize:11,color:oggi?"#2F6586":"#8A949B",fontWeight:oggi?700:400}}>{GIORNI_ABBR[i].slice(0,1)}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DiarioView(props) {
+  var menu = props.menu || {};
+  var profili = props.profili || {};
+  var s_acqua = useState(0); var acqua = s_acqua[0]; var setAcqua = s_acqua[1];
+  var now = new Date();
+  var oggiApp = DAYS[(now.getDay()+6)%7];
+  var ordine = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
+  var righe = [];
+  ordine.forEach(function(m){
+    var cell = menu[oggiApp+"-"+m];
+    if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) {
+      righe.push({m:m, nome:DB_PASTI[cell.pastoId].nome, kcal:kcalPastoAdulto(cell.pastoId)});
+    }
+  });
+  var consumate = righe.reduce(function(s,x){ return s + x.kcal; }, 0);
+  var vals = Object.values(profili);
+  var target = vals.length ? Math.max.apply(null, vals.map(function(p){ return p.kcal_target || 2000; })) : 2000;
+  var rimaste = Math.max(0, target - consumate);
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Diario</div>
+        <span style={{fontSize:13,color:"#8A949B"}}>Oggi</span>
+      </div>
+
+      <div className="mf-card" style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div>
+          <div className="cap">Consumate</div>
+          <div style={{fontSize:23,fontWeight:700}}>{consumate} <span style={{fontSize:13,color:"#8A949B",fontWeight:400}}>/ {target} kcal</span></div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div className="cap">Rimaste</div>
+          <div style={{fontSize:19,fontWeight:700,color:"#2F6586"}}>{rimaste}</div>
+        </div>
+      </div>
+
+      <div className="mf-card flush">
+        {righe.map(function(r){
+          return (
+            <div key={r.m} className="mf-row">
+              <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[r.m]||"ti-tools-kitchen-2")}/></div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:500}}>{r.nome}</div>
+                <div style={{fontSize:11,color:"#8A949B"}}>{r.m}</div>
+              </div>
+              <span style={{fontSize:13,color:"#8A949B"}}>{r.kcal||"-"}</span>
+            </div>
+          );
+        })}
+        {righe.length===0&&(
+          <div className="mf-row">
+            <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #B7C7CF",color:"#8A949B"}}><i className="ti ti-plus"/></div>
+            <div style={{flex:1,fontSize:14,color:"#8A949B"}}>Nessun pasto pianificato per oggi</div>
+          </div>
+        )}
+      </div>
+
+      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:12}}>
+        <i className="ti ti-droplet" style={{fontSize:19,color:"#6BA6C9"}}/>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Acqua - {acqua} / 8 bicchieri</div>
+          <div className="mf-track"><span style={{width:Math.min(100,acqua/8*100)+"%"}}/></div>
+        </div>
+        <button onClick={function(){ setAcqua(acqua>0?acqua-1:0); }}
+          style={{width:32,height:32,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:18,cursor:"pointer"}}>-</button>
+        <button onClick={function(){ setAcqua(acqua<8?acqua+1:8); }}
+          style={{width:32,height:32,borderRadius:10,border:"none",background:"#6BA6C9",color:"#fff",fontSize:18,cursor:"pointer"}}>+</button>
       </div>
     </div>
   );
@@ -5836,44 +6197,50 @@ export default function App() {
 
       {/* Login screen */}
       {!loading&&!utente&&(
-        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",
-          justifyContent:"center",padding:"24px"}}>
+        <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",display:"flex",alignItems:"center",
+          justifyContent:"center",padding:"24px",boxSizing:"border-box",background:"#F2F6F8"}}>
           <div style={{width:"100%",maxWidth:340}}>
-            <div style={{marginBottom:32,textAlign:"center"}}>
-              <div style={{fontSize:32,marginBottom:8}}>🍽</div>
-              <div style={{fontSize:22,fontWeight:800,color:"#2C3338"}}>Menu Famiglia</div>
+            <div style={{marginBottom:24,textAlign:"center"}}>
+              <div style={{width:64,height:64,borderRadius:20,background:"#E2EEF5",color:"#2F6586",
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,margin:"0 auto 12px"}}>
+                <i className="ti ti-tools-kitchen-2"/>
+              </div>
+              <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Menu Famiglia</div>
               <div style={{fontSize:13,color:"#8A949B",marginTop:4}}>
-                {isReg?"Crea il tuo account":"Accedi al tuo account"}
+                {isReg?"Crea il tuo account":"Bentornato"}
               </div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
-              <input type="email" placeholder="Email"
-                value={emailInput} onChange={function(e){setEmailInput(e.target.value);}}
-                onKeyDown={function(e){if(e.key==="Enter")isReg?doSignup():doLogin();}}
-                style={{padding:"12px 14px",borderRadius:8,border:"1.5px solid #ddd",
-                  fontSize:14,outline:"none",width:"100%",boxSizing:"border-box"}}/>
-              <input type="password" placeholder="Password"
-                value={pwdInput} onChange={function(e){setPwdInput(e.target.value);}}
-                onKeyDown={function(e){if(e.key==="Enter")isReg?doSignup():doLogin();}}
-                style={{padding:"12px 14px",borderRadius:8,border:"1.5px solid #ddd",
-                  fontSize:14,outline:"none",width:"100%",boxSizing:"border-box"}}/>
-            </div>
-            {authErr&&(
-              <div style={{fontSize:12,color:"#C0392B",marginBottom:10,textAlign:"center"}}>
-                {authErr}
+            <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div>
+                <div className="cap" style={{marginBottom:6}}>Email</div>
+                <input type="email" placeholder="nome@email.com"
+                  value={emailInput} onChange={function(e){setEmailInput(e.target.value);}}
+                  onKeyDown={function(e){if(e.key==="Enter")isReg?doSignup():doLogin();}}
+                  style={{padding:"12px",borderRadius:12,border:"1px solid #E3EAEE",
+                    fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
               </div>
-            )}
-            <button onClick={isReg?doSignup:doLogin}
-              style={{width:"100%",padding:"13px",borderRadius:8,border:"none",
-                background:"#2C3338",color:"#fff",fontSize:14,fontWeight:700,
-                cursor:"pointer",marginBottom:12}}>
-              {isReg?"Registrati":"Accedi"}
-            </button>
+              <div>
+                <div className="cap" style={{marginBottom:6}}>Password</div>
+                <input type="password" placeholder="La tua password"
+                  value={pwdInput} onChange={function(e){setPwdInput(e.target.value);}}
+                  onKeyDown={function(e){if(e.key==="Enter")isReg?doSignup():doLogin();}}
+                  style={{padding:"12px",borderRadius:12,border:"1px solid #E3EAEE",
+                    fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              </div>
+              {authErr&&(
+                <div style={{fontSize:12,color:"#C0392B",textAlign:"center"}}>{authErr}</div>
+              )}
+              <button onClick={isReg?doSignup:doLogin}
+                style={{width:"100%",padding:"13px 16px",borderRadius:12,border:"none",
+                  background:"#2F6586",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                {isReg?"Registrati":"Accedi"}
+              </button>
+            </div>
             <button onClick={function(){setIsReg(!isReg);setAuthErr("");}}
-              style={{width:"100%",padding:"10px",borderRadius:8,
-                border:"1.5px solid #ddd",background:"transparent",
-                color:"#555",fontSize:12,cursor:"pointer"}}>
-              {isReg?"Hai gi  un account? Accedi":"Non hai un account? Registrati"}
+              style={{width:"100%",padding:"12px",borderRadius:12,marginTop:12,
+                border:"none",background:"transparent",
+                color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              {isReg?"Hai gia un account? Accedi":"Non hai un account? Registrati"}
             </button>
           </div>
         </div>
@@ -5894,25 +6261,16 @@ export default function App() {
           <HomeView profili={profili} menu={menu} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
         )}
         {tab==="menu" && (
-          <TabMenu menu={menu} setMenuOverride={setMenuOverrideLS}
-            profili={profili} settimana={settimana} setSettimana={setSettimana}
-            activeDay={activeDay} setActiveDay={setActiveDay}
-            giorniFuori={giorniFuori} toggleFuori={toggleFuori}
-            autoGenera={autoGeneraMenu}
-            builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
-            builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}/>
+          <MenuView menu={menu} setTab={handleSetTab}/>
         )}
         {tab==="diario" && (
-          <TabDiario menu={menu} profili={profili}
-            regolaApro={regolaApro} setRegolaApro={setRegolaApro}
-            builderScelte={builderScelte}/>
+          <DiarioView menu={menu} profili={profili}/>
         )}
         {tab==="salute" && (
-          <TabSalute profili={profili} setProfili={setProfiliLS} onSavePeso={savePesoToSupabase}
-            pesoLog={pesoLog} setPesoLog={setPesoLogLS}/>
+          <SaluteView profili={profili} setTab={handleSetTab}/>
         )}
         {tab==="dispensa" && (
-          <TabDispensa dispensa={dispensa} setDispensa={setDispensaLS}
+          <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="mealprep" && (
@@ -5920,7 +6278,7 @@ export default function App() {
             profili={profili}/>
         )}
         {tab==="calorie" && (
-          <TabCalorie menu={menu} profili={profili} builderScelte={builderScelte}/>
+          <CalorieView menu={menu} profili={profili}/>
         )}
         {tab==="impostazioni" && (
           <TabImpostazioni
