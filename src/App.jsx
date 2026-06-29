@@ -4748,32 +4748,45 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 }
 
 
+var RUOLI_ONB = [
+  {id:"adulto",  label:"Adulto",  eta:38, kcal:1600},
+  {id:"adulta",  label:"Adulta",  eta:35, kcal:1400},
+  {id:"bimbo",   label:"Bambino", eta:8,  kcal:1400},
+  {id:"neonato", label:"Neonato", eta:1,  kcal:800}
+];
+
 function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
   var s_lista = useState([]);
   var lista = s_lista[0]; var setLista = s_lista[1];
   var s_nome = useState("");
   var nome = s_nome[0]; var setNome = s_nome[1];
+  var s_ruolo = useState("adulto");
+  var ruolo = s_ruolo[0]; var setRuolo = s_ruolo[1];
   var s_eta = useState("");
   var eta = s_eta[0]; var setEta = s_eta[1];
-  var s_pat = useState("nessuna");
-  var pat = s_pat[0]; var setPat = s_pat[1];
-  var s_kcal = useState("");
-  var kcal = s_kcal[0]; var setKcal = s_kcal[1];
+  var s_restr = useState("nessuna");
+  var restr = s_restr[0]; var setRestr = s_restr[1];
 
   function patInfo(id) {
     var f = PATOLOGIE_LIST.find(function(p){ return p.id === id; });
     return f || PATOLOGIE_LIST[0];
   }
+  function ruoloInfo(id) {
+    var f = RUOLI_ONB.find(function(r){ return r.id === id; });
+    return f || RUOLI_ONB[0];
+  }
 
   function aggiungi() {
     if(!nome.trim()) return;
-    var info = patInfo(pat);
-    var kc = kcal ? parseInt(kcal,10) : info.kcal;
-    var membro = { nome: nome.trim(), eta: eta ? parseInt(eta,10) : 30,
-      patologia: pat, kcal_target: kc, prot_max: info.prot };
+    var r = ruoloInfo(ruolo);
+    var p = (ruolo === "neonato" && restr === "nessuna") ? "svezzamento" : restr;
+    var info = patInfo(p);
+    var membro = { nome: nome.trim(), ruolo: ruolo,
+      eta: eta ? parseInt(eta,10) : r.eta,
+      patologia: p, kcal_target: r.kcal, prot_max: info.prot };
     setLista(lista.concat([membro]));
-    setNome(""); setEta(""); setPat("nessuna"); setKcal("");
+    setNome(""); setRuolo("adulto"); setEta(""); setRestr("nessuna");
   }
 
   function rimuovi(idx) {
@@ -4784,7 +4797,7 @@ function OnboardingFamiglia(props) {
     var pf = {};
     lista.forEach(function(m, idx) {
       var id = "m_" + idx + "_" + Date.now();
-      pf[id] = { id: id, nome: m.nome, emoji: "",
+      pf[id] = { id: id, nome: m.nome, emoji: "", ruolo: m.ruolo,
         patologia: m.patologia, kcal_target: m.kcal_target, prot_max: m.prot_max,
         colore: COLORI[idx % COLORI.length], eta: m.eta, peso: 0, altezza: 170,
         kcal_custom: "", prot_custom: "", note: "" };
@@ -4809,15 +4822,18 @@ function OnboardingFamiglia(props) {
           <div style={{fontSize:12,fontWeight:700,color:"#2E5F8A",marginBottom:10}}>Aggiungi un familiare</div>
           <input placeholder="Nome" value={nome}
             onChange={function(e){setNome(e.target.value);}} style={inputStyle}/>
-          <input placeholder="Eta (anni)" inputMode="numeric" value={eta}
-            onChange={function(e){setEta(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
-          <select value={pat} onChange={function(e){setPat(e.target.value);}} style={inputStyle}>
-            {PATOLOGIE_LIST.map(function(p){
-              return <option key={p.id} value={p.id}>{p.label}</option>;
+          <select value={ruolo} onChange={function(e){setRuolo(e.target.value);}} style={inputStyle}>
+            {RUOLI_ONB.map(function(r){
+              return <option key={r.id} value={r.id}>{r.label}</option>;
             })}
           </select>
-          <input placeholder={"Kcal/giorno (default "+patInfo(pat).kcal+")"} inputMode="numeric" value={kcal}
-            onChange={function(e){setKcal(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          <input placeholder={"Eta (default "+ruoloInfo(ruolo).eta+" anni)"} inputMode="numeric" value={eta}
+            onChange={function(e){setEta(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          <select value={restr} onChange={function(e){setRestr(e.target.value);}} style={inputStyle}>
+            {PATOLOGIE_LIST.map(function(p){
+              return <option key={p.id} value={p.id}>{p.id==="nessuna"?"Nessuna restrizione":p.label}</option>;
+            })}
+          </select>
           <button onClick={aggiungi}
             style={{width:"100%",padding:"11px",borderRadius:8,border:"none",
               background:"#2E5F8A",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
@@ -4833,7 +4849,7 @@ function OnboardingFamiglia(props) {
                   background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1px solid #E3ECF4"}}>
                   <div>
                     <div style={{fontSize:13,fontWeight:700,color:"#0D1B2A"}}>{m.nome}</div>
-                    <div style={{fontSize:10,color:"#888"}}>{m.eta} anni - {patInfo(m.patologia).label} - {m.kcal_target} kcal</div>
+                    <div style={{fontSize:10,color:"#888"}}>{ruoloInfo(m.ruolo).label} - {m.eta} anni - {m.patologia==="nessuna"?(m.kcal_target+" kcal"):patInfo(m.patologia).label}</div>
                   </div>
                   <button onClick={function(){rimuovi(idx);}}
                     style={{background:"none",border:"none",color:"#C0392B",fontSize:13,fontWeight:700,cursor:"pointer"}}>
