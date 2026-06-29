@@ -4858,12 +4858,14 @@ export default function App() {
   }
 
   useEffect(function(){
+    var safety = setTimeout(function(){ setLoading(false); }, 6000);
     if(sbSession&&!utente&&loading){
       supabase.getSession().then(function(user){
         if(user&&user.id){setUtente({email:user.email});initFamily(user.id);}
         else{sbSession=null;localStorage.removeItem("mf_session");setLoading(false);}
-      });
+      }, function(e){ console.error("Supabase: getSession errore", e); sbSession=null;localStorage.removeItem("mf_session");setLoading(false); });
     }
+    return function(){ clearTimeout(safety); };
   }, []);
 
   const handleSetTab = (t) => {
