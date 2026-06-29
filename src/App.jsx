@@ -234,7 +234,7 @@ const DB_PASTI = {
 };
 
 function getColor(pid, profili) {
-  return profili[pid]?.colore || "#888";
+  return (profili[pid]||{}).colore || "#888";
 }
 
 function buildMenu(week, profili) {
@@ -340,7 +340,7 @@ function TabFamiglia({profili, setProfili}) {
               <div style={{display:"flex",gap:5,marginTop:3,flexWrap:"wrap"}}>
                 <span style={{fontSize:9,background:p.colore+"22",color:p.colore,
                   fontWeight:700,padding:"2px 8px",borderRadius:20}}>
-                  {PATOLOGIE_LIST.find(x=>x.id===p.patologia)?.label||"Nessuna"}
+                  {(PATOLOGIE_LIST.find(x=>x.id===p.patologia)||{}).label||"Nessuna"}
                 </span>
                 <span style={{fontSize:9,background:"#EBF3FA",color:"#2E5F8A",padding:"2px 8px",borderRadius:20}}>
                   {p.kcal_target} kcal
@@ -1351,7 +1351,7 @@ function TabDispensa({dispensa, setDispensa, spesa, setSpesa}) {
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{flex:1}}>
                   <div style={{fontSize:12,fontWeight:700}}>{item.nome}</div>
-                  <div style={{fontSize:9,color:"#aaa"}}>{item.qty}{item.unita} - {CATS.find(c=>c.id===item.cat)?.l}</div>
+                  <div style={{fontSize:9,color:"#aaa"}}>{item.qty}{item.unita} - {(CATS.find(c=>c.id===item.cat)||{}).l}</div>
                   {item.scadenza && (
                     <div style={{fontSize:9,color:isScad(item.scadenza)?"#C0392B":
                       isProxScad(item.scadenza)?"#C2D9EC":"#aaa"}}>
@@ -1440,7 +1440,7 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
     if(!form.nome.trim()) return;
     const cons = CONS.find(c=>c.id===form.cons);
     const scad = new Date();
-    scad.setDate(scad.getDate()+(cons?.g||3));
+    scad.setDate(scad.getDate()+((cons&&cons.g)||3));
     setMealPrep(prev=>[...prev,{id:"mp"+Date.now(), nome:form.nome.trim(),
       emoji:form.emoji, pid:form.pid, cons:form.cons,
       kcal:parseFloat(form.kcal)||0, prot:parseFloat(form.prot)||0,
@@ -3227,7 +3227,7 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
               <div style={{fontSize:12,fontWeight:800,color:"#222",marginBottom:10}}>
                 {prof.nome}
                 <span style={{fontSize:10,fontWeight:400,color:"#888",marginLeft:6}}>
-                  {PATOLOGIE_LIST.find(p=>p.id===prof.patologia)?.label||""}
+                  {(PATOLOGIE_LIST.find(p=>p.id===prof.patologia)||{}).label||""}
                 </span>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
