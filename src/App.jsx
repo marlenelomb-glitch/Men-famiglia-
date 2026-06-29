@@ -5357,6 +5357,40 @@ function kcalPastoAdulto(id) {
   return 0;
 }
 
+function PiramideView() {
+  var bande = [
+    {w:30,  bg:"#2F6586", col:"#fff",     t:"Dolci - raramente"},
+    {w:48,  bg:"#6BA6C9", col:"#fff",     t:"Grassi buoni - 2 porzioni"},
+    {w:66,  bg:"#AFCDDD", col:"#2F6586",  t:"Proteine - 2 porzioni"},
+    {w:84,  bg:"#CFE0EA", col:"#2F6586",  t:"Cereali integrali - 4 porzioni"},
+    {w:100, bg:"#E2EEF5", col:"#2F6586",  t:"Frutta e verdura - 5 porzioni"}
+  ];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Piramide alimentare</div>
+        <div style={{fontSize:13,color:"#8A949B",marginTop:1}}>Porzioni consigliate al giorno</div>
+      </div>
+      <div className="mf-card" style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"18px 14px"}}>
+        {bande.map(function(b){
+          return (
+            <div key={b.t} style={{width:b.w+"%",borderRadius:10,textAlign:"center",fontWeight:600,
+              fontSize:13,padding:"10px 0",color:b.col,background:b.bg}}>{b.t}</div>
+          );
+        })}
+      </div>
+      <div className="mf-card acc" style={{display:"flex",alignItems:"center",gap:11}}>
+        <i className="ti ti-walk" style={{fontSize:19}}/>
+        <div style={{flex:1,fontSize:13}}>Base quotidiana: acqua e movimento</div>
+      </div>
+      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:11}}>
+        <i className="ti ti-bulb" style={{fontSize:19,color:"#6BA6C9"}}/>
+        <div style={{flex:1,fontSize:13}}>Punta a 5 porzioni di frutta e verdura ogni giorno</div>
+      </div>
+    </div>
+  );
+}
+
 function SaluteView(props) {
   var profili = props.profili || {};
   var setTab = props.setTab || function(){};
@@ -6447,7 +6481,7 @@ export default function App() {
             pin={pin} setPin={setPinLS}/>
         )}
         {tab==="piramide" && (
-          <TabPiramide menu={menu} builderScelte={builderScelte}/>
+          <PiramideView/>
         )}
         {tab==="idee" && (
           <TabIdee profili={profili} dispensa={dispensa}/>
