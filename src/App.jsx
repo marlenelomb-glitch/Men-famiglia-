@@ -134,17 +134,120 @@ const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
 const COLORI = ["#2E5F8A","#1B3A5C","#6B9EC4","#C2355A","#C2355A","#C2355A","#1B3A5C"];
 
 const PATOLOGIE_LIST = [
-  {id:"nessuna",     label:"Nessuna",          kcal:2000, prot:80,  note:""},
-  {id:"dimagrimento",label:"Dieta dimagrante",  kcal:1400, prot:80,  note:"Deficit calorico moderato"},
-  {id:"ipoproteica", label:"Dieta ipoproteica", kcal:1500, prot:20,  note:"Max proteine prescritto dal nefrologo"},
-  {id:"celiachia",   label:"Celiachia",         kcal:2000, prot:80,  note:"Eliminare glutine"},
-  {id:"diabete",     label:"Diabete",           kcal:1800, prot:80,  note:"Controllare carboidrati"},
-  {id:"ipertensione",label:"Ipertensione",      kcal:2000, prot:80,  note:"Ridurre sodio <1.5g/die"},
-  {id:"vegetariano", label:"Vegetariano",       kcal:2000, prot:80,  note:"No carne e pesce"},
-  {id:"vegano",      label:"Vegano",            kcal:2000, prot:80,  note:"No prodotti animali"},
-  {id:"svezzamento", label:"Svezzamento",       kcal:800,  prot:14,  note:"No sale, no miele"},
-  {id:"colite",      label:"Colite/IBS",        kcal:2000, prot:80,  note:"Low-FODMAP"},
+  {id:"nessuna", label:"Nessuna restrizione", kcal:2000, prot:80, vietati:[], note:""},
+  {id:"dimagrante", label:"Dieta dimagrante", kcal:1500, prot:80, kcalMod:{pct:-20}, vietati:[], note:"kcal -20% rispetto al fabbisogno per eta"},
+  {id:"ipoproteica", label:"Dieta Ipoproteica", kcal:1800, prot:20, prot_max:20, manuale:"prot", vietati:[], note:"prot_max prescritto dal medico (default 20g)"},
+  {id:"celiachia", label:"Celiachia", kcal:2000, prot:80, vietati:["glutine"], note:"No glutine (grano, orzo, segale, farro)"},
+  {id:"diabete_t1", label:"Diabete Tipo 1", kcal:2000, prot:80, carb_max:200, vietati:[], note:"Carb max 200g, preferire indice glicemico basso"},
+  {id:"diabete_t2", label:"Diabete Tipo 2", kcal:1800, prot:80, carb_max:180, vietati:[], note:"Carb max 180g, indice glicemico basso"},
+  {id:"ipertensione", label:"Ipertensione", kcal:2000, prot:80, sodio_max:1500, vietati:[], note:"Sodio max 1500mg/die"},
+  {id:"vegetariano", label:"Vegetariano", kcal:2000, prot:80, vietati:["carne","pesce","crostacei"], note:"No carne, no pesce"},
+  {id:"vegano", label:"Vegano", kcal:2000, prot:80, vietati:["carne","pesce","crostacei","latticini","uova"], note:"No carne, pesce, latticini, uova"},
+  {id:"svezzamento", label:"Svezzamento", kcal:700, prot:11, vietati:[], note:"Parametri neonato 6-12 mesi"},
+  {id:"colite_ibs", label:"Colite/IBS", kcal:2000, prot:80, vietati:["legumi","fritto","fermentati"], note:"No cibi fermentati, no legumi interi, no fritto"},
+  {id:"allergia_latte", label:"Allergia al Latte", kcal:2000, prot:80, vietati:["latticini"], note:"No latticini"},
+  {id:"allergia_uova", label:"Allergia alle Uova", kcal:2000, prot:80, vietati:["uova"], note:"No uova"},
+  {id:"allergia_frutta_secca", label:"Allergia Frutta Secca", kcal:2000, prot:80, vietati:["frutta_secca"], note:"No noci, mandorle, nocciole"},
+  {id:"allergia_pesce", label:"Allergia al Pesce", kcal:2000, prot:80, vietati:["pesce"], note:"No pesce"},
+  {id:"allergia_crostacei", label:"Allergia Crostacei", kcal:2000, prot:80, vietati:["crostacei"], note:"No gamberi, cozze, vongole"},
+  {id:"allergia_grano", label:"Allergia al Grano", kcal:2000, prot:80, vietati:["glutine"], note:"No frumento"},
+  {id:"fenilchetonuria", label:"Fenilchetonuria PKU", kcal:2000, prot:20, prot_max:20, phe_max:300, manuale:"phe", vietati:[], note:"Fenilalanina max inserita dal medico"},
+  {id:"ipercolesterolemia", label:"Ipercolesterolemia", kcal:2000, prot:80, grassi_sat_max:20, vietati:[], note:"Grassi saturi max 20g/die"},
+  {id:"ins_renale", label:"Insufficienza Renale", kcal:2000, prot:60, sodio_max:1500, fosforo_max:800, vietati:[], note:"Sodio max 1500mg, fosforo limitato"},
+  {id:"gotta", label:"Gotta", kcal:2000, prot:70, vietati:["carne_rossa","alcol"], note:"No carne rossa, no alcolici, purine limitate"},
+  {id:"anemia", label:"Anemia", kcal:2000, prot:80, vietati:[], note:"Aumentare ferro e vitamina C"},
+  {id:"gravidanza", label:"Gravidanza", kcal:2200, prot:90, vietati:["crudi","alcol"], note:"Aumentare folati, calcio, ferro, no alcol, no crudi"},
+  {id:"allattamento", label:"Allattamento", kcal:2300, prot:90, kcalMod:{add:500}, vietati:["alcol"], note:"+500 kcal, calcio elevato"},
+  {id:"intoll_lattosio", label:"Intolleranza al Lattosio", kcal:2000, prot:80, vietati:["latticini"], note:"Latticini limitati"},
+  {id:"intoll_fruttosio", label:"Intolleranza al Fruttosio", kcal:2000, prot:80, vietati:["miele"], note:"Frutta limitata, no miele"},
+  {id:"ingrassante", label:"Dieta Ingrassante/Ipercalorica", kcal:2500, prot:90, kcalMod:{pct:20}, vietati:[], note:"kcal +20% rispetto al fabbisogno per eta"},
 ];
+
+function calcolaEta(dataNascita) {
+  if(!dataNascita) return {anni:30, mesi:360};
+  var d = new Date(dataNascita);
+  if(isNaN(d.getTime())) return {anni:30, mesi:360};
+  var now = new Date();
+  var mesi = (now.getFullYear()-d.getFullYear())*12 + (now.getMonth()-d.getMonth());
+  if(now.getDate() < d.getDate()) mesi = mesi - 1;
+  if(mesi < 0) mesi = 0;
+  return {anni: Math.floor(mesi/12), mesi: mesi};
+}
+
+function getParametriEta(dataNascita, sesso) {
+  var e = calcolaEta(dataNascita);
+  var mesi = e.mesi, anni = e.anni;
+  var maschio = sesso === "maschio";
+  if(mesi < 6)  return {kcal:550,  prot:9,  carb:60};
+  if(mesi < 12) return {kcal:700,  prot:11, carb:95};
+  if(anni <= 3) return {kcal:1100, prot:14, carb:150};
+  if(anni <= 6) return {kcal:1400, prot:20, carb:190};
+  if(anni <= 10) return {kcal:1700, prot:28, carb:230};
+  if(anni <= 14) return maschio ? {kcal:2000, prot:40, carb:260} : {kcal:1800, prot:36, carb:240};
+  if(anni <= 17) return maschio ? {kcal:2300, prot:50, carb:300} : {kcal:1900, prot:43, carb:250};
+  if(anni >= 65) return maschio ? {kcal:1900, prot:54, carb:240} : {kcal:1600, prot:54, carb:200};
+  return maschio ? {kcal:2100, prot:56, carb:265} : {kcal:1800, prot:46, carb:230};
+}
+
+function getParametriFinali(profilo) {
+  var base = getParametriEta(profilo.dataNascita, profilo.sesso);
+  var res = {kcal: base.kcal, prot: base.prot, carb: base.carb,
+    prot_max: null, carb_max: null, sodio_max: null, grassi_sat_max: null, phe_max: null, vietati: []};
+  var lista = (profilo.patologie && profilo.patologie.length) ? profilo.patologie
+    : (profilo.patologia ? [profilo.patologia] : []);
+  lista.forEach(function(pid) {
+    var p = PATOLOGIE_LIST.find(function(x){ return x.id === pid; });
+    if(!p) return;
+    if(p.kcalMod) {
+      if(typeof p.kcalMod.pct === "number") res.kcal = Math.round(res.kcal * (1 + p.kcalMod.pct/100));
+      if(typeof p.kcalMod.add === "number") res.kcal = res.kcal + p.kcalMod.add;
+    }
+    if(typeof p.prot_max === "number") res.prot_max = (res.prot_max === null) ? p.prot_max : Math.min(res.prot_max, p.prot_max);
+    if(typeof p.carb_max === "number") res.carb_max = (res.carb_max === null) ? p.carb_max : Math.min(res.carb_max, p.carb_max);
+    if(typeof p.sodio_max === "number") res.sodio_max = (res.sodio_max === null) ? p.sodio_max : Math.min(res.sodio_max, p.sodio_max);
+    if(typeof p.grassi_sat_max === "number") res.grassi_sat_max = (res.grassi_sat_max === null) ? p.grassi_sat_max : Math.min(res.grassi_sat_max, p.grassi_sat_max);
+    if(typeof p.phe_max === "number") res.phe_max = (res.phe_max === null) ? p.phe_max : Math.min(res.phe_max, p.phe_max);
+    if(p.vietati) p.vietati.forEach(function(v){ if(res.vietati.indexOf(v) < 0) res.vietati.push(v); });
+  });
+  var vm = profilo.valoriMedico || {};
+  if(vm.prot !== undefined && vm.prot !== null && vm.prot !== "") res.prot_max = parseInt(vm.prot,10);
+  if(vm.phe !== undefined && vm.phe !== null && vm.phe !== "") res.phe_max = parseInt(vm.phe,10);
+  var ov = profilo.override || {};
+  if(ov.kcal !== undefined && ov.kcal !== null && ov.kcal !== "") res.kcal = parseInt(ov.kcal,10);
+  if(ov.prot_max !== undefined && ov.prot_max !== null && ov.prot_max !== "") res.prot_max = parseInt(ov.prot_max,10);
+  if(ov.carb_max !== undefined && ov.carb_max !== null && ov.carb_max !== "") res.carb_max = parseInt(ov.carb_max,10);
+  res.patologie = lista;
+  return res;
+}
+
+function tagsIngrediente(ing) {
+  if(!ing) return [];
+  var t = [];
+  var cat = ing.cat || "";
+  var id = ing.id || "";
+  var glutenFree = ["pasta_leg","soba","noodles","riso_b","riso_int","riso_bas","risotto","quinoa","polenta","patate","patate_d","gallette"];
+  if(cat === "pasta" || cat === "pane") { if(glutenFree.indexOf(id) < 0) t.push("glutine"); }
+  if(cat === "cereali") { if(["farro","orzo","cous"].indexOf(id) >= 0) t.push("glutine"); }
+  if(cat === "colazione") { if(["avena","muesli","granola","fette_int","pancakes"].indexOf(id) >= 0) t.push("glutine"); }
+  if(cat === "latticini") t.push("latticini");
+  if(id === "besciamella" || id === "burro") t.push("latticini");
+  if(cat === "uova" || id === "uova" || id === "pancakes") t.push("uova");
+  if(cat === "pesce") { t.push("pesce"); if(id === "gamberetti") t.push("crostacei"); }
+  if(cat === "carne bianca" || cat === "carne rossa" || cat === "affettati") t.push("carne");
+  if(cat === "carne rossa") t.push("carne_rossa");
+  if(cat === "legumi" || id === "pasta_leg") t.push("legumi");
+  if(id === "noci" || id === "mandorle" || cat === "frutta_sec") t.push("frutta_secca");
+  return t;
+}
+
+function ingredienteVietato(ing, vietati) {
+  if(!vietati || !vietati.length) return null;
+  var tags = tagsIngrediente(ing);
+  for(var i = 0; i < tags.length; i++) {
+    if(vietati.indexOf(tags[i]) >= 0) return tags[i];
+  }
+  return null;
+}
 
 const DB_PASTI = {
   c1:{nome:"Yogurt + frutta + cereali",emoji:"?",tipo:"Colazione",
@@ -3852,6 +3955,27 @@ function TwoLevelDrop(props) {
   );
 }
 
+function mealFrazione(pasto) {
+  var tipo = PASTI_TIPO[pasto] || "pranzo";
+  if(tipo === "colazione") return 0.20;
+  if(tipo === "pranzo") return 0.35;
+  if(tipo === "cena") return 0.30;
+  return 0.12;
+}
+function coloreSemaforo(stato) {
+  if(stato === "rosso") return "#C0392B";
+  if(stato === "giallo") return "#F39C12";
+  return "#27AE60";
+}
+function carbStima(cat, tipo, g) {
+  var c = cat || "";
+  if(c === "pasta" || c === "pane" || c === "cereali" || c === "colazione" || c === "riso") return g * 0.72;
+  if(c === "tuberi") return g * 0.18;
+  if(c === "legumi") return g * 0.20;
+  if(tipo === "frutta") return g * 0.13;
+  return 0;
+}
+
 function NutriPanel(props) {
   var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
   var PORZ = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
@@ -3864,7 +3988,9 @@ function NutriPanel(props) {
     var it = allDB.find(function(x){return x.id===id;});
     if(!it||!it.kcal_p) return;
     var g = PORZ[it.cat||tipo] || 100;
-    items.push({nome:it.nome, emoji:it.emoji, g:g, kcal:Math.round(it.kcal_p*g/100), prot:Math.round((it.prot_p||0)*g/100)});
+    items.push({nome:it.nome, emoji:it.emoji, g:g,
+      kcal:Math.round(it.kcal_p*g/100), prot:Math.round((it.prot_p||0)*g/100),
+      carb:Math.round(carbStima(it.cat, tipo, g)), ing:it});
   }
   addItem(props.carbo,"carbo");
   addItem(props.prot,"proteina");
@@ -3877,13 +4003,49 @@ function NutriPanel(props) {
 
   var totKcal = items.reduce(function(s,x){return s+x.kcal;},0);
   var totProt = items.reduce(function(s,x){return s+x.prot;},0);
+  var totCarb = items.reduce(function(s,x){return s+x.carb;},0);
 
-  var profili = [
-    {nome:"Adulto",  mult:1.0,  target:600},
-    {nome:"Adulta",  mult:0.85, target:500},
-    {nome:"Bambino", mult:0.65, target:420},
-    {nome:"Neonato", mult:0.25, target:180},
-  ];
+  var frac = mealFrazione(props.pasto);
+  var profMap = props.profili || {};
+  var pids = Object.keys(profMap);
+  var avvisi = [];
+
+  var righe = pids.map(function(pid) {
+    var p = profMap[pid];
+    var fin = getParametriFinali(p);
+    var mult = fin.kcal / 2000;
+    var personKcal = Math.round(totKcal * mult);
+    var personProt = Math.round(totProt * mult);
+    var personCarb = Math.round(totCarb * mult);
+    var targetKcal = Math.max(1, Math.round(fin.kcal * frac));
+    var kcalPct = personKcal / targetKcal;
+    var stato = "verde";
+    if(kcalPct >= 1.0) stato = "rosso";
+    else if(kcalPct >= 0.8) stato = "giallo";
+    var protInfo = null;
+    if(fin.prot_max !== null) {
+      var targetProt = Math.max(1, Math.round(fin.prot_max * frac));
+      protInfo = {val:personProt, target:targetProt};
+      if(personProt > targetProt) {
+        stato = "rosso";
+        avvisi.push("Proteine pasto (" + personProt + "g) oltre la quota per " + p.nome + " (max ~" + targetProt + "g/pasto)");
+      }
+    }
+    if(fin.carb_max !== null) {
+      var targetCarb = Math.max(1, Math.round(fin.carb_max * frac));
+      if(personCarb > targetCarb) {
+        stato = "rosso";
+        avvisi.push("Carboidrati pasto (~" + personCarb + "g) oltre il limite per " + p.nome + " (max ~" + targetCarb + "g/pasto)");
+      }
+    }
+    var allerg = false;
+    items.forEach(function(it) {
+      var v = ingredienteVietato(it.ing, fin.vietati);
+      if(v) { allerg = true; avvisi.push(it.nome + " non compatibile con " + p.nome + " (" + v + ")"); }
+    });
+    if(allerg) stato = "rosso";
+    return {pid:pid, nome:p.nome, kcal:personKcal, prot:personProt, protInfo:protInfo, stato:stato, allerg:allerg};
+  });
 
   return (
     <div style={{background:"#F5F8FC",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #C2D9EC"}}>
@@ -3894,46 +4056,30 @@ function NutriPanel(props) {
           {totProt>0&&<span style={{fontSize:12,fontWeight:800,color:"#E07A5F"}}>{totProt}<span style={{fontSize:9,fontWeight:400}}>g prot</span></span>}
         </div>
       </div>
+
       <div style={{display:"flex",flexDirection:"column",gap:2,marginBottom:8}}>
-        {profili.map(function(p){
-          var kc=Math.round(totKcal*p.mult);
-          var pr=Math.round(totProt*p.mult);
-          var pct=Math.min(100,Math.round(kc/p.target*100));
+        {righe.map(function(r){
           return (
-            <div key={p.nome} style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{minWidth:58,fontSize:9,color:"#555",fontWeight:600}}>{p.nome}</span>
-              <span style={{minWidth:44,fontSize:9,fontWeight:700,color:"#2E5F8A"}}>{kc} kcal</span>
-              {pr>0&&<span style={{minWidth:36,fontSize:9,color:"#E07A5F"}}>{pr}g</span>}
-              <div style={{flex:1,background:"#ddd",borderRadius:4,height:4}}>
-                <div style={{width:pct+"%",height:"100%",background:"#2E5F8A",borderRadius:4}}/>
-              </div>
+            <div key={r.pid} style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{width:9,height:9,borderRadius:"50%",background:coloreSemaforo(r.stato),flexShrink:0}}/>
+              <span style={{minWidth:70,maxWidth:90,fontSize:10,color:"#333",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</span>
+              <span style={{fontSize:10,fontWeight:700,color:"#2E5F8A"}}>{r.kcal} kcal</span>
+              {r.protInfo&&<span style={{fontSize:9,color:r.protInfo.val>r.protInfo.target?"#C0392B":"#888"}}>{r.prot}/{r.protInfo.target}g prot</span>}
+              {r.allerg&&<span style={{fontSize:9,fontWeight:800,color:"#C0392B"}}>NON OK</span>}
             </div>
           );
         })}
       </div>
 
-      {(totProt>0||totKcal>0)&&(
-        <div style={{background:"#FFF3E0",borderRadius:8,padding:"8px 10px",marginBottom:8,border:"1.5px solid #FFB74D"}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#E65100",marginBottom:4}}>Stima aproteico</div>
-          <div style={{fontSize:9,color:"#555",lineHeight:1.6}}>
-            Carbo normale + proteina ridotta (~20% adulto):
-          </div>
-          <div style={{display:"flex",gap:10,marginTop:4}}>
-            <span style={{fontSize:11,fontWeight:800,color:"#E65100"}}>
-              {Math.round(totKcal*0.7)} kcal
-            </span>
-            {totProt>0&&(
-              <span style={{fontSize:11,fontWeight:800,color:Math.round(totProt*0.2)>5?"#C0392B":"#27AE60"}}>
-                {Math.round(totProt*0.2)}g prot
-                {Math.round(totProt*0.2)>5?"!! riduci proteina":"ok"}
-              </span>
-            )}
-          </div>
-          <div style={{fontSize:8,color:"#888",marginTop:3}}>
-            Max 20g proteine/die — controlla con il dietologo la quota per pasto
-          </div>
+      {avvisi.length>0&&(
+        <div style={{background:"#FDEDEC",border:"1.5px solid #E6B0AA",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#C0392B",marginBottom:4}}>Avvisi nutrizionali</div>
+          {avvisi.map(function(a,i){
+            return <div key={i} style={{fontSize:9,color:"#922B21",lineHeight:1.5}}>- {a}</div>;
+          })}
         </div>
       )}
+
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
         {items.map(function(it){
           return (
@@ -3943,16 +4089,10 @@ function NutriPanel(props) {
           );
         })}
       </div>
-      {totProt>0&&totKcal>0&&totProt/totKcal*100<10&&totKcal>300&&(
-        <div style={{background:"#FFF3E0",borderRadius:6,padding:"5px 8px",fontSize:9,color:"#E65100"}}>
-          Pasto ipoproteico (&lt;10% kcal da prot). Compatibile dieta ingrassante se carbo adeguati.
-        </div>
-      )}
-      {totProt>0&&totKcal>0&&totProt/totKcal*100>25&&(
-        <div style={{background:"#F0F7F4",borderRadius:6,padding:"5px 8px",fontSize:9,color:"#2D6A4F"}}>
-          Pasto iperproteico (&gt;25% kcal da prot). Attenzione dieta ipoproteica.
-        </div>
-      )}
+
+      <div style={{fontSize:8,color:"#999"}}>
+        Semaforo: verde entro i parametri - giallo 80-100% del limite - rosso superato
+      </div>
     </div>
   );
 }
@@ -4140,7 +4280,7 @@ function CostruttorePasto(props) {
           )}
 
           {haQualcosa&&(
-            <NutriPanel carbo={carbo} prot={prot} verd={verd} verd2={verd2} frutta={frutta} lattic={lattic}/>
+            <NutriPanel carbo={carbo} prot={prot} verd={verd} verd2={verd2} frutta={frutta} lattic={lattic} pasto={pasto} profili={props.profili}/>
           )}
 
           <button onClick={function(){setStep(2);}} disabled={!haQualcosa}
@@ -4616,6 +4756,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             giorno={GIORNI_B[giornoSel]}
             pasto={pastoSel}
             scelta={sceltaCorrente}
+            profili={profili}
             onSalva={salva}
             stepEst={stepCorrente}
             setStepEst={setStepCorrente}
@@ -4748,45 +4889,54 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 }
 
 
-var RUOLI_ONB = [
-  {id:"adulto",  label:"Adulto",  eta:38, kcal:1600},
-  {id:"adulta",  label:"Adulta",  eta:35, kcal:1400},
-  {id:"bimbo",   label:"Bambino", eta:8,  kcal:1400},
-  {id:"neonato", label:"Neonato", eta:1,  kcal:800}
-];
+function patologiaPrimaria(patologie) {
+  if(patologie.indexOf("svezzamento") >= 0) return "svezzamento";
+  if(patologie.indexOf("ipoproteica") >= 0) return "ipoproteica";
+  if(patologie.indexOf("fenilchetonuria") >= 0) return "ipoproteica";
+  return patologie.length ? patologie[0] : "nessuna";
+}
 
 function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
-  var s_lista = useState([]);
-  var lista = s_lista[0]; var setLista = s_lista[1];
-  var s_nome = useState("");
-  var nome = s_nome[0]; var setNome = s_nome[1];
-  var s_ruolo = useState("adulto");
-  var ruolo = s_ruolo[0]; var setRuolo = s_ruolo[1];
-  var s_eta = useState("");
-  var eta = s_eta[0]; var setEta = s_eta[1];
-  var s_restr = useState("nessuna");
-  var restr = s_restr[0]; var setRestr = s_restr[1];
+  var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
+  var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
+  var s_data = useState(""); var dataN = s_data[0]; var setDataN = s_data[1];
+  var s_sesso = useState("femmina"); var sesso = s_sesso[0]; var setSesso = s_sesso[1];
+  var s_pat = useState([]); var patologie = s_pat[0]; var setPatologie = s_pat[1];
+  var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
+  var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
+  var s_ovk = useState(""); var ovKcal = s_ovk[0]; var setOvKcal = s_ovk[1];
+  var s_ovp = useState(""); var ovProt = s_ovp[0]; var setOvProt = s_ovp[1];
 
-  function patInfo(id) {
-    var f = PATOLOGIE_LIST.find(function(p){ return p.id === id; });
-    return f || PATOLOGIE_LIST[0];
+  function togglePat(pid) {
+    if(patologie.indexOf(pid) >= 0) setPatologie(patologie.filter(function(x){ return x !== pid; }));
+    else setPatologie(patologie.concat([pid]));
   }
-  function ruoloInfo(id) {
-    var f = RUOLI_ONB.find(function(r){ return r.id === id; });
-    return f || RUOLI_ONB[0];
+
+  function membroCorrente() {
+    return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
+      patologie: patologie.slice(),
+      valoriMedico: {prot: vProt, phe: vPhe},
+      override: {kcal: ovKcal, prot_max: ovProt} };
+  }
+
+  function riassunto(m) {
+    var fin = getParametriFinali(m);
+    var anni = calcolaEta(m.dataNascita).anni;
+    var sx = m.sesso === "maschio" ? "Maschio" : "Femmina";
+    var parts = [];
+    if(fin.prot_max !== null) parts.push("Max " + fin.prot_max + "g proteine/die");
+    if(fin.carb_max !== null) parts.push("Max " + fin.carb_max + "g carbo/die");
+    if(fin.phe_max !== null) parts.push("Fenilalanina max " + fin.phe_max + "mg");
+    parts.push(fin.kcal + " kcal/die");
+    return m.nome + ", " + anni + " anni, " + sx + " - " + parts.join(", ");
   }
 
   function aggiungi() {
-    if(!nome.trim()) return;
-    var r = ruoloInfo(ruolo);
-    var p = (ruolo === "neonato" && restr === "nessuna") ? "svezzamento" : restr;
-    var info = patInfo(p);
-    var membro = { nome: nome.trim(), ruolo: ruolo,
-      eta: eta ? parseInt(eta,10) : r.eta,
-      patologia: p, kcal_target: r.kcal, prot_max: info.prot };
-    setLista(lista.concat([membro]));
-    setNome(""); setRuolo("adulto"); setEta(""); setRestr("nessuna");
+    if(!nome.trim() || !dataN) return;
+    setLista(lista.concat([membroCorrente()]));
+    setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
+    setVProt(""); setVPhe(""); setOvKcal(""); setOvProt("");
   }
 
   function rimuovi(idx) {
@@ -4797,46 +4947,87 @@ function OnboardingFamiglia(props) {
     var pf = {};
     lista.forEach(function(m, idx) {
       var id = "m_" + idx + "_" + Date.now();
-      pf[id] = { id: id, nome: m.nome, emoji: "", ruolo: m.ruolo,
-        patologia: m.patologia, kcal_target: m.kcal_target, prot_max: m.prot_max,
-        colore: COLORI[idx % COLORI.length], eta: m.eta, peso: 0, altezza: 170,
+      var fin = getParametriFinali(m);
+      pf[id] = { id: id, nome: m.nome, emoji: "",
+        dataNascita: m.dataNascita, sesso: m.sesso,
+        patologie: m.patologie, patologia: patologiaPrimaria(m.patologie),
+        valoriMedico: m.valoriMedico, override: m.override,
+        eta: calcolaEta(m.dataNascita).anni,
+        kcal_target: fin.kcal, prot_max: (fin.prot_max !== null ? fin.prot_max : fin.prot),
+        colore: COLORI[idx % COLORI.length], peso: 0, altezza: 170,
         kcal_custom: "", prot_custom: "", note: "" };
     });
     onComplete(pf);
   }
 
+  var canAdd = !!nome.trim() && !!dataN;
+  var showProt = patologie.indexOf("ipoproteica") >= 0;
+  var showPhe = patologie.indexOf("fenilchetonuria") >= 0;
   var inputStyle = {padding:"11px 12px",borderRadius:8,border:"1.5px solid #ddd",
     fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10};
 
   return (
-    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",
-      maxWidth:520,margin:"0 auto"}}>
-      <div style={{maxWidth:380,margin:"0 auto"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
+    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",maxWidth:520,margin:"0 auto"}}>
+      <div style={{maxWidth:400,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:32,marginBottom:8}}>🍽</div>
           <div style={{fontSize:20,fontWeight:800,color:"#0D1B2A"}}>Benvenuto!</div>
-          <div style={{fontSize:13,color:"#888",marginTop:4}}>Configura la tua famiglia per iniziare</div>
+          <div style={{fontSize:13,color:"#888",marginTop:4}}>Configura i profili nutrizionali della famiglia</div>
         </div>
 
         <div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #E3ECF4"}}>
           <div style={{fontSize:12,fontWeight:700,color:"#2E5F8A",marginBottom:10}}>Aggiungi un familiare</div>
           <input placeholder="Nome" value={nome}
             onChange={function(e){setNome(e.target.value);}} style={inputStyle}/>
-          <select value={ruolo} onChange={function(e){setRuolo(e.target.value);}} style={inputStyle}>
-            {RUOLI_ONB.map(function(r){
-              return <option key={r.id} value={r.id}>{r.label}</option>;
-            })}
+          <div style={{fontSize:10,color:"#888",marginBottom:4}}>Data di nascita</div>
+          <input type="date" value={dataN}
+            onChange={function(e){setDataN(e.target.value);}} style={inputStyle}/>
+          <select value={sesso} onChange={function(e){setSesso(e.target.value);}} style={inputStyle}>
+            <option value="femmina">Femmina</option>
+            <option value="maschio">Maschio</option>
           </select>
-          <input placeholder={"Eta (default "+ruoloInfo(ruolo).eta+" anni)"} inputMode="numeric" value={eta}
-            onChange={function(e){setEta(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
-          <select value={restr} onChange={function(e){setRestr(e.target.value);}} style={inputStyle}>
-            {PATOLOGIE_LIST.map(function(p){
-              return <option key={p.id} value={p.id}>{p.id==="nessuna"?"Nessuna restrizione":p.label}</option>;
+
+          <div style={{fontSize:10,color:"#888",marginBottom:6}}>Patologie / restrizioni (puoi selezionarne piu di una)</div>
+          <div style={{maxHeight:170,overflowY:"auto",border:"1px solid #eee",borderRadius:8,padding:"4px 8px",marginBottom:10}}>
+            {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p){
+              var sel = patologie.indexOf(p.id) >= 0;
+              return (
+                <label key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 2px",cursor:"pointer",fontSize:12}}>
+                  <input type="checkbox" checked={sel} onChange={function(){ togglePat(p.id); }}/>
+                  <span style={{color:sel?"#0D1B2A":"#555",fontWeight:sel?700:400}}>{p.label}</span>
+                </label>
+              );
             })}
-          </select>
-          <button onClick={aggiungi}
+          </div>
+
+          {showProt&&(
+            <input placeholder="Proteine max prescritte dal medico (g)" inputMode="numeric" value={vProt}
+              onChange={function(e){setVProt(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          )}
+          {showPhe&&(
+            <input placeholder="Fenilalanina max prescritta dal medico (mg)" inputMode="numeric" value={vPhe}
+              onChange={function(e){setVPhe(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          )}
+
+          <div style={{fontSize:10,color:"#888",marginBottom:6}}>Parametri manuali (opzionale, lascia vuoto per automatico)</div>
+          <div style={{display:"flex",gap:8}}>
+            <input placeholder="kcal/die" inputMode="numeric" value={ovKcal}
+              onChange={function(e){setOvKcal(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+            <input placeholder="prot max/die" inputMode="numeric" value={ovProt}
+              onChange={function(e){setOvProt(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          </div>
+
+          {canAdd&&(
+            <div style={{background:"#EBF3FA",borderRadius:8,padding:"8px 10px",marginBottom:10,
+              fontSize:11,color:"#2E5F8A",fontWeight:600}}>
+              {riassunto(membroCorrente())}
+            </div>
+          )}
+
+          <button onClick={aggiungi} disabled={!canAdd}
             style={{width:"100%",padding:"11px",borderRadius:8,border:"none",
-              background:"#2E5F8A",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              background:canAdd?"#2E5F8A":"#ccc",color:"#fff",fontSize:13,fontWeight:700,
+              cursor:canAdd?"pointer":"default"}}>
             + Aggiungi familiare
           </button>
         </div>
@@ -4847,9 +5038,9 @@ function OnboardingFamiglia(props) {
               return (
                 <div key={idx} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
                   background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1px solid #E3ECF4"}}>
-                  <div>
+                  <div style={{flex:1,paddingRight:8}}>
                     <div style={{fontSize:13,fontWeight:700,color:"#0D1B2A"}}>{m.nome}</div>
-                    <div style={{fontSize:10,color:"#888"}}>{ruoloInfo(m.ruolo).label} - {m.eta} anni - {m.patologia==="nessuna"?(m.kcal_target+" kcal"):patInfo(m.patologia).label}</div>
+                    <div style={{fontSize:10,color:"#888"}}>{riassunto(m)}</div>
                   </div>
                   <button onClick={function(){rimuovi(idx);}}
                     style={{background:"none",border:"none",color:"#C0392B",fontSize:13,fontWeight:700,cursor:"pointer"}}>
