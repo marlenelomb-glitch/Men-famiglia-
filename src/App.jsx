@@ -126,6 +126,89 @@ try {
 
 var supabase = createSupabaseClient();
 
+// ── CLIENT AI (Claude) ───────────────────────────────────────
+var ANTHROPIC_KEY = import.meta.env.VITE_ANTHROPIC_KEY || "";
+var AI_MODEL = "claude-sonnet-4-6";
+
+function aiAttiva() { return !!ANTHROPIC_KEY; }
+
+function chiamaAI(system, userText, maxTokens) {
+  if(!ANTHROPIC_KEY) return Promise.reject(new Error("Chiave AI non configurata (VITE_ANTHROPIC_KEY)"));
+  return fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model: AI_MODEL,
+      max_tokens: maxTokens || 1024,
+      system: system,
+      messages: [{ role: "user", content: userText }]
+    })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data && data.error) throw new Error(data.error.message || "Errore AI");
+    var t = "";
+    if(data && data.content) data.content.forEach(function(b){ if(b.type === "text") t += b.text; });
+    return t;
+  });
+}
+
+function descriviProfili(profili) {
+  var righe = [];
+  Object.keys(profili).forEach(function(pid){
+    var p = profili[pid];
+    var fin = getParametriFinali(p);
+    var eta = p.dataNascita ? calcolaEta(p.dataNascita).anni : (p.eta || "?");
+    var vincoli = [];
+    if(fin.prot_max !== null) vincoli.push("max " + fin.prot_max + "g proteine/die");
+    if(fin.carb_max !== null) vincoli.push("max " + fin.carb_max + "g carboidrati/die");
+    if(fin.sodio_max !== null) vincoli.push("max " + fin.sodio_max + "mg sodio/die");
+    if(fin.phe_max !== null) vincoli.push("max " + fin.phe_max + "mg fenilalanina/die (PKU)");
+    if(fin.vietati && fin.vietati.length) vincoli.push("vietati: " + fin.vietati.join(", "));
+    var pats = (fin.patologie && fin.patologie.length) ? fin.patologie.join(", ") : "nessuna";
+    righe.push("- " + p.nome + " (" + eta + " anni): " + fin.kcal + " kcal/die; patologie: " + pats + "; " + (vincoli.length ? vincoli.join("; ") : "nessun vincolo particolare"));
+  });
+  return righe.join("\n");
+}
+
+var AI_SYSTEM = "Sei un assistente nutrizionista per un'app di menu familiare italiana. " +
+  "Rispondi sempre in italiano, in modo chiaro e conciso. Tieni conto delle patologie e dei vincoli " +
+  "nutrizionali di ogni membro della famiglia. Non sostituisci il parere medico: per patologie serie " +
+  "(PKU, insufficienza renale, ipoproteica) ricorda di seguire la prescrizione del medico.";
+
+function aiSuggerisciIngredienti(profili, sceltaParziale) {
+  var prompt = "Profili famiglia:\n" + descriviProfili(profili) + "\n\n" +
+    "Pasto in costruzione (ingredienti gia scelti): " + (sceltaParziale || "nessuno") + ".\n" +
+    "Suggerisci 2-3 ingredienti per completare il pasto in modo equilibrato e compatibile con TUTTI i membri " +
+    "(rispetta allergie e limiti). Per ognuno una riga breve col perche. Massimo 6 righe.";
+  return chiamaAI(AI_SYSTEM, prompt, 600);
+}
+
+function aiGeneraMenu(profili) {
+  var prompt = "Profili famiglia:\n" + descriviProfili(profili) + "\n\n" +
+    "Genera un menu settimanale (Lunedi-Domenica) con Colazione, Pranzo e Cena, " +
+    "rispettando tutte le patologie e i vincoli di ogni membro. " +
+    "Dove un membro ha bisogno di una variante (es. aproteico, senza glutine), indicala tra parentesi. " +
+    "Formato compatto, una riga per pasto.";
+  return chiamaAI(AI_SYSTEM, prompt, 2000);
+}
+
+function aiDomanda(profili, domanda) {
+  var prompt = "Profili famiglia:\n" + descriviProfili(profili) + "\n\n" +
+    "Domanda dell'utente: " + domanda;
+  return chiamaAI(AI_SYSTEM, prompt, 800);
+}
+
+function aiOpzioniCena(profili, giorno) {
+  var prompt = "Profili famiglia:\n" + descriviProfili(profili) + "\n\n" +
+    "Proponi esattamente 3 opzioni di cena per " + giorno + ", compatibili con tutti i membri. " +
+    "Rispondi SOLO con le 3 opzioni, una per riga, numerate 1) 2) 3), senza altro testo.";
+  return chiamaAI(AI_SYSTEM, prompt, 500);
+}
+
 import { useState, useMemo, useCallback, useEffect } from "react";
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
@@ -953,7 +1036,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,.4)",zIndex:200,
             display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div onClick={function(e){e.stopPropagation();}}
-            style={{background:"#fff",borderRadius:"16px 16px 0 0",width:"100%",maxWidth:520,
+            style={{background:"#fff",borderRadius:"16px 16px 0 0",width:"100%",maxWidth:390,
               maxHeight:"70vh",overflow:"auto",padding:"20px 20px 32px"}}>
             <div style={{fontSize:10,color:"#888",marginBottom:2}}>{popup.g} — {popup.pasto}</div>
             <div style={{fontSize:16,fontWeight:800,color:"#0D1B2A",marginBottom:16}}>
@@ -4136,8 +4219,22 @@ function CostruttorePasto(props) {
   var s8=useState((scelta&&scelta.nota)||""); var nota=s8[0]; var setNota=s8[1];
   var s9=useState(null); var addingCat=s9[0]; var setAddingCat=s9[1];
   var s10=useState(""); var newIngNome=s10[0]; var setNewIngNome=s10[1];
+  var sAI=useState(""); var aiSugg=sAI[0]; var setAiSugg=sAI[1];
+  var sAIL=useState(false); var aiLoad=sAIL[0]; var setAiLoad=sAIL[1];
   var step=stepEst||1;
   var setStep=setStepEst||(function(){});
+
+  function nomeIng(id) {
+    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+    var f = all.find(function(x){ return x.id === id; });
+    return f ? f.nome : "";
+  }
+  function suggerisciAI() {
+    setAiLoad(true); setAiSugg("");
+    var scelti = [carbo,prot,verd,verd2,frutta,lattic].filter(Boolean).map(nomeIng).join(", ");
+    aiSuggerisciIngredienti(props.profili || {}, scelti).then(function(t){ setAiSugg(t); setAiLoad(false); },
+      function(e){ setAiSugg("Errore AI: " + (e.message || "")); setAiLoad(false); });
+  }
 
   function notify(updates) {
     if(onLive) {
@@ -4300,6 +4397,20 @@ function CostruttorePasto(props) {
 
           {haQualcosa&&(
             <NutriPanel carbo={carbo} prot={prot} verd={verd} verd2={verd2} frutta={frutta} lattic={lattic} pasto={pasto} profili={props.profili}/>
+          )}
+
+          {haQualcosa&&!completo&&aiAttiva()&&(
+            <div style={{marginBottom:8}}>
+              <button onClick={suggerisciAI} disabled={aiLoad}
+                style={{width:"100%",padding:"9px",borderRadius:10,border:"1.5px solid #2E5F8A",
+                  background:"#EBF3FA",color:"#2E5F8A",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                {aiLoad ? "AI sta pensando..." : "Suggerisci con AI"}
+              </button>
+              {aiSugg&&(
+                <div style={{whiteSpace:"pre-wrap",fontSize:11,color:"#333",lineHeight:1.6,
+                  marginTop:8,background:"#F5F8FC",borderRadius:8,padding:10,border:"1px solid #E3ECF4"}}>{aiSugg}</div>
+              )}
+            </div>
           )}
 
           <button onClick={function(){setStep(2);}} disabled={!haQualcosa}
@@ -4816,7 +4927,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         <div onClick={function(){setShowSpesa(false);}}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div onClick={function(e){e.stopPropagation();}}
-            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
+            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
             <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:13,fontWeight:800}}>Lista della spesa</div>
               <button onClick={function(){setShowSpesa(false);}} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#aaa"}}>x</button>
@@ -4833,7 +4944,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:300,
             display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div onClick={function(e){e.stopPropagation();}}
-            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:520,
+            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,
               maxHeight:"75vh",display:"flex",flexDirection:"column"}}>
             <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #eee",
               display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -4986,7 +5097,7 @@ function OnboardingFamiglia(props) {
     fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10};
 
   return (
-    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",maxWidth:520,margin:"0 auto"}}>
+    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",maxWidth:390,margin:"0 auto"}}>
       <div style={{maxWidth:400,margin:"0 auto"}}>
         <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{fontSize:32,marginBottom:8}}>🍽</div>
@@ -5083,6 +5194,241 @@ function OnboardingFamiglia(props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function BannerScadenze(props) {
+  var dispensa = props.dispensa || [];
+  var oggi = new Date(); oggi.setHours(0,0,0,0);
+  var scaduti = []; var inScadenza = [];
+  dispensa.forEach(function(it){
+    if(!it || !it.scadenza) return;
+    var d = new Date(it.scadenza);
+    if(isNaN(d.getTime())) return;
+    var giorni = Math.round((d.getTime() - oggi.getTime()) / 86400000);
+    if(giorni < 0) scaduti.push(it.nome);
+    else if(giorni <= 3) inScadenza.push(it.nome);
+  });
+  if(!scaduti.length && !inScadenza.length) return null;
+  return (
+    <div style={{marginBottom:12}}>
+      {scaduti.length>0&&(
+        <div style={{background:"#FDEDEC",border:"1.5px solid #E6B0AA",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#C0392B",marginBottom:2}}>Prodotti scaduti</div>
+          <div style={{fontSize:11,color:"#922B21"}}>{scaduti.join(", ")}</div>
+        </div>
+      )}
+      {inScadenza.length>0&&(
+        <div style={{background:"#FFF8E1",border:"1.5px solid #FFE082",borderRadius:10,padding:"10px 12px",marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#9A7B00",marginBottom:2}}>In scadenza entro 3 giorni</div>
+          <div style={{fontSize:11,color:"#7A6200"}}>{inScadenza.join(", ")}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VotoPartner(props) {
+  var familyId = props.familyId; var giorno = props.giorno;
+  var s_opz = useState([]); var opzioni = s_opz[0]; var setOpzioni = s_opz[1];
+  var s_load = useState(true); var loading = s_load[0]; var setLoading = s_load[1];
+  var s_scelta = useState(null); var scelta = s_scelta[0]; var setScelta = s_scelta[1];
+  var s_err = useState(""); var err = s_err[0]; var setErr = s_err[1];
+
+  useEffect(function(){
+    var t = setTimeout(function(){ setLoading(false); }, 8000);
+    supabase.from("voti").select("*").eq("family_id", familyId).eq("giorno", giorno).then(function(rows){
+      if(rows && rows.length && rows[0].opzioni){
+        setOpzioni(rows[0].opzioni);
+        if(rows[0].scelta) setScelta(rows[0].scelta);
+      } else {
+        setErr("Nessuna proposta trovata per questo giorno. Chiedi a chi ti ha mandato il link di rigenerarla.");
+      }
+      setLoading(false);
+    }, function(e){ setErr("Errore di caricamento"); setLoading(false); });
+    return function(){ clearTimeout(t); };
+  }, []);
+
+  function scegli(op) {
+    setScelta(op);
+    supabase.from("voti").upsert({family_id:familyId, giorno:giorno, scelta:op, updated_at:new Date().toISOString()});
+  }
+
+  return (
+    <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",padding:"24px",boxSizing:"border-box",
+      fontFamily:"'Nunito',system-ui,sans-serif",background:"#F5F8FC"}}>
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:32,marginBottom:8}}>🍽</div>
+        <div style={{fontSize:20,fontWeight:800,color:"#0D1B2A"}}>Cosa si mangia {giorno}?</div>
+        <div style={{fontSize:13,color:"#888",marginTop:4}}>Scegli la cena che preferisci</div>
+      </div>
+      {loading&&<div style={{textAlign:"center",color:"#888",fontSize:13}}>Caricamento...</div>}
+      {err&&!loading&&(
+        <div style={{fontSize:13,color:"#C0392B",background:"#FDEDEC",borderRadius:8,padding:"12px"}}>{err}</div>
+      )}
+      {!loading&&opzioni.map(function(op, i){
+        var sel = scelta === op;
+        return (
+          <button key={i} onClick={function(){ scegli(op); }}
+            style={{display:"block",width:"100%",textAlign:"left",marginBottom:12,
+              padding:"16px",borderRadius:12,cursor:"pointer",fontSize:15,lineHeight:1.5,
+              border:sel?"2.5px solid #2D6A4F":"1.5px solid #ddd",
+              background:sel?"#E8F5E9":"#fff",color:"#0D1B2A",fontWeight:sel?700:400}}>
+            {sel?"✓ ":""}{op}
+          </button>
+        );
+      })}
+      {scelta&&!loading&&(
+        <div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#2D6A4F",marginTop:8}}>
+          Grazie! La tua scelta e stata inviata.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AssistenteAI(props) {
+  var profili = props.profili || {};
+  var familyId = props.familyId || null;
+  var s_pgiorno = useState("Lunedi"); var pGiorno = s_pgiorno[0]; var setPGiorno = s_pgiorno[1];
+  var s_plink = useState(""); var pLink = s_plink[0]; var setPLink = s_plink[1];
+  var s_pload = useState(false); var pLoad = s_pload[0]; var setPLoad = s_pload[1];
+  var s_pscelta = useState(""); var pScelta = s_pscelta[0]; var setPScelta = s_pscelta[1];
+  var s_menu = useState(""); var menuAI = s_menu[0]; var setMenuAI = s_menu[1];
+  var s_loadMenu = useState(false); var loadMenu = s_loadMenu[0]; var setLoadMenu = s_loadMenu[1];
+  var s_dom = useState(""); var domanda = s_dom[0]; var setDomanda = s_dom[1];
+  var s_risp = useState(""); var risposta = s_risp[0]; var setRisposta = s_risp[1];
+  var s_loadDom = useState(false); var loadDom = s_loadDom[0]; var setLoadDom = s_loadDom[1];
+  var s_err = useState(""); var err = s_err[0]; var setErr = s_err[1];
+
+  function generaMenu() {
+    setErr(""); setLoadMenu(true); setMenuAI("");
+    aiGeneraMenu(profili).then(function(t){ setMenuAI(t); setLoadMenu(false); },
+      function(e){ setErr(e.message || "Errore"); setLoadMenu(false); });
+  }
+  function chiedi() {
+    if(!domanda.trim()) return;
+    setErr(""); setLoadDom(true); setRisposta("");
+    aiDomanda(profili, domanda.trim()).then(function(t){ setRisposta(t); setLoadDom(false); },
+      function(e){ setErr(e.message || "Errore"); setLoadDom(false); });
+  }
+
+  function creaLinkPartner() {
+    if(!familyId) { setErr("Salva prima i profili (serve la famiglia) per creare il link."); return; }
+    setErr(""); setPLoad(true); setPLink(""); setPScelta("");
+    aiOpzioniCena(profili, pGiorno).then(function(t){
+      var opz = t.split("\n").map(function(r){ return r.replace(/^\s*\d+[\).]\s*/, "").trim(); })
+        .filter(function(r){ return r.length > 0; }).slice(0, 3);
+      supabase.from("voti").upsert({family_id:familyId, giorno:pGiorno, opzioni:opz, scelta:null, updated_at:new Date().toISOString()});
+      var base = (typeof window !== "undefined" && window.location) ? window.location.origin : "";
+      setPLink(base + "/voto/" + familyId + "/" + encodeURIComponent(pGiorno));
+      setPLoad(false);
+    }, function(e){ setErr(e.message || "Errore"); setPLoad(false); });
+  }
+
+  function controllaScelta() {
+    if(!familyId) return;
+    supabase.from("voti").select("*").eq("family_id", familyId).eq("giorno", pGiorno).then(function(rows){
+      if(rows && rows.length && rows[0].scelta) setPScelta(rows[0].scelta);
+    });
+  }
+
+  useEffect(function(){
+    if(!pLink) return;
+    controllaScelta();
+    var iv = setInterval(controllaScelta, 5000);
+    return function(){ clearInterval(iv); };
+  }, [pLink]);
+
+  var card = {background:"#fff",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #E3ECF4"};
+  var btn = {width:"100%",padding:"13px",borderRadius:10,border:"none",background:"#2E5F8A",
+    color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"};
+
+  if(!aiAttiva()) {
+    return (
+      <div>
+        <div style={card}>
+          <div style={{fontSize:15,fontWeight:800,color:"#2E5F8A",marginBottom:8}}>Assistente AI</div>
+          <div style={{fontSize:13,color:"#666",lineHeight:1.6}}>
+            L'assistente AI non e configurato. Imposta la variabile d'ambiente VITE_ANTHROPIC_KEY
+            su Vercel (Settings - Environment Variables) con la tua chiave Claude, poi rilancia il deploy.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{fontSize:18,fontWeight:800,color:"#0D1B2A",marginBottom:14}}>Assistente AI</div>
+
+      <div style={card}>
+        <div style={{fontSize:14,fontWeight:700,color:"#2E5F8A",marginBottom:6}}>Menu settimanale</div>
+        <div style={{fontSize:12,color:"#888",marginBottom:10}}>
+          Genera un menu completo che rispetta le patologie di tutti i familiari.
+        </div>
+        <button onClick={generaMenu} disabled={loadMenu} style={btn}>
+          {loadMenu ? "Genero..." : "Genera menu con AI"}
+        </button>
+        {menuAI&&(
+          <div style={{whiteSpace:"pre-wrap",fontSize:12,color:"#333",lineHeight:1.6,
+            marginTop:12,background:"#F5F8FC",borderRadius:8,padding:12}}>{menuAI}</div>
+        )}
+      </div>
+
+      <div style={card}>
+        <div style={{fontSize:14,fontWeight:700,color:"#2E5F8A",marginBottom:6}}>Chiedi all'AI</div>
+        <div style={{fontSize:12,color:"#888",marginBottom:10}}>
+          Es: "Questo pranzo va bene per Marco?" oppure "Cosa posso dare a colazione al neonato?"
+        </div>
+        <textarea value={domanda} onChange={function(e){setDomanda(e.target.value);}}
+          placeholder="Scrivi la tua domanda..." rows={3}
+          style={{width:"100%",padding:"11px 12px",borderRadius:8,border:"1.5px solid #ddd",
+            fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10,resize:"vertical"}}/>
+        <button onClick={chiedi} disabled={loadDom} style={btn}>
+          {loadDom ? "Penso..." : "Chiedi"}
+        </button>
+        {risposta&&(
+          <div style={{whiteSpace:"pre-wrap",fontSize:13,color:"#333",lineHeight:1.6,
+            marginTop:12,background:"#F5F8FC",borderRadius:8,padding:12}}>{risposta}</div>
+        )}
+      </div>
+
+      <div style={card}>
+        <div style={{fontSize:14,fontWeight:700,color:"#2E5F8A",marginBottom:6}}>Chiedi al partner</div>
+        <div style={{fontSize:12,color:"#888",marginBottom:10}}>
+          Genera 3 opzioni di cena con l'AI e invia il link: il partner sceglie e tu vedi la risposta qui.
+        </div>
+        <select value={pGiorno} onChange={function(e){setPGiorno(e.target.value);}}
+          style={{width:"100%",padding:"11px 12px",borderRadius:8,border:"1.5px solid #ddd",
+            fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}}>
+          {GIORNI.map(function(g){ return <option key={g} value={g}>{g}</option>; })}
+        </select>
+        <button onClick={creaLinkPartner} disabled={pLoad} style={btn}>
+          {pLoad ? "Genero opzioni..." : "Genera e crea link"}
+        </button>
+        {pLink&&(
+          <div style={{marginTop:12}}>
+            <div style={{fontSize:11,color:"#888",marginBottom:4}}>Invia questo link al partner:</div>
+            <input readOnly value={pLink} onFocus={function(e){e.target.select();}}
+              style={{width:"100%",padding:"10px",borderRadius:8,border:"1.5px solid #C2D9EC",
+                fontSize:11,boxSizing:"border-box",background:"#F5F8FC"}}/>
+            <div style={{marginTop:12,padding:"12px",borderRadius:8,
+              background:pScelta?"#E8F5E9":"#FFF8E1",border:"1px solid "+(pScelta?"#A5D6A7":"#FFE082")}}>
+              {pScelta
+                ? <span style={{fontSize:13,fontWeight:700,color:"#2D6A4F"}}>Il partner ha scelto: {pScelta}</span>
+                : <span style={{fontSize:12,color:"#9A7B00"}}>In attesa della scelta del partner...</span>}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {err&&(
+        <div style={{fontSize:12,color:"#C0392B",background:"#FDEDEC",borderRadius:8,padding:"10px 12px"}}>
+          {err}
+        </div>
+      )}
     </div>
   );
 }
@@ -5252,17 +5598,18 @@ export default function App() {
   }).length;
 
   const TABS = [
-    {id:"home",        l:"Home"},
-    {id:"menu",        l:"Menu"},
-    {id:"diario",      l:"Diario"},
-    {id:"salute",      l:"Salute"},
-    {id:"dispensa",    l:"Dispensa"},
-    {id:"mealprep",    l:"Prep",    badge:prepAlert||null},
-    {id:"calorie",     l:"Calorie"},
-    {id:"piramide",    l:"Piramide"},
-    {id:"idee",        l:"Idee"},
-    {id:"impostazioni",l:"Impost."},
-    {id:"builder",     l:"Builder"},
+    {id:"home",        l:"Home",     ic:"ti-home"},
+    {id:"menu",        l:"Menu",     ic:"ti-calendar"},
+    {id:"diario",      l:"Diario",   ic:"ti-chart-bar"},
+    {id:"salute",      l:"Salute",   ic:"ti-heart-rate-monitor"},
+    {id:"dispensa",    l:"Dispensa", ic:"ti-fridge"},
+    {id:"mealprep",    l:"Prep",     ic:"ti-tools-kitchen-2", badge:prepAlert||null},
+    {id:"calorie",     l:"Calorie",  ic:"ti-flame"},
+    {id:"piramide",    l:"Piramide", ic:"ti-pyramid"},
+    {id:"idee",        l:"Idee",     ic:"ti-bulb"},
+    {id:"impostazioni",l:"Impost.",  ic:"ti-settings"},
+    {id:"builder",     l:"Builder",  ic:"ti-pencil"},
+    {id:"ai",          l:"AI",       ic:"ti-sparkles"},
   ];
 
   const TABS_ROW1 = TABS.slice(0,5);
@@ -5322,8 +5669,12 @@ export default function App() {
     }
   };
 
+  var votoPath = (typeof window !== "undefined" && window.location) ? window.location.pathname : "";
+  var votoMatch = votoPath.match(/^\/voto\/([^\/]+)\/([^\/]+)/);
+  if(votoMatch) return <VotoPartner familyId={votoMatch[1]} giorno={decodeURIComponent(votoMatch[2])}/>;
+
   if(pin.attivo && !pin.sbloccato) return (
-    <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:520,margin:"0 auto",
+    <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:390,margin:"0 auto",
       display:"flex",alignItems:"center",justifyContent:"center",padding:"30px"}}>
       <div style={{width:"100%",textAlign:"center"}}>
         <div style={{fontSize:14,fontWeight:800,color:"#2E5F8A",marginBottom:4}}>
@@ -5350,7 +5701,7 @@ export default function App() {
   );
 
   return (
-    <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:520,margin:"0 auto",fontFamily:"system-ui,sans-serif"}}>
+    <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:390,margin:"0 auto",fontFamily:"'Nunito',system-ui,sans-serif"}}>
 
       {/* Loading */}
       {loading&&(
@@ -5415,7 +5766,7 @@ export default function App() {
 
       {/* App principale */}
       {!loading&&utente&&Object.keys(profili).length>0&&(
-      <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:520,margin:"0 auto",fontFamily:"system-ui,sans-serif"}}>
+      <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:390,margin:"0 auto",fontFamily:"'Nunito',system-ui,sans-serif"}}>
 
       <div style={{background:"linear-gradient(135deg,#0D1B2A 0%,#2E5F8A 100%)",
         padding:"16px 16px 12px",color:"#fff",
@@ -5443,10 +5794,12 @@ export default function App() {
           {TABS_ROW1.map(t=>(
             <button key={t.id} onClick={()=>handleSetTab(t.id)}
               style={{flex:1,padding:"9px 2px 7px",border:"none",background:"transparent",
-                cursor:"pointer",position:"relative",
-                borderBottom:tab===t.id?"2.5px solid #2D6A4F":"2.5px solid transparent",
-                color:tab===t.id?"#2E5F8A":"#aaa",
-                fontWeight:tab===t.id?700:400,fontSize:10,whiteSpace:"nowrap"}}>
+                cursor:"pointer",position:"relative",display:"flex",flexDirection:"column",
+                alignItems:"center",gap:2,
+                borderBottom:tab===t.id?"2.5px solid #2F6586":"2.5px solid transparent",
+                color:tab===t.id?"#2F6586":"#B4BEC4",
+                fontWeight:tab===t.id?700:600,fontSize:10,whiteSpace:"nowrap"}}>
+              <i className={"ti "+t.ic} style={{fontSize:17}}/>
               {t.l}
               {t.badge&&<span style={{position:"absolute",top:4,right:0,
                 background:"#C0392B",color:"#fff",fontSize:9,fontWeight:800,
@@ -5458,10 +5811,12 @@ export default function App() {
           {TABS_ROW2.map(t=>(
             <button key={t.id} onClick={()=>handleSetTab(t.id)}
               style={{flex:1,padding:"7px 2px 5px",border:"none",background:"transparent",
-                cursor:"pointer",position:"relative",
-                borderBottom:tab===t.id?"2.5px solid #2D6A4F":"2.5px solid transparent",
-                color:tab===t.id?"#2E5F8A":"#aaa",
-                fontWeight:tab===t.id?700:400,fontSize:10,whiteSpace:"nowrap"}}>
+                cursor:"pointer",position:"relative",display:"flex",flexDirection:"column",
+                alignItems:"center",gap:2,
+                borderBottom:tab===t.id?"2.5px solid #2F6586":"2.5px solid transparent",
+                color:tab===t.id?"#2F6586":"#B4BEC4",
+                fontWeight:tab===t.id?700:600,fontSize:10,whiteSpace:"nowrap"}}>
+              <i className={"ti "+t.ic} style={{fontSize:17}}/>
               {t.l}
               {t.badge&&<span style={{position:"absolute",top:4,right:0,
                 background:"#C0392B",color:"#fff",fontSize:9,fontWeight:800,
@@ -5471,7 +5826,8 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{padding:"16px 14px 90px"}}>
+      <div key={tab} className="mf-fade" style={{padding:"16px 14px 90px"}}>
+        <BannerScadenze dispensa={dispensa}/>
         {tab==="home" && (
           <TabHome menu={menu} profili={profili} dispensa={dispensa}
             mealPrep={mealPrep} giorniFuori={giorniFuori}
@@ -5526,6 +5882,9 @@ export default function App() {
             builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
             onSavePasto={savePastoToSupabase}/>
+        )}
+        {tab==="ai" && (
+          <AssistenteAI profili={profili} familyId={familyId}/>
         )}
       </div>
     </div>

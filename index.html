@@ -4,7 +4,33 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽</text></svg>"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css" rel="stylesheet"/>
     <title>Menu Famiglia</title>
+    <style>
+      :root {
+        --mf-bg: #F2F6F8;
+        --mf-card: #FFFFFF;
+        --mf-border: #E3EAEE;
+        --mf-text: #2C3338;
+        --mf-text2: #8A949B;
+        --mf-text3: #B4BEC4;
+        --mf-blue: #6BA6C9;
+        --mf-blue-dark: #2F6586;
+        --mf-accent-bg: #E2EEF5;
+        --mf-warn-bg: #F6ECD9;
+        --mf-warn-text: #8A5A12;
+      }
+      * { font-family: 'Nunito', system-ui, sans-serif; }
+      html, body { margin: 0; background: var(--mf-bg); color: var(--mf-text); }
+      @keyframes mfFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .mf-fade { animation: mfFadeIn 0.22s ease; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

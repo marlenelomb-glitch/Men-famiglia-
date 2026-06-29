@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/voto/:path*", "destination": "/" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
