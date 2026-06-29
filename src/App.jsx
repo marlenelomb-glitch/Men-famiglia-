@@ -5068,14 +5068,25 @@ function OnboardingFamiglia(props) {
 
   function valoriFinali(m) {
     var fin = getParametriFinali(m);
+    var base = getParametriEta(m.dataNascita, m.sesso);
     var anni = calcolaEta(m.dataNascita).anni;
     var pe = parseFloat(m.peso); var al = parseFloat(m.altezza);
     var usaMifflin = !isNaN(pe) && pe > 0 && !isNaN(al) && al > 0 && anni >= 14;
-    var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso) : fin.kcal;
-    var kcal = (m.override && m.override.kcal !== undefined && m.override.kcal !== null && m.override.kcal !== "")
-      ? parseInt(m.override.kcal, 10)
-      : kcalObiettivo(baseKcal, m.obiettivo);
-    return {kcal:kcal, prot:fin.prot, carb:fin.carb,
+    var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso) : base.kcal;
+    var kcal;
+    if(m.override && m.override.kcal !== undefined && m.override.kcal !== null && m.override.kcal !== "") {
+      kcal = parseInt(m.override.kcal, 10);
+    } else {
+      var ob = m.obiettivo;
+      var pats = m.patologie || [];
+      if(ob === "mantenere") {
+        if(pats.indexOf("dimagrante") >= 0) ob = "dimagrire";
+        else if(pats.indexOf("ingrassante") >= 0) ob = "ingrassare";
+      }
+      kcal = kcalObiettivo(baseKcal, ob);
+      if(pats.indexOf("allattamento") >= 0) kcal += 500;
+    }
+    return {kcal:kcal, prot:base.prot, carb:base.carb,
       prot_max:fin.prot_max, carb_max:fin.carb_max, phe_max:fin.phe_max, mifflin:usaMifflin};
   }
 
