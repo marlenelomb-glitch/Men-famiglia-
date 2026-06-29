@@ -5032,6 +5032,11 @@ function kcalObiettivo(kcal, obiettivo) {
   return kcal;
 }
 
+function kcalMifflin(peso, altezza, anni, sesso) {
+  var bmr = 10*peso + 6.25*altezza - 5*anni + (sesso === "maschio" ? 5 : -161);
+  return Math.round(bmr * 1.4);
+}
+
 function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
   var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
@@ -5040,6 +5045,8 @@ function OnboardingFamiglia(props) {
   var s_sesso = useState("femmina"); var sesso = s_sesso[0]; var setSesso = s_sesso[1];
   var s_pat = useState([]); var patologie = s_pat[0]; var setPatologie = s_pat[1];
   var s_obj = useState("mantenere"); var obiettivo = s_obj[0]; var setObiettivo = s_obj[1];
+  var s_peso = useState(""); var peso = s_peso[0]; var setPeso = s_peso[1];
+  var s_alt = useState(""); var altezza = s_alt[0]; var setAltezza = s_alt[1];
   var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
   var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
   var s_ovk = useState(""); var ovKcal = s_ovk[0]; var setOvKcal = s_ovk[1];
@@ -5054,17 +5061,22 @@ function OnboardingFamiglia(props) {
   function membroCorrente() {
     return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
       patologie: patologie.slice(), obiettivo: obiettivo,
+      peso: peso, altezza: altezza,
       valoriMedico: {prot: vProt, phe: vPhe},
       override: {kcal: ovKcal, prot_max: ovProt} };
   }
 
   function valoriFinali(m) {
     var fin = getParametriFinali(m);
+    var anni = calcolaEta(m.dataNascita).anni;
+    var pe = parseFloat(m.peso); var al = parseFloat(m.altezza);
+    var usaMifflin = !isNaN(pe) && pe > 0 && !isNaN(al) && al > 0 && anni >= 14;
+    var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso) : fin.kcal;
     var kcal = (m.override && m.override.kcal !== undefined && m.override.kcal !== null && m.override.kcal !== "")
       ? parseInt(m.override.kcal, 10)
-      : kcalObiettivo(fin.kcal, m.obiettivo);
+      : kcalObiettivo(baseKcal, m.obiettivo);
     return {kcal:kcal, prot:fin.prot, carb:fin.carb,
-      prot_max:fin.prot_max, carb_max:fin.carb_max, phe_max:fin.phe_max};
+      prot_max:fin.prot_max, carb_max:fin.carb_max, phe_max:fin.phe_max, mifflin:usaMifflin};
   }
 
   function calcola() {
@@ -5089,7 +5101,8 @@ function OnboardingFamiglia(props) {
     if(!nome.trim() || !dataN) return;
     setLista(lista.concat([membroCorrente()]));
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
-    setObiettivo("mantenere"); setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null);
+    setObiettivo("mantenere"); setPeso(""); setAltezza("");
+    setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null);
   }
 
   function rimuovi(idx) {
@@ -5108,7 +5121,8 @@ function OnboardingFamiglia(props) {
         valoriMedico: m.valoriMedico, override: {kcal: String(v.kcal), prot_max: (m.override ? m.override.prot_max : "")},
         eta: calcolaEta(m.dataNascita).anni,
         kcal_target: v.kcal, prot_max: (v.prot_max !== null ? v.prot_max : fin.prot),
-        colore: COLORI[idx % COLORI.length], peso: 0, altezza: 170,
+        colore: COLORI[idx % COLORI.length],
+        peso: (parseFloat(m.peso) || 0), altezza: (parseFloat(m.altezza) || 170),
         kcal_custom: "", prot_custom: "", note: "" };
     });
     onComplete(pf);
@@ -5148,6 +5162,14 @@ function OnboardingFamiglia(props) {
             <option value="dimagrire">Dimagrire (-20% kcal)</option>
             <option value="ingrassare">Aumentare di peso (+20% kcal)</option>
           </select>
+
+          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Peso e altezza (per un calcolo piu preciso - opzionale)</div>
+          <div style={{display:"flex",gap:8}}>
+            <input placeholder="Peso (kg)" inputMode="decimal" value={peso}
+              onChange={function(e){setPeso(e.target.value.replace(/[^0-9.]/g,""));setCalcolo(null);}} style={inputStyle}/>
+            <input placeholder="Altezza (cm)" inputMode="numeric" value={altezza}
+              onChange={function(e){setAltezza(e.target.value.replace(/[^0-9]/g,""));setCalcolo(null);}} style={inputStyle}/>
+          </div>
 
           <div style={{fontSize:10,color:"#8A949B",marginBottom:6}}>Patologie / restrizioni (puoi selezionarne piu di una)</div>
           <div style={{maxHeight:170,overflowY:"auto",border:"1px solid #eee",borderRadius:8,padding:"4px 8px",marginBottom:10}}>
@@ -5194,7 +5216,9 @@ function OnboardingFamiglia(props) {
                 <div><div style={{fontSize:19,fontWeight:800,color:"#2F6586"}}>{calcolo.prot_max !== null ? calcolo.prot_max : calcolo.prot}</div><div style={{fontSize:10,color:"#8A949B"}}>g proteine{calcolo.prot_max !== null ? " max" : ""}</div></div>
                 <div><div style={{fontSize:19,fontWeight:800,color:"#2F6586"}}>{calcolo.carb_max !== null ? calcolo.carb_max : calcolo.carb}</div><div style={{fontSize:10,color:"#8A949B"}}>g carbo{calcolo.carb_max !== null ? " max" : ""}</div></div>
               </div>
-              <div style={{fontSize:10,color:"#8A949B",marginTop:6}}>Calcolati da eta, sesso, obiettivo e patologie. Puoi sovrascriverli sotto.</div>
+              <div style={{fontSize:10,color:"#8A949B",marginTop:6}}>
+                {calcolo.mifflin ? "Calcolati con formula Mifflin-St Jeor da peso, altezza, eta, sesso e obiettivo." : "Calcolati da eta, sesso, obiettivo e patologie (inserisci peso e altezza per piu precisione)."} Puoi sovrascriverli sotto.
+              </div>
             </div>
           )}
 
