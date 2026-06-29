@@ -3610,104 +3610,104 @@ var CARBO_CATS = {pasta:"Pasta",riso:"Riso",cereali:"Cereali",tuberi:"Patate",pa
 var PROT_CATS  = {"carne bianca":"Carne bianca","carne rossa":"Carne rossa",pesce:"Pesce",uova:"Uova",legumi:"Legumi",affettati:"Affettati",latticini:"Latticini"};
 
 var CARBOIDRATI = [
-  {id:"spaghetti",nome:"Spaghetti",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"rigatoni",nome:"Rigatoni",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"penne",nome:"Penne rigate",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"fusilli",nome:"Fusilli",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"farfalle",nome:"Farfalle",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"tagliatelle",nome:"Tagliatelle",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"orecchiette",nome:"Orecchiette",cat:"pasta",emoji:"?",kcal_p:350,stagione:"tutto"},
-  {id:"lasagne",nome:"Lasagne",cat:"pasta",emoji:"?",kcal_p:380,stagione:"tutto"},
-  {id:"gnocchi",nome:"Gnocchi di patate",cat:"pasta",emoji:"?",kcal_p:280,stagione:"tutto"},
-  {id:"ravioli",nome:"Ravioli",cat:"pasta",emoji:"?",kcal_p:320,stagione:"tutto"},
-  {id:"noodles",nome:"Noodles di riso",cat:"pasta",emoji:"?",kcal_p:360,stagione:"tutto"},
-  {id:"soba",nome:"Soba grano saraceno",cat:"pasta",emoji:"?",kcal_p:340,stagione:"tutto"},
-  {id:"pasta_leg",nome:"Pasta di legumi",cat:"pasta",emoji:"?",kcal_p:330,stagione:"tutto"},
-  {id:"riso_b",nome:"Riso bianco",cat:"riso",emoji:"?",kcal_p:300,stagione:"tutto"},
-  {id:"riso_int",nome:"Riso integrale",cat:"riso",emoji:"?",kcal_p:290,stagione:"tutto"},
-  {id:"riso_bas",nome:"Riso basmati",cat:"riso",emoji:"?",kcal_p:300,stagione:"tutto"},
-  {id:"risotto",nome:"Risotto",cat:"riso",emoji:"?",kcal_p:340,stagione:"tutto"},
-  {id:"farro",nome:"Farro",cat:"cereali",emoji:"?",kcal_p:305,stagione:"tutto"},
-  {id:"orzo",nome:"Orzo perlato",cat:"cereali",emoji:"?",kcal_p:295,stagione:"tutto"},
-  {id:"quinoa",nome:"Quinoa",cat:"cereali",emoji:"?",kcal_p:320,stagione:"tutto"},
-  {id:"cous",nome:"Cous cous",cat:"cereali",emoji:"?",kcal_p:310,stagione:"tutto"},
-  {id:"polenta",nome:"Polenta",cat:"cereali",emoji:"?",kcal_p:250,stagione:"tutto"},
-  {id:"patate",nome:"Patate",cat:"tuberi",emoji:"?",kcal_p:200,stagione:"tutto"},
-  {id:"patate_d",nome:"Patate dolci",cat:"tuberi",emoji:"?",kcal_p:220,stagione:"tutto"},
-  {id:"pane_b",nome:"Pane bianco",cat:"pane",emoji:"?",kcal_p:265,stagione:"tutto"},
-  {id:"pane_int",nome:"Pane integrale",cat:"pane",emoji:"?",kcal_p:240,stagione:"tutto"},
-  {id:"focaccia",nome:"Focaccia",cat:"pane",emoji:"?",kcal_p:310,stagione:"tutto"},
-  {id:"pizza",nome:"Pizza",cat:"pane",emoji:"?",kcal_p:420,stagione:"tutto"},
-  {id:"piadina",nome:"Piadina",cat:"pane",emoji:"?",kcal_p:340,stagione:"tutto"},
-  {id:"pinsa",nome:"Pinsa romana",cat:"pane",emoji:"?",kcal_p:260,stagione:"tutto"},
-  {id:"avena",nome:"Avena/porridge",cat:"colazione",emoji:"?",kcal_p:370,stagione:"tutto"},
-  {id:"muesli",nome:"Muesli",cat:"colazione",emoji:"?",kcal_p:360,stagione:"tutto"},
-  {id:"granola",nome:"Granola",cat:"colazione",emoji:"?",kcal_p:410,stagione:"tutto"},
-  {id:"fette_int",nome:"Fette biscottate",cat:"colazione",emoji:"?",kcal_p:380,stagione:"tutto"},
-  {id:"gallette",nome:"Gallette di riso",cat:"colazione",emoji:"?",kcal_p:380,stagione:"tutto"},
-  {id:"pancakes",nome:"Pancakes",cat:"colazione",emoji:"?",kcal_p:280,stagione:"tutto"},
+  {id:"spaghetti",nome:"Spaghetti",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"rigatoni",nome:"Rigatoni",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"penne",nome:"Penne rigate",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"fusilli",nome:"Fusilli",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"farfalle",nome:"Farfalle",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"tagliatelle",nome:"Tagliatelle",cat:"pasta",emoji:"?",kcal_p:350,prot_p:13,carb_p:71,phe_p:650,gsat_p:0.5,na_p:20,stagione:"tutto"},
+  {id:"orecchiette",nome:"Orecchiette",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
+  {id:"lasagne",nome:"Lasagne",cat:"pasta",emoji:"?",kcal_p:380,prot_p:13,carb_p:70,phe_p:660,gsat_p:0.6,na_p:25,stagione:"tutto"},
+  {id:"gnocchi",nome:"Gnocchi di patate",cat:"pasta",emoji:"?",kcal_p:280,prot_p:4,carb_p:44,phe_p:190,gsat_p:0.2,na_p:290,stagione:"tutto"},
+  {id:"ravioli",nome:"Ravioli",cat:"pasta",emoji:"?",kcal_p:320,prot_p:12,carb_p:45,phe_p:600,gsat_p:2.0,na_p:400,stagione:"tutto"},
+  {id:"noodles",nome:"Noodles di riso",cat:"pasta",emoji:"?",kcal_p:360,prot_p:6,carb_p:80,phe_p:300,gsat_p:0.1,na_p:10,stagione:"tutto"},
+  {id:"soba",nome:"Soba grano saraceno",cat:"pasta",emoji:"?",kcal_p:340,prot_p:14,carb_p:70,phe_p:640,gsat_p:0.2,na_p:60,stagione:"tutto"},
+  {id:"pasta_leg",nome:"Pasta di legumi",cat:"pasta",emoji:"?",kcal_p:330,prot_p:22,carb_p:50,phe_p:1150,gsat_p:0.4,na_p:12,stagione:"tutto"},
+  {id:"riso_b",nome:"Riso bianco",cat:"riso",emoji:"?",kcal_p:300,prot_p:7,carb_p:80,phe_p:370,gsat_p:0.2,na_p:1,stagione:"tutto"},
+  {id:"riso_int",nome:"Riso integrale",cat:"riso",emoji:"?",kcal_p:290,prot_p:7.5,carb_p:76,phe_p:390,gsat_p:0.3,na_p:4,stagione:"tutto"},
+  {id:"riso_bas",nome:"Riso basmati",cat:"riso",emoji:"?",kcal_p:300,prot_p:7.5,carb_p:78,phe_p:390,gsat_p:0.1,na_p:2,stagione:"tutto"},
+  {id:"risotto",nome:"Risotto",cat:"riso",emoji:"?",kcal_p:340,prot_p:7,carb_p:65,phe_p:360,gsat_p:2.5,na_p:400,stagione:"tutto"},
+  {id:"farro",nome:"Farro",cat:"cereali",emoji:"?",kcal_p:305,prot_p:15,carb_p:67,phe_p:720,gsat_p:0.4,na_p:8,stagione:"tutto"},
+  {id:"orzo",nome:"Orzo perlato",cat:"cereali",emoji:"?",kcal_p:295,prot_p:10,carb_p:73,phe_p:520,gsat_p:0.2,na_p:9,stagione:"tutto"},
+  {id:"quinoa",nome:"Quinoa",cat:"cereali",emoji:"?",kcal_p:320,prot_p:14,carb_p:64,phe_p:600,gsat_p:0.7,na_p:5,stagione:"tutto"},
+  {id:"cous",nome:"Cous cous",cat:"cereali",emoji:"?",kcal_p:310,prot_p:13,carb_p:72,phe_p:660,gsat_p:0.1,na_p:10,stagione:"tutto"},
+  {id:"polenta",nome:"Polenta",cat:"cereali",emoji:"?",kcal_p:250,prot_p:8,carb_p:79,phe_p:390,gsat_p:0.6,na_p:35,stagione:"tutto"},
+  {id:"patate",nome:"Patate",cat:"tuberi",emoji:"?",kcal_p:200,prot_p:2,carb_p:17,phe_p:90,gsat_p:0.05,na_p:6,stagione:"tutto"},
+  {id:"patate_d",nome:"Patate dolci",cat:"tuberi",emoji:"?",kcal_p:220,prot_p:1.6,carb_p:20,phe_p:80,gsat_p:0.05,na_p:55,stagione:"tutto"},
+  {id:"pane_b",nome:"Pane bianco",cat:"pane",emoji:"?",kcal_p:265,prot_p:8,carb_p:50,phe_p:410,gsat_p:0.4,na_p:450,stagione:"tutto"},
+  {id:"pane_int",nome:"Pane integrale",cat:"pane",emoji:"?",kcal_p:240,prot_p:9,carb_p:45,phe_p:450,gsat_p:0.5,na_p:400,stagione:"tutto"},
+  {id:"focaccia",nome:"Focaccia",cat:"pane",emoji:"?",kcal_p:310,prot_p:8,carb_p:50,phe_p:410,gsat_p:1.5,na_p:600,stagione:"tutto"},
+  {id:"pizza",nome:"Pizza",cat:"pane",emoji:"?",kcal_p:420,prot_p:11,carb_p:50,phe_p:560,gsat_p:4.0,na_p:600,stagione:"tutto"},
+  {id:"piadina",nome:"Piadina",cat:"pane",emoji:"?",kcal_p:340,prot_p:8,carb_p:50,phe_p:410,gsat_p:5.0,na_p:700,stagione:"tutto"},
+  {id:"pinsa",nome:"Pinsa romana",cat:"pane",emoji:"?",kcal_p:260,prot_p:9,carb_p:48,phe_p:450,gsat_p:0.5,na_p:500,stagione:"tutto"},
+  {id:"avena",nome:"Avena/porridge",cat:"colazione",emoji:"?",kcal_p:370,prot_p:13,carb_p:60,phe_p:700,gsat_p:1.2,na_p:4,stagione:"tutto"},
+  {id:"muesli",nome:"Muesli",cat:"colazione",emoji:"?",kcal_p:360,prot_p:10,carb_p:65,phe_p:500,gsat_p:1.0,na_p:30,stagione:"tutto"},
+  {id:"granola",nome:"Granola",cat:"colazione",emoji:"?",kcal_p:410,prot_p:9,carb_p:64,phe_p:450,gsat_p:3.0,na_p:30,stagione:"tutto"},
+  {id:"fette_int",nome:"Fette biscottate",cat:"colazione",emoji:"?",kcal_p:380,prot_p:11,carb_p:72,phe_p:550,gsat_p:0.6,na_p:500,stagione:"tutto"},
+  {id:"gallette",nome:"Gallette di riso",cat:"colazione",emoji:"?",kcal_p:380,prot_p:8,carb_p:81,phe_p:400,gsat_p:0.2,na_p:20,stagione:"tutto"},
+  {id:"pancakes",nome:"Pancakes",cat:"colazione",emoji:"?",kcal_p:280,prot_p:8,carb_p:40,phe_p:410,gsat_p:2.0,na_p:350,stagione:"tutto"},
 ];
 
 var PROTEINE = [
-  {id:"pollo_f",nome:"Petto di pollo",cat:"carne bianca",emoji:"?",kcal_p:165,prot_p:31,piramide:"carne",freq:"3/sett"},
-  {id:"pollo_c",nome:"Cosce di pollo",cat:"carne bianca",emoji:"?",kcal_p:215,prot_p:26,piramide:"carne",freq:"3/sett"},
-  {id:"tacchino",nome:"Tacchino",cat:"carne bianca",emoji:"?",kcal_p:135,prot_p:30,piramide:"carne",freq:"3/sett"},
-  {id:"manzo",nome:"Manzo",cat:"carne rossa",emoji:"?",kcal_p:250,prot_p:26,piramide:"carne_rossa",limit:1,freq:"1/sett"},
-  {id:"agnello",nome:"Agnello",cat:"carne rossa",emoji:"?",kcal_p:294,prot_p:25,piramide:"carne_rossa",limit:1,freq:"1/sett"},
-  {id:"salmone",nome:"Salmone",cat:"pesce",emoji:"?",kcal_p:208,prot_p:20,piramide:"pesce",freq:"3/sett"},
-  {id:"merluzzo",nome:"Merluzzo",cat:"pesce",emoji:"?",kcal_p:82,prot_p:18,piramide:"pesce",freq:"3/sett"},
-  {id:"tonno",nome:"Tonno",cat:"pesce",emoji:"?",kcal_p:132,prot_p:28,piramide:"pesce",freq:"3/sett"},
-  {id:"orata",nome:"Orata",cat:"pesce",emoji:"?",kcal_p:120,prot_p:20,piramide:"pesce",freq:"3/sett"},
-  {id:"gamberetti",nome:"Gamberetti",cat:"pesce",emoji:"?",kcal_p:106,prot_p:20,piramide:"pesce",freq:"3/sett"},
-  {id:"uova",nome:"Uova",cat:"uova",emoji:"?",kcal_p:155,prot_p:13,piramide:"uova",limit:2,freq:"2/sett"},
-  {id:"ceci",nome:"Ceci",cat:"legumi",emoji:"?",kcal_p:130,prot_p:9,piramide:"legumi",freq:"3/sett"},
-  {id:"lenticchie",nome:"Lenticchie",cat:"legumi",emoji:"?",kcal_p:116,prot_p:9,piramide:"legumi",freq:"3/sett"},
-  {id:"fagioli",nome:"Fagioli",cat:"legumi",emoji:"?",kcal_p:127,prot_p:9,piramide:"legumi",freq:"3/sett"},
-  {id:"prosciutto",nome:"Prosciutto cotto",cat:"affettati",emoji:"?",kcal_p:145,prot_p:19,piramide:"carne",freq:"libero"},
-  {id:"bresaola",nome:"Bresaola",cat:"affettati",emoji:"?",kcal_p:151,prot_p:32,piramide:"carne",freq:"libero"},
-  {id:"mortadella",nome:"Mortadella",cat:"affettati",emoji:"?",kcal_p:311,prot_p:15,piramide:"carne",freq:"libero"},
-  {id:"yogurt_g",nome:"Yogurt greco",cat:"latticini",emoji:"?",kcal_p:100,prot_p:10,piramide:"latticini",freq:"libero"},
-  {id:"ricotta",nome:"Ricotta",cat:"latticini",emoji:"?",kcal_p:174,prot_p:11,piramide:"latticini",freq:"libero"},
-  {id:"mozzarella",nome:"Mozzarella",cat:"latticini",emoji:"?",kcal_p:280,prot_p:18,piramide:"latticini",freq:"libero"},
-  {id:"feta",nome:"Feta",cat:"latticini",emoji:"?",kcal_p:264,prot_p:14,piramide:"latticini",freq:"libero"},
+  {id:"pollo_f",nome:"Petto di pollo",cat:"carne bianca",emoji:"?",kcal_p:165,prot_p:31,carb_p:0,phe_p:1230,gsat_p:1.0,na_p:70,piramide:"carne",freq:"3/sett"},
+  {id:"pollo_c",nome:"Cosce di pollo",cat:"carne bianca",emoji:"?",kcal_p:215,prot_p:26,carb_p:0,phe_p:1030,gsat_p:2.5,na_p:85,piramide:"carne",freq:"3/sett"},
+  {id:"tacchino",nome:"Tacchino",cat:"carne bianca",emoji:"?",kcal_p:135,prot_p:30,carb_p:0,phe_p:1180,gsat_p:0.7,na_p:60,piramide:"carne",freq:"3/sett"},
+  {id:"manzo",nome:"Manzo",cat:"carne rossa",emoji:"?",kcal_p:250,prot_p:26,carb_p:0,phe_p:1030,gsat_p:6.0,na_p:60,piramide:"carne_rossa",limit:1,freq:"1/sett"},
+  {id:"agnello",nome:"Agnello",cat:"carne rossa",emoji:"?",kcal_p:294,prot_p:25,carb_p:0,phe_p:1000,gsat_p:8.0,na_p:70,piramide:"carne_rossa",limit:1,freq:"1/sett"},
+  {id:"salmone",nome:"Salmone",cat:"pesce",emoji:"?",kcal_p:208,prot_p:20,carb_p:0,phe_p:790,gsat_p:3.0,na_p:60,piramide:"pesce",freq:"3/sett"},
+  {id:"merluzzo",nome:"Merluzzo",cat:"pesce",emoji:"?",kcal_p:82,prot_p:18,carb_p:0,phe_p:710,gsat_p:0.1,na_p:80,piramide:"pesce",freq:"3/sett"},
+  {id:"tonno",nome:"Tonno",cat:"pesce",emoji:"?",kcal_p:132,prot_p:28,carb_p:0,phe_p:1100,gsat_p:0.3,na_p:40,piramide:"pesce",freq:"3/sett"},
+  {id:"orata",nome:"Orata",cat:"pesce",emoji:"?",kcal_p:120,prot_p:20,carb_p:0,phe_p:790,gsat_p:0.8,na_p:70,piramide:"pesce",freq:"3/sett"},
+  {id:"gamberetti",nome:"Gamberetti",cat:"pesce",emoji:"?",kcal_p:106,prot_p:20,carb_p:0.9,phe_p:790,gsat_p:0.3,na_p:220,piramide:"pesce",freq:"3/sett"},
+  {id:"uova",nome:"Uova",cat:"uova",emoji:"?",kcal_p:155,prot_p:13,carb_p:1.1,phe_p:680,gsat_p:3.3,na_p:140,piramide:"uova",limit:2,freq:"2/sett"},
+  {id:"ceci",nome:"Ceci",cat:"legumi",emoji:"?",kcal_p:130,prot_p:9,carb_p:20,phe_p:480,gsat_p:0.3,na_p:5,piramide:"legumi",freq:"3/sett"},
+  {id:"lenticchie",nome:"Lenticchie",cat:"legumi",emoji:"?",kcal_p:116,prot_p:9,carb_p:20,phe_p:470,gsat_p:0.1,na_p:2,piramide:"legumi",freq:"3/sett"},
+  {id:"fagioli",nome:"Fagioli",cat:"legumi",emoji:"?",kcal_p:127,prot_p:9,carb_p:22,phe_p:480,gsat_p:0.1,na_p:2,piramide:"legumi",freq:"3/sett"},
+  {id:"prosciutto",nome:"Prosciutto cotto",cat:"affettati",emoji:"?",kcal_p:145,prot_p:19,carb_p:1,phe_p:750,gsat_p:3.0,na_p:950,piramide:"carne",freq:"libero"},
+  {id:"bresaola",nome:"Bresaola",cat:"affettati",emoji:"?",kcal_p:151,prot_p:32,carb_p:0.5,phe_p:1280,gsat_p:1.5,na_p:1600,piramide:"carne",freq:"libero"},
+  {id:"mortadella",nome:"Mortadella",cat:"affettati",emoji:"?",kcal_p:311,prot_p:15,carb_p:1.5,phe_p:600,gsat_p:9.0,na_p:1100,piramide:"carne",freq:"libero"},
+  {id:"yogurt_g",nome:"Yogurt greco",cat:"latticini",emoji:"?",kcal_p:100,prot_p:10,carb_p:4,phe_p:500,gsat_p:3.0,na_p:50,piramide:"latticini",freq:"libero"},
+  {id:"ricotta",nome:"Ricotta",cat:"latticini",emoji:"?",kcal_p:174,prot_p:11,carb_p:3,phe_p:550,gsat_p:7.0,na_p:80,piramide:"latticini",freq:"libero"},
+  {id:"mozzarella",nome:"Mozzarella",cat:"latticini",emoji:"?",kcal_p:280,prot_p:18,carb_p:2,phe_p:900,gsat_p:12,na_p:400,piramide:"latticini",freq:"libero"},
+  {id:"feta",nome:"Feta",cat:"latticini",emoji:"?",kcal_p:264,prot_p:14,carb_p:4,phe_p:700,gsat_p:13,na_p:1100,piramide:"latticini",freq:"libero"},
 ];
 
 var VERDURE = [
-  {id:"zucchine",nome:"Zucchine",emoji:"?",stagione:"estate,primavera",kcal_p:17,prot_p:1.2},
-  {id:"melanzane",nome:"Melanzane",emoji:"?",stagione:"estate",kcal_p:25,prot_p:1.0},
-  {id:"peperoni",nome:"Peperoni",emoji:"?",stagione:"estate",kcal_p:31,prot_p:1.0},
-  {id:"pomodori",nome:"Pomodori",emoji:"?",stagione:"estate",kcal_p:18,prot_p:0.9},
-  {id:"spinaci",nome:"Spinaci",emoji:"?",stagione:"inverno,primavera",kcal_p:23,prot_p:2.9},
-  {id:"broccoli",nome:"Broccoli",emoji:"?",stagione:"autunno,inverno",kcal_p:34,prot_p:2.8},
-  {id:"cavolfiore",nome:"Cavolfiore",emoji:"?",stagione:"autunno,inverno",kcal_p:25,prot_p:1.9},
-  {id:"carote",nome:"Carote",emoji:"?",stagione:"tutto",kcal_p:41,prot_p:0.9},
-  {id:"funghi",nome:"Funghi",emoji:"?",stagione:"autunno",kcal_p:22,prot_p:3.1},
-  {id:"asparagi",nome:"Asparagi",emoji:"?",stagione:"primavera",kcal_p:20,prot_p:2.2},
-  {id:"fagiolini",nome:"Fagiolini",emoji:"?",stagione:"estate",kcal_p:31,prot_p:1.8},
-  {id:"insalata",nome:"Insalata mista",emoji:"?",stagione:"tutto",kcal_p:15,prot_p:1.3},
-  {id:"cipolla",nome:"Cipolla",emoji:"?",stagione:"tutto",kcal_p:40,prot_p:1.1},
-  {id:"aglio",nome:"Aglio",emoji:"?",stagione:"tutto",kcal_p:149,prot_p:6.4},
-  {id:"pomodori_c",nome:"Pomodorini",emoji:"?",stagione:"estate",kcal_p:18,prot_p:0.9},
-  {id:"rucola",nome:"Rucola",emoji:"?",stagione:"tutto",kcal_p:25,prot_p:2.6},
-  {id:"zucca",nome:"Zucca",emoji:"?",stagione:"autunno",kcal_p:26,prot_p:1.0},
-  {id:"cavolo_n",nome:"Cavolo nero",emoji:"?",stagione:"inverno",kcal_p:35,prot_p:3.3},
-  {id:"bietola",nome:"Bietola",emoji:"?",stagione:"tutto",kcal_p:19,prot_p:1.8},
-  {id:"piselli_v",nome:"Piselli",emoji:"?",stagione:"primavera",kcal_p:81,prot_p:5.4},
+  {id:"zucchine",nome:"Zucchine",emoji:"?",stagione:"estate,primavera",kcal_p:17,prot_p:1.2,carb_p:3,phe_p:50,gsat_p:0.1,na_p:8},
+  {id:"melanzane",nome:"Melanzane",emoji:"?",stagione:"estate",kcal_p:25,prot_p:1.0,carb_p:6,phe_p:45,gsat_p:0.0,na_p:2},
+  {id:"peperoni",nome:"Peperoni",emoji:"?",stagione:"estate",kcal_p:31,prot_p:1.0,carb_p:6,phe_p:40,gsat_p:0.0,na_p:4},
+  {id:"pomodori",nome:"Pomodori",emoji:"?",stagione:"estate",kcal_p:18,prot_p:0.9,carb_p:4,phe_p:35,gsat_p:0.0,na_p:5},
+  {id:"spinaci",nome:"Spinaci",emoji:"?",stagione:"inverno,primavera",kcal_p:23,prot_p:2.9,carb_p:4,phe_p:130,gsat_p:0.1,na_p:79},
+  {id:"broccoli",nome:"Broccoli",emoji:"?",stagione:"autunno,inverno",kcal_p:34,prot_p:2.8,carb_p:7,phe_p:120,gsat_p:0.1,na_p:33},
+  {id:"cavolfiore",nome:"Cavolfiore",emoji:"?",stagione:"autunno,inverno",kcal_p:25,prot_p:1.9,carb_p:5,phe_p:80,gsat_p:0.1,na_p:30},
+  {id:"carote",nome:"Carote",emoji:"?",stagione:"tutto",kcal_p:41,prot_p:0.9,carb_p:10,phe_p:40,gsat_p:0.0,na_p:69},
+  {id:"funghi",nome:"Funghi",emoji:"?",stagione:"autunno",kcal_p:22,prot_p:3.1,carb_p:3,phe_p:90,gsat_p:0.0,na_p:5},
+  {id:"asparagi",nome:"Asparagi",emoji:"?",stagione:"primavera",kcal_p:20,prot_p:2.2,carb_p:4,phe_p:90,gsat_p:0.0,na_p:2},
+  {id:"fagiolini",nome:"Fagiolini",emoji:"?",stagione:"estate",kcal_p:31,prot_p:1.8,carb_p:7,phe_p:75,gsat_p:0.0,na_p:6},
+  {id:"insalata",nome:"Insalata mista",emoji:"?",stagione:"tutto",kcal_p:15,prot_p:1.3,carb_p:3,phe_p:50,gsat_p:0.0,na_p:10},
+  {id:"cipolla",nome:"Cipolla",emoji:"?",stagione:"tutto",kcal_p:40,prot_p:1.1,carb_p:9,phe_p:40,gsat_p:0.0,na_p:4},
+  {id:"aglio",nome:"Aglio",emoji:"?",stagione:"tutto",kcal_p:149,prot_p:6.4,carb_p:33,phe_p:180,gsat_p:0.1,na_p:17},
+  {id:"pomodori_c",nome:"Pomodorini",emoji:"?",stagione:"estate",kcal_p:18,prot_p:0.9,carb_p:4,phe_p:35,gsat_p:0.0,na_p:5},
+  {id:"rucola",nome:"Rucola",emoji:"?",stagione:"tutto",kcal_p:25,prot_p:2.6,carb_p:4,phe_p:100,gsat_p:0.1,na_p:27},
+  {id:"zucca",nome:"Zucca",emoji:"?",stagione:"autunno",kcal_p:26,prot_p:1.0,carb_p:7,phe_p:40,gsat_p:0.0,na_p:1},
+  {id:"cavolo_n",nome:"Cavolo nero",emoji:"?",stagione:"inverno",kcal_p:35,prot_p:3.3,carb_p:9,phe_p:140,gsat_p:0.2,na_p:40},
+  {id:"bietola",nome:"Bietola",emoji:"?",stagione:"tutto",kcal_p:19,prot_p:1.8,carb_p:4,phe_p:75,gsat_p:0.0,na_p:210},
+  {id:"piselli_v",nome:"Piselli",emoji:"?",stagione:"primavera",kcal_p:81,prot_p:5.4,carb_p:14,phe_p:230,gsat_p:0.1,na_p:5},
 ];
 
 var FRUTTA = [
-  {id:"mele",nome:"Mele",emoji:"?",stagione:"autunno,inverno",kcal_p:52,prot_p:0.3},
-  {id:"pere",nome:"Pere",emoji:"?",stagione:"autunno",kcal_p:57,prot_p:0.4},
-  {id:"arance",nome:"Arance",emoji:"?",stagione:"inverno",kcal_p:47,prot_p:0.9},
-  {id:"fragole",nome:"Fragole",emoji:"?",stagione:"primavera",kcal_p:32,prot_p:0.7},
-  {id:"pesche",nome:"Pesche",emoji:"?",stagione:"estate",kcal_p:39,prot_p:0.9},
-  {id:"anguria",nome:"Anguria",emoji:"?",stagione:"estate",kcal_p:30,prot_p:0.6},
-  {id:"uva",nome:"Uva",emoji:"?",stagione:"autunno",kcal_p:69,prot_p:0.6},
-  {id:"banana",nome:"Banana",emoji:"?",stagione:"tutto",kcal_p:89,prot_p:1.1},
-  {id:"kiwi",nome:"Kiwi",emoji:"?",stagione:"inverno,primavera",kcal_p:61,prot_p:1.1},
-  {id:"mirtilli",nome:"Mirtilli",emoji:"?",stagione:"estate",kcal_p:57,prot_p:0.7},
-  {id:"ciliegie",nome:"Ciliegie",emoji:"?",stagione:"estate",kcal_p:50,prot_p:1.0},
-  {id:"fichi",nome:"Fichi",emoji:"?",stagione:"estate",kcal_p:74,prot_p:0.8},
+  {id:"mele",nome:"Mele",emoji:"?",stagione:"autunno,inverno",kcal_p:52,prot_p:0.3,carb_p:14,phe_p:12,gsat_p:0.0,na_p:1},
+  {id:"pere",nome:"Pere",emoji:"?",stagione:"autunno",kcal_p:57,prot_p:0.4,carb_p:15,phe_p:12,gsat_p:0.0,na_p:1},
+  {id:"arance",nome:"Arance",emoji:"?",stagione:"inverno",kcal_p:47,prot_p:0.9,carb_p:12,phe_p:30,gsat_p:0.0,na_p:0},
+  {id:"fragole",nome:"Fragole",emoji:"?",stagione:"primavera",kcal_p:32,prot_p:0.7,carb_p:8,phe_p:25,gsat_p:0.0,na_p:1},
+  {id:"pesche",nome:"Pesche",emoji:"?",stagione:"estate",kcal_p:39,prot_p:0.9,carb_p:10,phe_p:25,gsat_p:0.0,na_p:0},
+  {id:"anguria",nome:"Anguria",emoji:"?",stagione:"estate",kcal_p:30,prot_p:0.6,carb_p:8,phe_p:20,gsat_p:0.0,na_p:1},
+  {id:"uva",nome:"Uva",emoji:"?",stagione:"autunno",kcal_p:69,prot_p:0.6,carb_p:18,phe_p:20,gsat_p:0.0,na_p:2},
+  {id:"banana",nome:"Banana",emoji:"?",stagione:"tutto",kcal_p:89,prot_p:1.1,carb_p:23,phe_p:40,gsat_p:0.1,na_p:1},
+  {id:"kiwi",nome:"Kiwi",emoji:"?",stagione:"inverno,primavera",kcal_p:61,prot_p:1.1,carb_p:15,phe_p:40,gsat_p:0.0,na_p:3},
+  {id:"mirtilli",nome:"Mirtilli",emoji:"?",stagione:"estate",kcal_p:57,prot_p:0.7,carb_p:14,phe_p:25,gsat_p:0.0,na_p:1},
+  {id:"ciliegie",nome:"Ciliegie",emoji:"?",stagione:"estate",kcal_p:50,prot_p:1.0,carb_p:12,phe_p:30,gsat_p:0.0,na_p:0},
+  {id:"fichi",nome:"Fichi",emoji:"?",stagione:"estate",kcal_p:74,prot_p:0.8,carb_p:19,phe_p:30,gsat_p:0.0,na_p:1},
 ];
 
 var SALSE = [
@@ -3967,15 +3967,6 @@ function coloreSemaforo(stato) {
   if(stato === "giallo") return "#F39C12";
   return "#27AE60";
 }
-function carbStima(cat, tipo, g) {
-  var c = cat || "";
-  if(c === "pasta" || c === "pane" || c === "cereali" || c === "colazione" || c === "riso") return g * 0.72;
-  if(c === "tuberi") return g * 0.18;
-  if(c === "legumi") return g * 0.20;
-  if(tipo === "frutta") return g * 0.13;
-  return 0;
-}
-
 function NutriPanel(props) {
   var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
   var PORZ = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
@@ -3990,7 +3981,8 @@ function NutriPanel(props) {
     var g = PORZ[it.cat||tipo] || 100;
     items.push({nome:it.nome, emoji:it.emoji, g:g,
       kcal:Math.round(it.kcal_p*g/100), prot:Math.round((it.prot_p||0)*g/100),
-      carb:Math.round(carbStima(it.cat, tipo, g)), ing:it});
+      carb:Math.round((it.carb_p||0)*g/100), phe:Math.round((it.phe_p||0)*g/100),
+      gsat:Math.round((it.gsat_p||0)*g/100*10)/10, na:Math.round((it.na_p||0)*g/100), ing:it});
   }
   addItem(props.carbo,"carbo");
   addItem(props.prot,"proteina");
@@ -4004,6 +3996,9 @@ function NutriPanel(props) {
   var totKcal = items.reduce(function(s,x){return s+x.kcal;},0);
   var totProt = items.reduce(function(s,x){return s+x.prot;},0);
   var totCarb = items.reduce(function(s,x){return s+x.carb;},0);
+  var totPhe = items.reduce(function(s,x){return s+x.phe;},0);
+  var totGsat = Math.round(items.reduce(function(s,x){return s+x.gsat;},0)*10)/10;
+  var totNa = items.reduce(function(s,x){return s+x.na;},0);
 
   var frac = mealFrazione(props.pasto);
   var profMap = props.profili || {};
@@ -4017,6 +4012,9 @@ function NutriPanel(props) {
     var personKcal = Math.round(totKcal * mult);
     var personProt = Math.round(totProt * mult);
     var personCarb = Math.round(totCarb * mult);
+    var personPhe = Math.round(totPhe * mult);
+    var personGsat = Math.round(totGsat * mult * 10)/10;
+    var personNa = Math.round(totNa * mult);
     var targetKcal = Math.max(1, Math.round(fin.kcal * frac));
     var kcalPct = personKcal / targetKcal;
     var stato = "verde";
@@ -4036,6 +4034,27 @@ function NutriPanel(props) {
       if(personCarb > targetCarb) {
         stato = "rosso";
         avvisi.push("Carboidrati pasto (~" + personCarb + "g) oltre il limite per " + p.nome + " (max ~" + targetCarb + "g/pasto)");
+      }
+    }
+    if(fin.phe_max !== null) {
+      var targetPhe = Math.max(1, Math.round(fin.phe_max * frac));
+      if(personPhe > targetPhe) {
+        stato = "rosso";
+        avvisi.push("Fenilalanina pasto (~" + personPhe + "mg) oltre il limite PKU per " + p.nome + " (max ~" + targetPhe + "mg/pasto)");
+      }
+    }
+    if(fin.grassi_sat_max !== null) {
+      var targetGsat = Math.max(1, Math.round(fin.grassi_sat_max * frac * 10)/10);
+      if(personGsat > targetGsat) {
+        if(stato !== "rosso") stato = "giallo";
+        avvisi.push("Grassi saturi pasto (~" + personGsat + "g) oltre il consigliato per " + p.nome + " (max ~" + targetGsat + "g/pasto)");
+      }
+    }
+    if(fin.sodio_max !== null) {
+      var targetNa = Math.max(1, Math.round(fin.sodio_max * frac));
+      if(personNa > targetNa) {
+        if(stato !== "rosso") stato = "giallo";
+        avvisi.push("Sodio pasto (~" + personNa + "mg) oltre il limite per " + p.nome + " (max ~" + targetNa + "mg/pasto)");
       }
     }
     var allerg = false;
