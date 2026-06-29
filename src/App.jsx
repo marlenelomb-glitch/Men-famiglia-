@@ -6011,6 +6011,7 @@ export default function App() {
   var s_email   = useState(""); var emailInput=s_email[0]; var setEmailInput=s_email[1];
   var s_pwd     = useState(""); var pwdInput=s_pwd[0]; var setPwdInput=s_pwd[1];
   var s_isReg   = useState(false); var isReg=s_isReg[0]; var setIsReg=s_isReg[1];
+  var s_authView = useState("intro"); var authView=s_authView[0]; var setAuthView=s_authView[1];
   var s_syncing = useState(false); var syncing=s_syncing[0]; var setSyncing=s_syncing[1];
 
   const [tab, setTab] = useState("home");
@@ -6280,18 +6281,91 @@ export default function App() {
         </div>
       )}
 
-      {/* Login screen */}
-      {!loading&&!utente&&(
+      {/* Schermata di benvenuto */}
+      {!loading&&!utente&&authView==="intro"&&(
+        <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",background:"#F2F6F8",
+          display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",
+          padding:"28px 24px 24px",boxSizing:"border-box"}}>
+          <div style={{width:54,height:54,borderRadius:16,background:"#2F6586",color:"#fff",
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>
+            <i className="ti ti-tools-kitchen-2"/>
+          </div>
+          <div style={{fontSize:24,fontWeight:800,marginTop:12,letterSpacing:"-0.01em",color:"#2C3338"}}>Menu Famiglia</div>
+          <div style={{fontSize:14,color:"#8A949B",lineHeight:1.5,marginTop:8,fontWeight:500,maxWidth:240}}>
+            Pianifica i pasti della settimana e mangia bene, tutti insieme.
+          </div>
+
+          <div style={{margin:"20px 0 22px"}}>
+            <svg viewBox="0 0 240 210" width="232" height="200" role="img" aria-label="Illustrazione di un piatto con cibo e un calendario settimanale">
+              <circle cx="120" cy="112" r="92" fill="#E2EEF5"/>
+              <rect x="150" y="30" width="52" height="50" rx="11" fill="#FFFFFF" stroke="#DDE7EC" strokeWidth="1.5"/>
+              <rect x="150" y="30" width="52" height="15" rx="11" fill="#2F6586"/>
+              <rect x="150" y="38" width="52" height="7" fill="#2F6586"/>
+              <circle cx="163" cy="30" r="2.5" fill="#2F6586"/><circle cx="189" cy="30" r="2.5" fill="#2F6586"/>
+              <path d="M163 62 l7 7 l13 -14" fill="none" stroke="#6BA6C9" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+              <ellipse cx="64" cy="58" rx="13" ry="8" fill="#9FC79A" transform="rotate(-35 64 58)"/>
+              <path d="M58 63 q6 -7 12 -11" fill="none" stroke="#5E8C57" strokeWidth="1.6" strokeLinecap="round"/>
+              <circle cx="120" cy="118" r="56" fill="#FFFFFF" stroke="#DDE7EC" strokeWidth="1.5"/>
+              <circle cx="120" cy="118" r="44" fill="#EAF1F6"/>
+              <ellipse cx="108" cy="110" rx="18" ry="13" fill="#9FC79A"/>
+              <path d="M99 110 q9 -10 19 -3" fill="none" stroke="#5E8C57" strokeWidth="1.6" strokeLinecap="round"/>
+              <ellipse cx="134" cy="124" rx="15" ry="11" fill="#AFCDDD"/>
+              <circle cx="120" cy="132" r="7" fill="#E2A98C"/>
+              <circle cx="128" cy="106" r="5" fill="#E2A98C"/>
+            </svg>
+          </div>
+
+          <div style={{display:"flex",justifyContent:"center",gap:20}}>
+            {[{ic:"ti-calendar-week",l:"Pianifica"},{ic:"ti-leaf",l:"Equilibrio"},{ic:"ti-users",l:"Famiglia"}].map(function(f){
+              return (
+                <div key={f.l} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:7,width:66}}>
+                  <div style={{width:42,height:42,borderRadius:13,background:"#E2EEF5",color:"#2F6586",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
+                    <i className={"ti "+f.ic}/>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:600,color:"#2C3338",lineHeight:1.3}}>{f.l}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{flex:1}}/>
+
+          <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:18}}>
+            <span style={{width:18,height:7,borderRadius:7,background:"#6BA6C9"}}/>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
+          </div>
+          <button onClick={function(){setIsReg(true);setAuthErr("");setAuthView("form");}}
+            style={{width:"100%",padding:"15px",borderRadius:15,border:"none",background:"#2F6586",
+              color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+            Inizia
+          </button>
+          <button onClick={function(){setIsReg(false);setAuthErr("");setAuthView("form");}}
+            style={{width:"100%",padding:"12px",borderRadius:15,marginTop:8,border:"none",
+              background:"transparent",color:"#2F6586",fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+            Ho gia un account
+          </button>
+        </div>
+      )}
+
+      {/* Form login/registrazione */}
+      {!loading&&!utente&&authView==="form"&&(
         <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",display:"flex",alignItems:"center",
           justifyContent:"center",padding:"24px",boxSizing:"border-box",background:"#F2F6F8"}}>
           <div style={{width:"100%",maxWidth:340}}>
-            <div style={{marginBottom:24,textAlign:"center"}}>
-              <div style={{width:64,height:64,borderRadius:20,background:"#E2EEF5",color:"#2F6586",
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,margin:"0 auto 12px"}}>
+            <button onClick={function(){setAuthView("intro");setAuthErr("");}}
+              style={{border:"none",background:"transparent",color:"#2F6586",fontSize:14,fontWeight:700,
+                cursor:"pointer",marginBottom:8,padding:0}}>
+              <i className="ti ti-arrow-left" style={{verticalAlign:"-2px",marginRight:4}}/>Indietro
+            </button>
+            <div style={{marginBottom:20,textAlign:"center"}}>
+              <div style={{width:54,height:54,borderRadius:16,background:"#2F6586",color:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 12px"}}>
                 <i className="ti ti-tools-kitchen-2"/>
               </div>
-              <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Menu Famiglia</div>
-              <div style={{fontSize:13,color:"#8A949B",marginTop:4}}>
+              <div style={{fontSize:24,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Menu Famiglia</div>
+              <div style={{fontSize:14,color:"#8A949B",marginTop:6}}>
                 {isReg?"Crea il tuo account":"Bentornato"}
               </div>
             </div>
@@ -6316,15 +6390,15 @@ export default function App() {
                 <div style={{fontSize:12,color:"#C0392B",textAlign:"center"}}>{authErr}</div>
               )}
               <button onClick={isReg?doSignup:doLogin}
-                style={{width:"100%",padding:"13px 16px",borderRadius:12,border:"none",
-                  background:"#2F6586",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                style={{width:"100%",padding:"15px",borderRadius:15,border:"none",
+                  background:"#2F6586",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>
                 {isReg?"Registrati":"Accedi"}
               </button>
             </div>
             <button onClick={function(){setIsReg(!isReg);setAuthErr("");}}
-              style={{width:"100%",padding:"12px",borderRadius:12,marginTop:12,
+              style={{width:"100%",padding:"12px",borderRadius:15,marginTop:12,
                 border:"none",background:"transparent",
-                color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer"}}>
               {isReg?"Hai gia un account? Accedi":"Non hai un account? Registrati"}
             </button>
           </div>
