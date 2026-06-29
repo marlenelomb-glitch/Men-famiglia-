@@ -4813,7 +4813,7 @@ export default function App() {
     supabase.from("dispensa").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){setDispensa(rows);saveLS("dispensa",rows);}
       setLoading(false);
-    });
+    }, function(){setLoading(false);});
     supabase.from("peso_log").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
         var log={};
@@ -5105,7 +5105,7 @@ export default function App() {
             mealPrep={mealPrep} giorniFuori={giorniFuori}
             orariPasti={orariPasti} setOrariPasti={setOrariPasti}
             prepAlert={prepAlert} setTab={handleSetTab}
-            pianificazione={pianificazione} setPianificazione={setPianificazione} builderScelte={builderScelte} setTab={handleSetTab}/>
+            pianificazione={pianificazione} setPianificazione={setPianificazione} builderScelte={builderScelte}/>
         )}
         {tab==="menu" && (
           <TabMenu menu={menu} setMenuOverride={setMenuOverrideLS}
