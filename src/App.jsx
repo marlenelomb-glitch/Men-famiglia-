@@ -4787,6 +4787,7 @@ export default function App() {
   const [autoGeneraMenu, setAutoGeneraMenu] = useState(false);
 
   function initFamily(userId) {
+    setTimeout(function(){ setLoading(false); }, 8000);
     supabase.from("families").select("id").eq("owner_id", userId)
     .then(function(rows) {
       if(rows && rows.length > 0) {
@@ -4794,10 +4795,12 @@ export default function App() {
       } else {
         supabase.from("families").insert({owner_id:userId}).then(function(r2) {
           if(r2&&r2.length>0){var f2=r2[0].id;setFamilyId(f2);saveLS("family_id",f2);}
+          else{ console.error("Supabase: insert families fallito", r2); }
           setLoading(false);
-        });
+        }, function(e){ console.error("Supabase: insert families errore", e); setLoading(false); });
       }
-    }).catch(function(){setLoading(false);});
+    }, function(e){ console.error("Supabase: select families errore", e); setLoading(false); })
+    .catch(function(e){ console.error("Supabase: initFamily errore", e); setLoading(false); });
   }
 
   function loadFromSupabase(fid) {
@@ -4809,18 +4812,18 @@ export default function App() {
         setBuilderScelte(q);saveLS("builderScelte",q);
         setBuilderScelteProssima(p);saveLS("builderScelteProssima",p);
       }
-    });
+    }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("dispensa").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){setDispensa(rows);saveLS("dispensa",rows);}
       setLoading(false);
-    }, function(){setLoading(false);});
+    }, function(e){ console.error("Supabase: dispensa errore", e); setLoading(false); });
     supabase.from("peso_log").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
         var log={};
         rows.forEach(function(r){if(!log[r.profile_nome])log[r.profile_nome]=[];log[r.profile_nome].push({data:r.data,valore:r.valore});});
         setPesoLog(log);saveLS("pesoLog",log);
       }
-    });
+    }, function(e){ console.error("Supabase: peso_log errore", e); });
   }
 
   function savePastoToSupabase(sett,giorno,pasto,dati) {
