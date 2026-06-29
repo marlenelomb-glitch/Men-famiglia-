@@ -5026,6 +5026,12 @@ function patologiaPrimaria(patologie) {
   return patologie.length ? patologie[0] : "nessuna";
 }
 
+function kcalObiettivo(kcal, obiettivo) {
+  if(obiettivo === "dimagrire") return Math.round(kcal * 0.8);
+  if(obiettivo === "ingrassare") return Math.round(kcal * 1.2);
+  return kcal;
+}
+
 function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
   var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
@@ -5033,10 +5039,12 @@ function OnboardingFamiglia(props) {
   var s_data = useState(""); var dataN = s_data[0]; var setDataN = s_data[1];
   var s_sesso = useState("femmina"); var sesso = s_sesso[0]; var setSesso = s_sesso[1];
   var s_pat = useState([]); var patologie = s_pat[0]; var setPatologie = s_pat[1];
+  var s_obj = useState("mantenere"); var obiettivo = s_obj[0]; var setObiettivo = s_obj[1];
   var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
   var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
   var s_ovk = useState(""); var ovKcal = s_ovk[0]; var setOvKcal = s_ovk[1];
   var s_ovp = useState(""); var ovProt = s_ovp[0]; var setOvProt = s_ovp[1];
+  var s_calc = useState(null); var calcolo = s_calc[0]; var setCalcolo = s_calc[1];
 
   function togglePat(pid) {
     if(patologie.indexOf(pid) >= 0) setPatologie(patologie.filter(function(x){ return x !== pid; }));
@@ -5045,20 +5053,35 @@ function OnboardingFamiglia(props) {
 
   function membroCorrente() {
     return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
-      patologie: patologie.slice(),
+      patologie: patologie.slice(), obiettivo: obiettivo,
       valoriMedico: {prot: vProt, phe: vPhe},
       override: {kcal: ovKcal, prot_max: ovProt} };
   }
 
-  function riassunto(m) {
+  function valoriFinali(m) {
     var fin = getParametriFinali(m);
+    var kcal = (m.override && m.override.kcal !== undefined && m.override.kcal !== null && m.override.kcal !== "")
+      ? parseInt(m.override.kcal, 10)
+      : kcalObiettivo(fin.kcal, m.obiettivo);
+    return {kcal:kcal, prot:fin.prot, carb:fin.carb,
+      prot_max:fin.prot_max, carb_max:fin.carb_max, phe_max:fin.phe_max};
+  }
+
+  function calcola() {
+    if(!dataN) return;
+    var v = valoriFinali(membroCorrente());
+    setCalcolo(v);
+  }
+
+  function riassunto(m) {
+    var v = valoriFinali(m);
     var anni = calcolaEta(m.dataNascita).anni;
     var sx = m.sesso === "maschio" ? "Maschio" : "Femmina";
     var parts = [];
-    if(fin.prot_max !== null) parts.push("Max " + fin.prot_max + "g proteine/die");
-    if(fin.carb_max !== null) parts.push("Max " + fin.carb_max + "g carbo/die");
-    if(fin.phe_max !== null) parts.push("Fenilalanina max " + fin.phe_max + "mg");
-    parts.push(fin.kcal + " kcal/die");
+    if(v.prot_max !== null) parts.push("Max " + v.prot_max + "g proteine/die");
+    if(v.carb_max !== null) parts.push("Max " + v.carb_max + "g carbo/die");
+    if(v.phe_max !== null) parts.push("Fenilalanina max " + v.phe_max + "mg");
+    parts.push(v.kcal + " kcal/die");
     return m.nome + ", " + anni + " anni, " + sx + " - " + parts.join(", ");
   }
 
@@ -5066,7 +5089,7 @@ function OnboardingFamiglia(props) {
     if(!nome.trim() || !dataN) return;
     setLista(lista.concat([membroCorrente()]));
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
-    setVProt(""); setVPhe(""); setOvKcal(""); setOvProt("");
+    setObiettivo("mantenere"); setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null);
   }
 
   function rimuovi(idx) {
@@ -5078,12 +5101,13 @@ function OnboardingFamiglia(props) {
     lista.forEach(function(m, idx) {
       var id = "m_" + idx + "_" + Date.now();
       var fin = getParametriFinali(m);
+      var v = valoriFinali(m);
       pf[id] = { id: id, nome: m.nome, emoji: "",
-        dataNascita: m.dataNascita, sesso: m.sesso,
+        dataNascita: m.dataNascita, sesso: m.sesso, obiettivo: m.obiettivo,
         patologie: m.patologie, patologia: patologiaPrimaria(m.patologie),
-        valoriMedico: m.valoriMedico, override: m.override,
+        valoriMedico: m.valoriMedico, override: {kcal: String(v.kcal), prot_max: (m.override ? m.override.prot_max : "")},
         eta: calcolaEta(m.dataNascita).anni,
-        kcal_target: fin.kcal, prot_max: (fin.prot_max !== null ? fin.prot_max : fin.prot),
+        kcal_target: v.kcal, prot_max: (v.prot_max !== null ? v.prot_max : fin.prot),
         colore: COLORI[idx % COLORI.length], peso: 0, altezza: 170,
         kcal_custom: "", prot_custom: "", note: "" };
     });
@@ -5118,6 +5142,13 @@ function OnboardingFamiglia(props) {
             <option value="maschio">Maschio</option>
           </select>
 
+          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Obiettivo</div>
+          <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={inputStyle}>
+            <option value="mantenere">Mantenere il peso</option>
+            <option value="dimagrire">Dimagrire (-20% kcal)</option>
+            <option value="ingrassare">Aumentare di peso (+20% kcal)</option>
+          </select>
+
           <div style={{fontSize:10,color:"#8A949B",marginBottom:6}}>Patologie / restrizioni (puoi selezionarne piu di una)</div>
           <div style={{maxHeight:170,overflowY:"auto",border:"1px solid #eee",borderRadius:8,padding:"4px 8px",marginBottom:10}}>
             {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p){
@@ -5148,15 +5179,34 @@ function OnboardingFamiglia(props) {
               onChange={function(e){setOvProt(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
           </div>
 
-          {canAdd&&(
-            <div style={{background:"#EBF3FA",borderRadius:8,padding:"8px 10px",marginBottom:10,
+          <button onClick={calcola} disabled={!canAdd}
+            style={{width:"100%",padding:"11px",borderRadius:12,marginBottom:10,
+              border:"1px solid #6BA6C9",background:"#E2EEF5",color:"#2F6586",
+              fontSize:13,fontWeight:700,cursor:canAdd?"pointer":"default"}}>
+            Calcola valori consigliati
+          </button>
+
+          {calcolo&&(
+            <div style={{background:"#E2EEF5",borderRadius:12,padding:"12px",marginBottom:10}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:6}}>Valori consigliati</div>
+              <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#2F6586"}}>{calcolo.kcal}</div><div style={{fontSize:10,color:"#8A949B"}}>kcal/die</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#2F6586"}}>{calcolo.prot_max !== null ? calcolo.prot_max : calcolo.prot}</div><div style={{fontSize:10,color:"#8A949B"}}>g proteine{calcolo.prot_max !== null ? " max" : ""}</div></div>
+                <div><div style={{fontSize:19,fontWeight:800,color:"#2F6586"}}>{calcolo.carb_max !== null ? calcolo.carb_max : calcolo.carb}</div><div style={{fontSize:10,color:"#8A949B"}}>g carbo{calcolo.carb_max !== null ? " max" : ""}</div></div>
+              </div>
+              <div style={{fontSize:10,color:"#8A949B",marginTop:6}}>Calcolati da eta, sesso, obiettivo e patologie. Puoi sovrascriverli sotto.</div>
+            </div>
+          )}
+
+          {canAdd&&!calcolo&&(
+            <div style={{background:"#EBF3FA",borderRadius:12,padding:"8px 10px",marginBottom:10,
               fontSize:11,color:"#2F6586",fontWeight:600}}>
               {riassunto(membroCorrente())}
             </div>
           )}
 
           <button onClick={aggiungi} disabled={!canAdd}
-            style={{width:"100%",padding:"11px",borderRadius:8,border:"none",
+            style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
               background:canAdd?"#2F6586":"#ccc",color:"#fff",fontSize:13,fontWeight:700,
               cursor:canAdd?"pointer":"default"}}>
             + Aggiungi familiare
