@@ -5032,9 +5032,16 @@ function kcalObiettivo(kcal, obiettivo) {
   return kcal;
 }
 
-function kcalMifflin(peso, altezza, anni, sesso) {
+function fattoreAttivita(a) {
+  if(a === "sedentario") return 1.2;
+  if(a === "moderato") return 1.55;
+  if(a === "intenso") return 1.725;
+  return 1.375;
+}
+
+function kcalMifflin(peso, altezza, anni, sesso, fattore) {
   var bmr = 10*peso + 6.25*altezza - 5*anni + (sesso === "maschio" ? 5 : -161);
-  return Math.round(bmr * 1.4);
+  return Math.round(bmr * (fattore || 1.375));
 }
 
 function OnboardingFamiglia(props) {
@@ -5047,6 +5054,7 @@ function OnboardingFamiglia(props) {
   var s_obj = useState("mantenere"); var obiettivo = s_obj[0]; var setObiettivo = s_obj[1];
   var s_peso = useState(""); var peso = s_peso[0]; var setPeso = s_peso[1];
   var s_alt = useState(""); var altezza = s_alt[0]; var setAltezza = s_alt[1];
+  var s_att = useState("leggero"); var attivita = s_att[0]; var setAttivita = s_att[1];
   var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
   var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
   var s_ovk = useState(""); var ovKcal = s_ovk[0]; var setOvKcal = s_ovk[1];
@@ -5061,7 +5069,7 @@ function OnboardingFamiglia(props) {
   function membroCorrente() {
     return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
       patologie: patologie.slice(), obiettivo: obiettivo,
-      peso: peso, altezza: altezza,
+      peso: peso, altezza: altezza, attivita: attivita,
       valoriMedico: {prot: vProt, phe: vPhe},
       override: {kcal: ovKcal, prot_max: ovProt} };
   }
@@ -5072,7 +5080,7 @@ function OnboardingFamiglia(props) {
     var anni = calcolaEta(m.dataNascita).anni;
     var pe = parseFloat(m.peso); var al = parseFloat(m.altezza);
     var usaMifflin = !isNaN(pe) && pe > 0 && !isNaN(al) && al > 0 && anni >= 14;
-    var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso) : base.kcal;
+    var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso, fattoreAttivita(m.attivita)) : base.kcal;
     var kcal;
     if(m.override && m.override.kcal !== undefined && m.override.kcal !== null && m.override.kcal !== "") {
       kcal = parseInt(m.override.kcal, 10);
@@ -5112,7 +5120,7 @@ function OnboardingFamiglia(props) {
     if(!nome.trim() || !dataN) return;
     setLista(lista.concat([membroCorrente()]));
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
-    setObiettivo("mantenere"); setPeso(""); setAltezza("");
+    setObiettivo("mantenere"); setPeso(""); setAltezza(""); setAttivita("leggero");
     setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null);
   }
 
@@ -5181,6 +5189,14 @@ function OnboardingFamiglia(props) {
             <input placeholder="Altezza (cm)" inputMode="numeric" value={altezza}
               onChange={function(e){setAltezza(e.target.value.replace(/[^0-9]/g,""));setCalcolo(null);}} style={inputStyle}/>
           </div>
+
+          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Livello di attivita</div>
+          <select value={attivita} onChange={function(e){setAttivita(e.target.value);setCalcolo(null);}} style={inputStyle}>
+            <option value="sedentario">Sedentario (poco o nessun esercizio)</option>
+            <option value="leggero">Leggero (1-3 giorni/settimana)</option>
+            <option value="moderato">Moderato (3-5 giorni/settimana)</option>
+            <option value="intenso">Intenso (6-7 giorni/settimana)</option>
+          </select>
 
           <div style={{fontSize:10,color:"#8A949B",marginBottom:6}}>Patologie / restrizioni (puoi selezionarne piu di una)</div>
           <div style={{maxHeight:170,overflowY:"auto",border:"1px solid #eee",borderRadius:8,padding:"4px 8px",marginBottom:10}}>
