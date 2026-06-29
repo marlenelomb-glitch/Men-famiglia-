@@ -3210,7 +3210,7 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
 
       {/* ── FAMILIARI ── */}
       {sezione==="famiglia" && (
-        <TabFamiglia profili={profili} setProfili={setProfiliLS}/>
+        <TabFamiglia profili={profili} setProfili={setProfili}/>
       )}
 
       {/* ── ESIGENZE NUTRIZIONALI ── */}
