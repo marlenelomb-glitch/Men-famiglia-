@@ -126,7 +126,7 @@ try {
 
 var supabase = createSupabaseClient();
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
 const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
@@ -4854,12 +4854,14 @@ export default function App() {
     localStorage.removeItem("mf_session");localStorage.removeItem("mf_family_id");
   }
 
-  if(sbSession&&!utente&&loading){
-    supabase.getSession().then(function(user){
-      if(user&&user.id){setUtente({email:user.email});initFamily(user.id);}
-      else{sbSession=null;localStorage.removeItem("mf_session");setLoading(false);}
-    });
-  }
+  useEffect(function(){
+    if(sbSession&&!utente&&loading){
+      supabase.getSession().then(function(user){
+        if(user&&user.id){setUtente({email:user.email});initFamily(user.id);}
+        else{sbSession=null;localStorage.removeItem("mf_session");setLoading(false);}
+      });
+    }
+  }, []);
 
   const handleSetTab = (t) => {
     if(t !== "menu") setAutoGeneraMenu(false);
