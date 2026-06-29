@@ -4748,6 +4748,119 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 }
 
 
+function OnboardingFamiglia(props) {
+  var onComplete = props.onComplete;
+  var s_lista = useState([]);
+  var lista = s_lista[0]; var setLista = s_lista[1];
+  var s_nome = useState("");
+  var nome = s_nome[0]; var setNome = s_nome[1];
+  var s_eta = useState("");
+  var eta = s_eta[0]; var setEta = s_eta[1];
+  var s_pat = useState("nessuna");
+  var pat = s_pat[0]; var setPat = s_pat[1];
+  var s_kcal = useState("");
+  var kcal = s_kcal[0]; var setKcal = s_kcal[1];
+
+  function patInfo(id) {
+    var f = PATOLOGIE_LIST.find(function(p){ return p.id === id; });
+    return f || PATOLOGIE_LIST[0];
+  }
+
+  function aggiungi() {
+    if(!nome.trim()) return;
+    var info = patInfo(pat);
+    var kc = kcal ? parseInt(kcal,10) : info.kcal;
+    var membro = { nome: nome.trim(), eta: eta ? parseInt(eta,10) : 30,
+      patologia: pat, kcal_target: kc, prot_max: info.prot };
+    setLista(lista.concat([membro]));
+    setNome(""); setEta(""); setPat("nessuna"); setKcal("");
+  }
+
+  function rimuovi(idx) {
+    setLista(lista.filter(function(m,i){ return i !== idx; }));
+  }
+
+  function inizia() {
+    var pf = {};
+    lista.forEach(function(m, idx) {
+      var id = "m_" + idx + "_" + Date.now();
+      pf[id] = { id: id, nome: m.nome, emoji: "",
+        patologia: m.patologia, kcal_target: m.kcal_target, prot_max: m.prot_max,
+        colore: COLORI[idx % COLORI.length], eta: m.eta, peso: 0, altezza: 170,
+        kcal_custom: "", prot_custom: "", note: "" };
+    });
+    onComplete(pf);
+  }
+
+  var inputStyle = {padding:"11px 12px",borderRadius:8,border:"1.5px solid #ddd",
+    fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10};
+
+  return (
+    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",
+      maxWidth:520,margin:"0 auto"}}>
+      <div style={{maxWidth:380,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:32,marginBottom:8}}>🍽</div>
+          <div style={{fontSize:20,fontWeight:800,color:"#0D1B2A"}}>Benvenuto!</div>
+          <div style={{fontSize:13,color:"#888",marginTop:4}}>Configura la tua famiglia per iniziare</div>
+        </div>
+
+        <div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #E3ECF4"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#2E5F8A",marginBottom:10}}>Aggiungi un familiare</div>
+          <input placeholder="Nome" value={nome}
+            onChange={function(e){setNome(e.target.value);}} style={inputStyle}/>
+          <input placeholder="Eta (anni)" inputMode="numeric" value={eta}
+            onChange={function(e){setEta(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          <select value={pat} onChange={function(e){setPat(e.target.value);}} style={inputStyle}>
+            {PATOLOGIE_LIST.map(function(p){
+              return <option key={p.id} value={p.id}>{p.label}</option>;
+            })}
+          </select>
+          <input placeholder={"Kcal/giorno (default "+patInfo(pat).kcal+")"} inputMode="numeric" value={kcal}
+            onChange={function(e){setKcal(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          <button onClick={aggiungi}
+            style={{width:"100%",padding:"11px",borderRadius:8,border:"none",
+              background:"#2E5F8A",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            + Aggiungi familiare
+          </button>
+        </div>
+
+        {lista.length>0&&(
+          <div style={{marginBottom:16}}>
+            {lista.map(function(m, idx){
+              return (
+                <div key={idx} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+                  background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1px solid #E3ECF4"}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0D1B2A"}}>{m.nome}</div>
+                    <div style={{fontSize:10,color:"#888"}}>{m.eta} anni - {patInfo(m.patologia).label} - {m.kcal_target} kcal</div>
+                  </div>
+                  <button onClick={function(){rimuovi(idx);}}
+                    style={{background:"none",border:"none",color:"#C0392B",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                    Togli
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <button onClick={inizia} disabled={lista.length===0}
+          style={{width:"100%",padding:"13px",borderRadius:8,border:"none",
+            background:lista.length===0?"#ccc":"#0D1B2A",color:"#fff",fontSize:14,fontWeight:700,
+            cursor:lista.length===0?"default":"pointer"}}>
+          {lista.length>0 ? ("Inizia ("+lista.length+" familiari)") : "Inizia"}
+        </button>
+        {lista.length===0&&(
+          <div style={{fontSize:11,color:"#aaa",textAlign:"center",marginTop:8}}>
+            Aggiungi almeno un familiare per continuare
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   // ── localStorage fallback ───────────────────────────────────
   function loadLS(key, def) {
@@ -4805,6 +4918,13 @@ export default function App() {
 
   function loadFromSupabase(fid) {
     if(!fid){setLoading(false);return;}
+    supabase.from("profiles").select("*").eq("family_id",fid).then(function(rows){
+      if(rows&&rows.length>0){
+        var pf={};
+        rows.forEach(function(r){ pf[r.profile_id]=r.dati; });
+        setProfili(pf); saveLS("profili", pf);
+      }
+    }, function(e){ console.error("Supabase: profiles errore", e); });
     supabase.from("builder_scelte").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
         var q={};var p={};
@@ -4874,7 +4994,7 @@ export default function App() {
   };
   const [settimana, setSettimana] = useState(0);
   const [activeDay, setActiveDay] = useState(0);
-  const [profili, setProfili] = useState(loadLS("profili", PROFILI_INIZIALI));
+  const [profili, setProfili] = useState(loadLS("profili", {}));
   const [menuOverride, setMenuOverride] = useState(loadLS("menuOverride", {}));
   const [builderScelte, setBuilderScelte] = useState(loadLS("builderScelte", {}));
   const [builderScelteProssima, setBuilderScelteProssima] = useState(loadLS("builderScelteProssima", {}));
@@ -4940,7 +5060,21 @@ export default function App() {
     };
   }
 
-  var setProfiliLS            = mkSetter("profili", setProfili);
+  function setProfiliLS(val) {
+    setProfili(function(prev) {
+      var next = (typeof val === "function") ? val(prev) : val;
+      saveLS("profili", next);
+      if(familyId) {
+        Object.keys(next).forEach(function(pid) {
+          supabase.from("profiles").upsert({family_id:familyId, profile_id:pid, dati:next[pid], updated_at:new Date().toISOString()});
+        });
+        Object.keys(prev).forEach(function(pid) {
+          if(!next[pid]) supabase.from("profiles").delete().eq("family_id",familyId).eq("profile_id",pid);
+        });
+      }
+      return next;
+    });
+  }
   var setBuilderScelteLS      = mkSetter("builderScelte", setBuilderScelte);
   var setBuilderScelteProssimaLS = mkSetter("builderScelteProssima", setBuilderScelteProssima);
   var setPesoLogLS            = mkSetter("pesoLog", setPesoLog);
@@ -5048,8 +5182,13 @@ export default function App() {
         </div>
       )}
 
+      {/* Onboarding nuovo account */}
+      {!loading&&utente&&Object.keys(profili).length===0&&(
+        <OnboardingFamiglia onComplete={setProfiliLS}/>
+      )}
+
       {/* App principale */}
-      {!loading&&utente&&(
+      {!loading&&utente&&Object.keys(profili).length>0&&(
       <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:520,margin:"0 auto",fontFamily:"system-ui,sans-serif"}}>
 
       <div style={{background:"linear-gradient(135deg,#0D1B2A 0%,#2E5F8A 100%)",
