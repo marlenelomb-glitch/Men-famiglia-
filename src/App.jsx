@@ -5586,10 +5586,33 @@ function lookupIngSpesa(id) {
   return null;
 }
 
+function catDaParola(t) {
+  var s = t.toLowerCase();
+  function has(arr){ for(var i=0;i<arr.length;i++){ if(s.indexOf(arr[i])>=0) return true; } return false; }
+  if(has(["verdur","insalat","pomodor","zucchin","spinaci","broccoli","carote","funghi","zucca","peperoni","melanzane","fagiolini","asparagi","frutta","mela","banana","frutti","fragole","pere","arance","kiwi","pesche"])) return "frutta_verdura";
+  if(has(["pollo","tacchino","manzo","agnello","carne","salmone","merluzzo","tonno","orata","pesce","gamber","prosciutto","bresaola","mortadella","affettat"])) return "carne_pesce";
+  if(has(["yogurt","ricotta","mozzarella","formaggio","latte","uova","uovo","feta","parmigiano","stracchino"])) return "latticini";
+  if(has(["pasta","riso","farro","orzo","quinoa","cous","pane","patate","polenta","legumi","ceci","lenticchie","fagioli","gnocchi","pizza","focaccia","piadina"])) return "dispensa";
+  if(has(["avena","muesli","granola","cereali","gallette","biscott","marmellata","miele","fette"])) return "colazione";
+  return "altro";
+}
+
+function tokensDaNome(nome) {
+  if(!nome) return [];
+  var parts = nome.split(/\s*\+\s*|\s*,\s*|\s+con\s+|\s+e\s+/i);
+  var out = [];
+  parts.forEach(function(t){
+    var clean = t.replace(/\d+\s*(g|gr|kg|ml|cl|l)\b/gi, "").replace(/\s+/g, " ").trim();
+    if(clean.length >= 3) out.push(clean.charAt(0).toUpperCase() + clean.slice(1));
+  });
+  return out;
+}
+
 function ListaSpesaView(props) {
   var spesa = props.spesa || [];
   var setSpesa = props.setSpesa || function(){};
   var builder = props.builder || {};
+  var menu = props.menu || {};
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
   var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
@@ -5625,13 +5648,22 @@ function ListaSpesaView(props) {
     var attuali = normSpesa(spesa);
     var esistenti = attuali.map(function(x){ return x.nome.toLowerCase(); });
     var nuovi = []; var visti = {};
-    ids.forEach(function(id){
-      var info = lookupIngSpesa(id);
-      if(!info) return;
-      var key = info.nome.toLowerCase();
+    function aggiungiVoce(nomeV, catV){
+      var key = nomeV.toLowerCase();
       if(esistenti.indexOf(key) >= 0 || visti[key]) return;
       visti[key] = true;
-      nuovi.push({nome:info.nome, cat:info.cat, fatto:false});
+      nuovi.push({nome:nomeV, cat:catV, fatto:false});
+    }
+    ids.forEach(function(id){
+      var info = lookupIngSpesa(id);
+      if(info) aggiungiVoce(info.nome, info.cat);
+    });
+    Object.keys(menu).forEach(function(k){
+      var cell = menu[k];
+      if(!cell || !cell.pastoId || !DB_PASTI[cell.pastoId]) return;
+      tokensDaNome(DB_PASTI[cell.pastoId].nome).forEach(function(t){
+        aggiungiVoce(t, catDaParola(t));
+      });
     });
     if(nuovi.length) { setSpesa(attuali.concat(nuovi)); setMsg(nuovi.length + " articoli aggiunti dalla settimana"); }
     else setMsg("Nessun nuovo articolo dal menu della settimana");
@@ -6805,7 +6837,7 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte}/>
+          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
