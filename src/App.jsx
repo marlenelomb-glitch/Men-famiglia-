@@ -5055,6 +5055,7 @@ function OnboardingFamiglia(props) {
   var s_peso = useState(""); var peso = s_peso[0]; var setPeso = s_peso[1];
   var s_alt = useState(""); var altezza = s_alt[0]; var setAltezza = s_alt[1];
   var s_att = useState("leggero"); var attivita = s_att[0]; var setAttivita = s_att[1];
+  var s_regOpen = useState(false); var regOpen = s_regOpen[0]; var setRegOpen = s_regOpen[1];
   var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
   var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
   var s_ovk = useState(""); var ovKcal = s_ovk[0]; var setOvKcal = s_ovk[1];
@@ -5121,7 +5122,7 @@ function OnboardingFamiglia(props) {
     setLista(lista.concat([membroCorrente()]));
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
     setObiettivo("mantenere"); setPeso(""); setAltezza(""); setAttivita("leggero");
-    setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null);
+    setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null); setRegOpen(false);
   }
 
   function rimuovi(idx) {
@@ -5154,33 +5155,83 @@ function OnboardingFamiglia(props) {
     fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10,
     fontFamily:"'Nunito',system-ui,sans-serif"};
 
+  var selPat = PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && patologie.indexOf(p.id) >= 0; });
+  var regSummary = selPat.length ? selPat.map(function(p){ return p.label; }).join(", ") : "Nessuna restrizione";
+
   return (
-    <div style={{minHeight:"100vh",padding:"24px",boxSizing:"border-box",maxWidth:390,margin:"0 auto"}}>
-      <div style={{maxWidth:400,margin:"0 auto"}}>
-        <div style={{textAlign:"center",marginBottom:20}}>
-          <div style={{fontSize:32,marginBottom:8}}>🍽</div>
-          <div style={{fontSize:20,fontWeight:800,color:"#2C3338"}}>Benvenuto!</div>
-          <div style={{fontSize:13,color:"#8A949B",marginTop:4}}>Configura i profili nutrizionali della famiglia</div>
+    <div style={{minHeight:"100vh",background:"#F2F6F8",padding:"18px 20px 28px",boxSizing:"border-box",maxWidth:420,margin:"0 auto"}}>
+      <div style={{maxWidth:420,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
+          <button onClick={function(){ if(lista.length) inizia(); }} aria-label="Indietro"
+            style={{width:36,height:36,borderRadius:12,border:"1px solid #E3EAEE",background:"#fff",
+              color:"#2C3338",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <i className="ti ti-arrow-left"/>
+          </button>
         </div>
 
-        <div style={{background:"#fff",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #E3EAEE"}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#2F6586",marginBottom:10}}>Aggiungi un familiare</div>
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <div style={{width:54,height:54,borderRadius:16,background:"#2F6586",color:"#fff",
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 12px"}}>
+            <i className="ti ti-tools-kitchen-2"/>
+          </div>
+          <div style={{fontSize:24,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Benvenuto</div>
+          <div style={{fontSize:13,color:"#8A949B",marginTop:6}}>Configura i profili nutrizionali della famiglia</div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
+            <span style={{width:18,height:7,borderRadius:7,background:"#6BA6C9"}}/>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
+          </div>
+        </div>
+
+        {lista.length>0&&(
+          <div style={{marginBottom:16}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {lista.map(function(m, idx){
+                return (
+                  <div key={idx} style={{display:"flex",alignItems:"center",gap:8,background:"#fff",
+                    border:"1px solid #E3EAEE",borderRadius:20,padding:"5px 8px 5px 5px"}}>
+                    <span style={{width:26,height:26,borderRadius:"50%",background:COLORI[idx%COLORI.length],
+                      color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700}}>
+                      {m.nome ? m.nome.slice(0,1).toUpperCase() : "?"}
+                    </span>
+                    <span style={{fontSize:13,fontWeight:600,color:"#2C3338"}}>{m.nome}</span>
+                    <button onClick={function(){rimuovi(idx);}} aria-label="Rimuovi"
+                      style={{border:"none",background:"transparent",color:"#8A949B",fontSize:14,cursor:"pointer",padding:"0 2px",display:"flex"}}>
+                      <i className="ti ti-x"/>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{fontSize:11,color:"#8A949B",marginTop:8}}>{lista.length} aggiunti</div>
+          </div>
+        )}
+
+        <div style={{background:"#fff",borderRadius:18,padding:"15px 16px",marginBottom:16,border:"1px solid #E3EAEE"}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#2C3338",marginBottom:12}}>Nuovo familiare</div>
           <input placeholder="Nome" value={nome}
             onChange={function(e){setNome(e.target.value);}} style={inputStyle}/>
           <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Data di nascita</div>
           <input type="date" value={dataN}
             onChange={function(e){setDataN(e.target.value);}} style={inputStyle}/>
-          <select value={sesso} onChange={function(e){setSesso(e.target.value);}} style={inputStyle}>
-            <option value="femmina">Femmina</option>
-            <option value="maschio">Maschio</option>
-          </select>
 
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Obiettivo</div>
-          <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={inputStyle}>
-            <option value="mantenere">Mantenere il peso</option>
-            <option value="dimagrire">Dimagrire (-20% kcal)</option>
-            <option value="ingrassare">Aumentare di peso (+20% kcal)</option>
-          </select>
+          <div style={{display:"flex",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Sesso</div>
+              <select value={sesso} onChange={function(e){setSesso(e.target.value);setCalcolo(null);}} style={inputStyle}>
+                <option value="femmina">Femmina</option>
+                <option value="maschio">Maschio</option>
+              </select>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Obiettivo</div>
+              <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={inputStyle}>
+                <option value="mantenere">Mantieni</option>
+                <option value="dimagrire">Dimagrire</option>
+                <option value="ingrassare">Aumenta</option>
+              </select>
+            </div>
+          </div>
 
           <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Peso e altezza (per un calcolo piu preciso - opzionale)</div>
           <div style={{display:"flex",gap:8}}>
@@ -5198,18 +5249,38 @@ function OnboardingFamiglia(props) {
             <option value="intenso">Intenso (6-7 giorni/settimana)</option>
           </select>
 
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:6}}>Patologie / restrizioni (puoi selezionarne piu di una)</div>
-          <div style={{maxHeight:170,overflowY:"auto",border:"1px solid #eee",borderRadius:8,padding:"4px 8px",marginBottom:10}}>
-            {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p){
-              var sel = patologie.indexOf(p.id) >= 0;
-              return (
-                <label key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 2px",cursor:"pointer",fontSize:12}}>
-                  <input type="checkbox" checked={sel} onChange={function(){ togglePat(p.id); }}/>
-                  <span style={{color:sel?"#2C3338":"#555",fontWeight:sel?700:400}}>{p.label}</span>
-                </label>
-              );
-            })}
+          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Regime alimentare</div>
+          <div onClick={function(){ setRegOpen(!regOpen); }}
+            style={{display:"flex",alignItems:"center",gap:8,padding:"12px",borderRadius:13,
+              border:"1px solid #E3EAEE",background:"#fff",cursor:"pointer",marginBottom:regOpen?0:10}}>
+            <span style={{flex:1,fontSize:13,color:selPat.length?"#2C3338":"#8A949B",
+              whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:selPat.length?600:400}}>
+              {regSummary}
+            </span>
+            {selPat.length>0&&<span style={{fontSize:11,fontWeight:700,color:"#2F6586",background:"#E2EEF5",borderRadius:20,padding:"1px 8px"}}>{selPat.length}</span>}
+            <i className={"ti "+(regOpen?"ti-chevron-up":"ti-chevron-down")} style={{color:"#8A949B",fontSize:16}}/>
           </div>
+          {regOpen&&(
+            <div style={{border:"1px solid #E3EAEE",borderTop:"none",borderRadius:"0 0 13px 13px",
+              maxHeight:200,overflowY:"auto",marginBottom:10}}>
+              {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p){
+                var sel = patologie.indexOf(p.id) >= 0;
+                return (
+                  <label key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
+                    cursor:"pointer",fontSize:13,borderTop:"1px solid #F0F4F6",
+                    background:sel?"#E2EEF5":"#fff"}}>
+                    <input type="checkbox" checked={sel} onChange={function(){ togglePat(p.id); }}
+                      style={{accentColor:"#2F6586",width:16,height:16}}/>
+                    <span style={{color:sel?"#2F6586":"#2C3338",fontWeight:sel?700:500}}>{p.label}</span>
+                  </label>
+                );
+              })}
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",
+                borderTop:"1px solid #F0F4F6",color:"#8A949B",fontSize:13}}>
+                <i className="ti ti-plus"/>Aggiungi restrizione
+              </div>
+            </div>
+          )}
 
           {showProt&&(
             <input placeholder="Proteine max prescritte dal medico (g)" inputMode="numeric" value={vProt}
@@ -5256,39 +5327,25 @@ function OnboardingFamiglia(props) {
             </div>
           )}
 
-          <button onClick={aggiungi} disabled={!canAdd}
-            style={{width:"100%",padding:"12px",borderRadius:12,border:"none",
-              background:canAdd?"#2F6586":"#ccc",color:"#fff",fontSize:13,fontWeight:700,
-              cursor:canAdd?"pointer":"default"}}>
-            + Aggiungi familiare
-          </button>
         </div>
 
-        {lista.length>0&&(
-          <div style={{marginBottom:16}}>
-            {lista.map(function(m, idx){
-              return (
-                <div key={idx} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
-                  background:"#fff",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1px solid #E3EAEE"}}>
-                  <div style={{flex:1,paddingRight:8}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#2C3338"}}>{m.nome}</div>
-                    <div style={{fontSize:10,color:"#8A949B"}}>{riassunto(m)}</div>
-                  </div>
-                  <button onClick={function(){rimuovi(idx);}}
-                    style={{background:"none",border:"none",color:"#C0392B",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                    Togli
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
+        <button onClick={aggiungi} disabled={!canAdd}
+          style={{width:"100%",padding:"15px",borderRadius:15,border:"none",marginBottom:10,
+            background:canAdd?"#2F6586":"#ccc",color:"#fff",fontSize:15,fontWeight:700,
+            cursor:canAdd?"pointer":"default"}}>
+          Salva familiare
+        </button>
+        <button onClick={aggiungi} disabled={!canAdd}
+          style={{width:"100%",padding:"14px",borderRadius:15,marginBottom:10,
+            border:"1px solid #2F6586",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:700,
+            cursor:canAdd?"pointer":"default"}}>
+          Aggiungi un altro familiare
+        </button>
         <button onClick={inizia} disabled={lista.length===0}
-          style={{width:"100%",padding:"13px",borderRadius:8,border:"none",
-            background:lista.length===0?"#ccc":"#2C3338",color:"#fff",fontSize:14,fontWeight:700,
+          style={{width:"100%",padding:"12px",borderRadius:15,border:"none",background:"transparent",
+            color:lista.length===0?"#B4BEC4":"#2F6586",fontSize:15,fontWeight:700,
             cursor:lista.length===0?"default":"pointer"}}>
-          {lista.length>0 ? ("Inizia ("+lista.length+" familiari)") : "Inizia"}
+          Continua <i className="ti ti-arrow-right" style={{verticalAlign:"-2px"}}/>
         </button>
         {lista.length===0&&(
           <div style={{fontSize:11,color:"#8A949B",textAlign:"center",marginTop:8}}>
