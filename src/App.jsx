@@ -5243,7 +5243,7 @@ function OnboardingFamiglia(props) {
   var labelStyle = {display:"block",fontSize:12,color:"#8A949B",fontWeight:600,marginBottom:6};
 
   var etaCorr = calcolaEta(dataN);
-  var isBambino = dataN !== "" && etaCorr.anni < 18;
+  var isBambino = dataN !== "" && etaCorr.anni < 14;
 
   var selPat = PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && patologie.indexOf(p.id) >= 0; });
   var regLabels = selPat.map(function(p){ return p.label; });
@@ -5306,7 +5306,7 @@ function OnboardingFamiglia(props) {
           <div style={{marginBottom:13}}>
             <label style={labelStyle}>Data di nascita</label>
             <input type="date" value={dataN}
-              onChange={function(e){var v=e.target.value; setDataN(v); if(v!==""&&calcolaEta(v).anni<18){setObiettivo("mantenere");} setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+              onChange={function(e){var v=e.target.value; setDataN(v); if(v!==""&&calcolaEta(v).anni<14){setObiettivo("mantenere");} setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
           </div>
 
           <div style={{display:"flex",gap:10,marginBottom:13}}>
