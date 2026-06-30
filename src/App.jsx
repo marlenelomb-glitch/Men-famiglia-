@@ -212,6 +212,12 @@ function aiOpzioniCena(profili, giorno) {
 // ── Notifica nuove iscrizioni (Web3Forms) ───────────────────
 var WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY || "";
 
+function salvaIscritto(emailUtente, userId) {
+  try {
+    supabase.from("iscritti").insert({email: emailUtente, user_id: userId || null, created_at: new Date().toISOString()});
+  } catch(e) {}
+}
+
 function notificaIscrizione(emailUtente) {
   if(!WEB3FORMS_KEY) return;
   fetch("https://api.web3forms.com/submit", {
@@ -6585,7 +6591,7 @@ export default function App() {
     setAuthErr("");setLoading(true);
     supabase.signUp(emailInput,pwdInput).then(function(res){
       if(res.error){setAuthErr(res.error.message||"Errore");setLoading(false);}
-      else{notificaIscrizione(emailInput);sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(res.user?res.user.id:res.id);}
+      else{var uid=res.user?res.user.id:res.id;notificaIscrizione(emailInput);salvaIscritto(emailInput,uid);sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(uid);}
     }).catch(function(){setAuthErr("Errore di rete");setLoading(false);});
   }
 
