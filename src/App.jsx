@@ -5564,9 +5564,32 @@ function catLabel(id) {
   return c ? c.label : "Altro";
 }
 
+function lookupIngSpesa(id) {
+  function byId(x){ return x.id === id; }
+  var c = CARBOIDRATI.find(byId);
+  if(c) return {nome:c.nome, cat:(c.cat === "colazione" ? "colazione" : "dispensa")};
+  var p = PROTEINE.find(byId);
+  if(p) {
+    var pc = "carne_pesce";
+    if(p.cat === "uova" || p.cat === "latticini") pc = "latticini";
+    else if(p.cat === "legumi") pc = "dispensa";
+    return {nome:p.nome, cat:pc};
+  }
+  var v = VERDURE.find(byId);
+  if(v) return {nome:v.nome, cat:"frutta_verdura"};
+  var f = FRUTTA.find(byId);
+  if(f) return {nome:f.nome, cat:"frutta_verdura"};
+  var s = SALSE.find(byId);
+  if(s) return {nome:s.nome, cat:"dispensa"};
+  var g = GRASSI.find(byId);
+  if(g) return {nome:g.nome, cat:"dispensa"};
+  return null;
+}
+
 function ListaSpesaView(props) {
   var spesa = props.spesa || [];
   var setSpesa = props.setSpesa || function(){};
+  var builder = props.builder || {};
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
   var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
@@ -5588,6 +5611,31 @@ function ListaSpesaView(props) {
   }
   function svuotaFatti() {
     setSpesa(normSpesa(spesa).filter(function(x){ return !x.fatto; }));
+  }
+
+  function generaDallaSettimana() {
+    var ids = [];
+    Object.keys(builder).forEach(function(k){
+      var s = builder[k];
+      if(!s) return;
+      ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){
+        if(s[f]) ids.push(s[f]);
+      });
+    });
+    var attuali = normSpesa(spesa);
+    var esistenti = attuali.map(function(x){ return x.nome.toLowerCase(); });
+    var nuovi = []; var visti = {};
+    ids.forEach(function(id){
+      var info = lookupIngSpesa(id);
+      if(!info) return;
+      var key = info.nome.toLowerCase();
+      if(esistenti.indexOf(key) >= 0 || visti[key]) return;
+      visti[key] = true;
+      nuovi.push({nome:info.nome, cat:info.cat, fatto:false});
+    });
+    if(nuovi.length) { setSpesa(attuali.concat(nuovi)); setMsg(nuovi.length + " articoli aggiunti dalla settimana"); }
+    else setMsg("Nessun nuovo articolo dal menu della settimana");
+    setTimeout(function(){ setMsg(""); }, 2800);
   }
 
   function testoLista() {
@@ -5656,6 +5704,13 @@ function ListaSpesaView(props) {
               fontSize:14,fontWeight:700,cursor:"pointer"}}>Aggiungi</button>
         </div>
       </div>
+
+      <button onClick={generaDallaSettimana}
+        style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#E2EEF5",
+          color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <i className="ti ti-calendar-week" style={{fontSize:16}}/>Genera dalla settimana
+      </button>
 
       {CAT_SPESA.map(function(c){
         var inCat = [];
@@ -6750,7 +6805,7 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS}/>
+          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
