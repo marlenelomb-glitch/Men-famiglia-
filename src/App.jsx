@@ -5242,6 +5242,9 @@ function OnboardingFamiglia(props) {
     color:"#2C3338",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"};
   var labelStyle = {display:"block",fontSize:12,color:"#8A949B",fontWeight:600,marginBottom:6};
 
+  var etaCorr = calcolaEta(dataN);
+  var isBambino = dataN !== "" && etaCorr.anni < 18;
+
   var selPat = PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && patologie.indexOf(p.id) >= 0; });
   var regLabels = selPat.map(function(p){ return p.label; });
   var regSummary = regLabels.length === 0 ? "Seleziona regime"
@@ -5303,7 +5306,7 @@ function OnboardingFamiglia(props) {
           <div style={{marginBottom:13}}>
             <label style={labelStyle}>Data di nascita</label>
             <input type="date" value={dataN}
-              onChange={function(e){setDataN(e.target.value);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+              onChange={function(e){var v=e.target.value; setDataN(v); if(v!==""&&calcolaEta(v).anni<18){setObiettivo("mantenere");} setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
           </div>
 
           <div style={{display:"flex",gap:10,marginBottom:13}}>
@@ -5316,10 +5319,10 @@ function OnboardingFamiglia(props) {
             </div>
             <div style={{flex:1}}>
               <label style={labelStyle}>Obiettivo</label>
-              <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
+              <select value={isBambino?"mantenere":obiettivo} disabled={isBambino} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0,background:isBambino?"#F2F6F8":"#fff",color:isBambino?"#8A949B":"#2C3338"})}>
                 <option value="mantenere">Mantieni</option>
-                <option value="dimagrire">Perdere peso</option>
-                <option value="ingrassare">Aumentare</option>
+                {!isBambino&&<option value="dimagrire">Perdere peso</option>}
+                {!isBambino&&<option value="ingrassare">Aumentare</option>}
               </select>
             </div>
           </div>
