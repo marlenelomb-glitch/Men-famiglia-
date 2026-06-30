@@ -5326,9 +5326,9 @@ function OnboardingFamiglia(props) {
                 </div>
               ):(
                 <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
+                  <option value="ingrassare">Piu del fabbisogno</option>
+                  <option value="dimagrire">Meno del fabbisogno</option>
                   <option value="mantenere">Mantieni</option>
-                  <option value="dimagrire">Perdere peso</option>
-                  <option value="ingrassare">Aumentare</option>
                 </select>
               )}
             </div>
