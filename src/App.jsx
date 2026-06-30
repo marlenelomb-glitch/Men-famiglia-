@@ -5390,7 +5390,7 @@ function OnboardingFamiglia(props) {
             {regOpen&&(
               <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,marginTop:7,overflow:"hidden",
                 maxHeight:220,overflowY:"auto"}}>
-                {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && p.id !== "vegetariano" && p.id !== "vegano"; }).map(function(p, i){
+                {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && p.id !== "vegetariano" && p.id !== "vegano" && p.id !== "dimagrante" && p.id !== "ingrassante"; }).map(function(p, i){
                   var sel = patologie.indexOf(p.id) >= 0;
                   return (
                     <div key={p.id} onClick={function(){ togglePat(p.id); }}
