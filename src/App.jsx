@@ -5319,11 +5319,18 @@ function OnboardingFamiglia(props) {
             </div>
             <div style={{flex:1}}>
               <label style={labelStyle}>Obiettivo</label>
-              <select value={isBambino?"mantenere":obiettivo} disabled={isBambino} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0,background:isBambino?"#F2F6F8":"#fff",color:isBambino?"#8A949B":"#2C3338"})}>
-                <option value="mantenere">Mantieni</option>
-                {!isBambino&&<option value="dimagrire">Perdere peso</option>}
-                {!isBambino&&<option value="ingrassare">Aumentare</option>}
-              </select>
+              {isBambino?(
+                <div style={Object.assign({},inputStyle,{marginBottom:0,background:"#F2F6F8",color:"#8A949B",
+                  display:"flex",alignItems:"center",gap:7})}>
+                  <i className="ti ti-plant-2" style={{fontSize:16,color:"#6BA6C9"}}/>Crescita
+                </div>
+              ):(
+                <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
+                  <option value="mantenere">Mantieni</option>
+                  <option value="dimagrire">Perdere peso</option>
+                  <option value="ingrassare">Aumentare</option>
+                </select>
+              )}
             </div>
           </div>
 
