@@ -209,6 +209,24 @@ function aiOpzioniCena(profili, giorno) {
   return chiamaAI(AI_SYSTEM, prompt, 500);
 }
 
+// ── Notifica nuove iscrizioni (Web3Forms) ───────────────────
+var WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY || "";
+
+function notificaIscrizione(emailUtente) {
+  if(!WEB3FORMS_KEY) return;
+  fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "Accept": "application/json"},
+    body: JSON.stringify({
+      access_key: WEB3FORMS_KEY,
+      subject: "Nuova iscrizione - Menu Famiglia",
+      from_name: "Menu Famiglia",
+      email: emailUtente,
+      message: "Nuovo utente registrato: " + emailUtente
+    })
+  }).catch(function(){});
+}
+
 import { useState, useMemo, useCallback, useEffect } from "react";
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
@@ -6567,7 +6585,7 @@ export default function App() {
     setAuthErr("");setLoading(true);
     supabase.signUp(emailInput,pwdInput).then(function(res){
       if(res.error){setAuthErr(res.error.message||"Errore");setLoading(false);}
-      else{sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(res.user?res.user.id:res.id);}
+      else{notificaIscrizione(emailInput);sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(res.user?res.user.id:res.id);}
     }).catch(function(){setAuthErr("Errore di rete");setLoading(false);});
   }
 
