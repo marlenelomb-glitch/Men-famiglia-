@@ -5026,6 +5026,27 @@ function patologiaPrimaria(patologie) {
   return patologie.length ? patologie[0] : "nessuna";
 }
 
+var REGIME_LIST = [
+  {id:"onnivoro",    l:"Onnivoro"},
+  {id:"vegetariano", l:"Vegetariano"},
+  {id:"vegano",      l:"Vegano"},
+  {id:"pescetariano",l:"Pescetariano"},
+  {id:"mediterranea",l:"Mediterranea"},
+  {id:"chetogenica", l:"Chetogenica"},
+  {id:"iperproteica",l:"Iperproteica"}
+];
+
+function regimeLabel(id) {
+  var r = REGIME_LIST.find(function(x){ return x.id === id; });
+  return r ? r.l : "Onnivoro";
+}
+
+function regimeToPatologie(regime) {
+  if(regime === "vegetariano") return ["vegetariano"];
+  if(regime === "vegano") return ["vegano"];
+  return [];
+}
+
 function kcalObiettivo(kcal, obiettivo) {
   if(obiettivo === "dimagrire") return Math.round(kcal * 0.8);
   if(obiettivo === "ingrassare") return Math.round(kcal * 1.2);
@@ -5055,6 +5076,8 @@ function OnboardingFamiglia(props) {
   var s_peso = useState(""); var peso = s_peso[0]; var setPeso = s_peso[1];
   var s_alt = useState(""); var altezza = s_alt[0]; var setAltezza = s_alt[1];
   var s_att = useState("leggero"); var attivita = s_att[0]; var setAttivita = s_att[1];
+  var s_regime = useState("onnivoro"); var regime = s_regime[0]; var setRegime = s_regime[1];
+  var s_regimeOpen = useState(false); var regimeOpen = s_regimeOpen[0]; var setRegimeOpen = s_regimeOpen[1];
   var s_regOpen = useState(false); var regOpen = s_regOpen[0]; var setRegOpen = s_regOpen[1];
   var s_vprot = useState(""); var vProt = s_vprot[0]; var setVProt = s_vprot[1];
   var s_vphe = useState(""); var vPhe = s_vphe[0]; var setVPhe = s_vphe[1];
@@ -5069,14 +5092,24 @@ function OnboardingFamiglia(props) {
 
   function membroCorrente() {
     return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
-      patologie: patologie.slice(), obiettivo: obiettivo,
+      patologie: patologie.slice(), obiettivo: obiettivo, regime: regime,
       peso: peso, altezza: altezza, attivita: attivita,
       valoriMedico: {prot: vProt, phe: vPhe},
       override: {kcal: ovKcal, prot_max: ovProt} };
   }
 
+  function patologieEffettive(m) {
+    var extra = regimeToPatologie(m.regime);
+    var arr = (m.patologie || []).slice();
+    extra.forEach(function(p){ if(arr.indexOf(p) < 0) arr.push(p); });
+    return arr;
+  }
+
   function valoriFinali(m) {
-    var fin = getParametriFinali(m);
+    var mEff = {dataNascita:m.dataNascita, sesso:m.sesso, obiettivo:m.obiettivo,
+      peso:m.peso, altezza:m.altezza, attivita:m.attivita,
+      patologie:patologieEffettive(m), valoriMedico:m.valoriMedico, override:m.override};
+    var fin = getParametriFinali(mEff);
     var base = getParametriEta(m.dataNascita, m.sesso);
     var anni = calcolaEta(m.dataNascita).anni;
     var pe = parseFloat(m.peso); var al = parseFloat(m.altezza);
@@ -5122,6 +5155,7 @@ function OnboardingFamiglia(props) {
     setLista(lista.concat([membroCorrente()]));
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
     setObiettivo("mantenere"); setPeso(""); setAltezza(""); setAttivita("leggero");
+    setRegime("onnivoro"); setRegimeOpen(false);
     setVProt(""); setVPhe(""); setOvKcal(""); setOvProt(""); setCalcolo(null); setRegOpen(false);
   }
 
@@ -5133,11 +5167,12 @@ function OnboardingFamiglia(props) {
     var pf = {};
     lista.forEach(function(m, idx) {
       var id = "m_" + idx + "_" + Date.now();
-      var fin = getParametriFinali(m);
+      var patEff = patologieEffettive(m);
+      var fin = getParametriFinali({dataNascita:m.dataNascita, sesso:m.sesso, patologie:patEff, valoriMedico:m.valoriMedico, override:m.override});
       var v = valoriFinali(m);
       pf[id] = { id: id, nome: m.nome, emoji: "",
-        dataNascita: m.dataNascita, sesso: m.sesso, obiettivo: m.obiettivo,
-        patologie: m.patologie, patologia: patologiaPrimaria(m.patologie),
+        dataNascita: m.dataNascita, sesso: m.sesso, obiettivo: m.obiettivo, regime: m.regime,
+        patologie: patEff, patologia: patologiaPrimaria(patEff),
         valoriMedico: m.valoriMedico, override: {kcal: String(v.kcal), prot_max: (m.override ? m.override.prot_max : "")},
         eta: calcolaEta(m.dataNascita).anni,
         kcal_target: v.kcal, prot_max: (v.prot_max !== null ? v.prot_max : fin.prot),
@@ -5259,20 +5294,52 @@ function OnboardingFamiglia(props) {
           </div>
 
           <div style={{marginBottom:13}}>
-            <label style={labelStyle}>Regime alimentare · piu scelte</label>
+            <label style={labelStyle}>Regime alimentare</label>
+            <div onClick={function(){ setRegimeOpen(!regimeOpen); }}
+              style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
+                padding:"12px 14px",borderRadius:13,border:"1.5px solid #E3EAEE",background:"#fff",
+                cursor:"pointer",fontSize:14,fontWeight:600,color:"#2C3338"}}>
+              <span>{regimeLabel(regime)}</span>
+              <i className={"ti "+(regimeOpen?"ti-chevron-up":"ti-chevron-down")} style={{color:"#8A949B",fontSize:18}}/>
+            </div>
+            {regimeOpen&&(
+              <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,marginTop:7,overflow:"hidden"}}>
+                {REGIME_LIST.map(function(r, i){
+                  var sel = regime === r.id;
+                  return (
+                    <div key={r.id} onClick={function(){ setRegime(r.id); setRegimeOpen(false); setCalcolo(null); }}
+                      style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",cursor:"pointer",
+                        fontSize:13,color:"#2C3338",borderTop:i===0?"none":"1px solid #E3EAEE",
+                        background:sel?"#E2EEF5":"#fff",fontWeight:sel?700:500}}>
+                      <span style={{width:20,height:20,borderRadius:"50%",flexShrink:0,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),
+                        background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                        {sel&&<i className="ti ti-check" style={{fontSize:13}}/>}
+                      </span>
+                      {r.l}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Patologie e restrizioni · piu scelte</label>
             <div onClick={function(){ setRegOpen(!regOpen); }}
               style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
                 padding:"12px 14px",borderRadius:13,border:"1.5px solid "+(selPat.length?"#6BA6C9":"#E3EAEE"),
                 background:selPat.length?"#E2EEF5":"#fff",cursor:"pointer",
                 fontSize:14,fontWeight:600,color:selPat.length?"#2F6586":"#8A949B"}}>
-              <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{regSummary}</span>
+              <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{selPat.length?regSummary:"Nessuna restrizione"}</span>
               <i className={"ti "+(regOpen?"ti-chevron-up":"ti-chevron-down")}
                 style={{color:selPat.length?"#2F6586":"#8A949B",fontSize:18}}/>
             </div>
             {regOpen&&(
               <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,marginTop:7,overflow:"hidden",
                 maxHeight:220,overflowY:"auto"}}>
-                {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p, i){
+                {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && p.id !== "vegetariano" && p.id !== "vegano"; }).map(function(p, i){
                   var sel = patologie.indexOf(p.id) >= 0;
                   return (
                     <div key={p.id} onClick={function(){ togglePat(p.id); }}
