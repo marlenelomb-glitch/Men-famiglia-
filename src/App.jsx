@@ -81,7 +81,9 @@ function createSupabaseClient() {
         upsert: function(data, opts) {
           var h = Object.assign({}, headers());
           h["Prefer"] = "resolution=merge-duplicates,return=representation";
-          return fetch(rest(table), {
+          var url = rest(table);
+          if(opts && opts.onConflict) url = url + "?on_conflict=" + opts.onConflict;
+          return fetch(url, {
             method:"POST", headers:h,
             body: JSON.stringify(Array.isArray(data)?data:[data])
           }).then(function(r){return r.json();});
@@ -6621,10 +6623,17 @@ export default function App() {
         setBuilderScelteProssima(p);saveLS("builderScelteProssima",p);
       }
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
-    supabase.from("dispensa").select("*").eq("family_id",fid).then(function(rows){
-      if(rows&&rows.length>0){setDispensa(rows);saveLS("dispensa",rows);}
+    supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
+      if(rows&&rows.length>0){
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride};
+        rows.forEach(function(r){
+          if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
+            setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
+          }
+        });
+      }
       setLoading(false);
-    }, function(e){ console.error("Supabase: dispensa errore", e); setLoading(false); });
+    }, function(e){ console.error("Supabase: app_state errore", e); setLoading(false); });
     supabase.from("peso_log").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
         var log={};
@@ -6777,15 +6786,31 @@ export default function App() {
       return next;
     });
   }
+  function mkSetterSync(key, setter) {
+    return function(val) {
+      setter(function(prev) {
+        var next = (typeof val === "function") ? val(prev) : val;
+        saveLS(key, next);
+        if(familyId) {
+          supabase.from("app_state").upsert(
+            {family_id:familyId, chiave:key, dati:next, updated_at:new Date().toISOString()},
+            {onConflict:"family_id,chiave"}
+          );
+        }
+        return next;
+      });
+    };
+  }
+
   var setBuilderScelteLS      = mkSetter("builderScelte", setBuilderScelte);
   var setBuilderScelteProssimaLS = mkSetter("builderScelteProssima", setBuilderScelteProssima);
   var setPesoLogLS            = mkSetter("pesoLog", setPesoLog);
-  var setDispensaLS           = mkSetter("dispensa", setDispensa);
-  var setSpesaLS              = mkSetter("spesa", setSpesa);
-  var setMealPrepLS           = mkSetter("mealPrep", setMealPrep);
+  var setDispensaLS           = mkSetterSync("dispensa", setDispensa);
+  var setSpesaLS              = mkSetterSync("spesa", setSpesa);
+  var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
   var setPinLS                = mkSetter("pin", setPin);
-  var setMenuOverrideLS       = mkSetter("menuOverride", setMenuOverride);
-  var setGiorniFuoriLS        = mkSetter("giorniFuori", setGiorniFuori);
+  var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
+  var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
 
   const [pinInput, setPinInput] = useState("");
   const [pinWrong, setPinWrong] = useState(false);
