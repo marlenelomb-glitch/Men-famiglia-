@@ -5151,32 +5151,36 @@ function OnboardingFamiglia(props) {
   var canAdd = !!nome.trim() && !!dataN;
   var showProt = patologie.indexOf("ipoproteica") >= 0;
   var showPhe = patologie.indexOf("fenilchetonuria") >= 0;
-  var inputStyle = {padding:"12px",borderRadius:12,border:"1px solid #E3EAEE",
+  var inputStyle = {padding:"12px 14px",borderRadius:13,border:"1.5px solid #E3EAEE",
     fontSize:14,outline:"none",width:"100%",boxSizing:"border-box",marginBottom:10,
-    fontFamily:"'Nunito',system-ui,sans-serif"};
+    color:"#2C3338",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"};
+  var labelStyle = {display:"block",fontSize:12,color:"#8A949B",fontWeight:600,marginBottom:6};
 
   var selPat = PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna" && patologie.indexOf(p.id) >= 0; });
-  var regSummary = selPat.length ? selPat.map(function(p){ return p.label; }).join(", ") : "Nessuna restrizione";
+  var regLabels = selPat.map(function(p){ return p.label; });
+  var regSummary = regLabels.length === 0 ? "Seleziona regime"
+    : (regLabels.length <= 2 ? regLabels.join(" · ")
+       : (regLabels.slice(0,2).join(" · ") + " · +" + (regLabels.length-2)));
 
   return (
     <div style={{minHeight:"100vh",background:"#F2F6F8",padding:"18px 20px 28px",boxSizing:"border-box",maxWidth:420,margin:"0 auto"}}>
       <div style={{maxWidth:420,margin:"0 auto"}}>
-        <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
           <button onClick={function(){ if(lista.length) inizia(); }} aria-label="Indietro"
-            style={{width:36,height:36,borderRadius:12,border:"1px solid #E3EAEE",background:"#fff",
-              color:"#2C3338",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <i className="ti ti-arrow-left"/>
+            style={{width:34,height:34,borderRadius:11,border:"1px solid #E3EAEE",background:"#fff",
+              color:"#2C3338",fontSize:19,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <i className="ti ti-chevron-left"/>
           </button>
         </div>
 
-        <div style={{textAlign:"center",marginBottom:18}}>
-          <div style={{width:54,height:54,borderRadius:16,background:"#2F6586",color:"#fff",
-            display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 12px"}}>
+        <div style={{textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:6,marginBottom:16}}>
+          <div style={{width:46,height:46,borderRadius:14,background:"#2F6586",color:"#fff",
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>
             <i className="ti ti-tools-kitchen-2"/>
           </div>
-          <div style={{fontSize:24,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Benvenuto</div>
-          <div style={{fontSize:13,color:"#8A949B",marginTop:6}}>Configura i profili nutrizionali della famiglia</div>
-          <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
+          <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Benvenuto</div>
+          <div style={{fontSize:13,color:"#8A949B",fontWeight:500}}>Configura i profili nutrizionali della famiglia</div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:3}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
             <span style={{width:18,height:7,borderRadius:7,background:"#6BA6C9"}}/>
             <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
@@ -5184,103 +5188,114 @@ function OnboardingFamiglia(props) {
         </div>
 
         {lista.length>0&&(
-          <div style={{marginBottom:16}}>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-              {lista.map(function(m, idx){
-                return (
-                  <div key={idx} style={{display:"flex",alignItems:"center",gap:8,background:"#fff",
-                    border:"1px solid #E3EAEE",borderRadius:20,padding:"5px 8px 5px 5px"}}>
-                    <span style={{width:26,height:26,borderRadius:"50%",background:COLORI[idx%COLORI.length],
-                      color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700}}>
-                      {m.nome ? m.nome.slice(0,1).toUpperCase() : "?"}
-                    </span>
-                    <span style={{fontSize:13,fontWeight:600,color:"#2C3338"}}>{m.nome}</span>
-                    <button onClick={function(){rimuovi(idx);}} aria-label="Rimuovi"
-                      style={{border:"none",background:"transparent",color:"#8A949B",fontSize:14,cursor:"pointer",padding:"0 2px",display:"flex"}}>
-                      <i className="ti ti-x"/>
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <div style={{fontSize:11,color:"#8A949B",marginTop:8}}>{lista.length} aggiunti</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:16}}>
+            {lista.map(function(m, idx){
+              return (
+                <span key={idx} style={{display:"flex",alignItems:"center",gap:7,background:"#fff",
+                  border:"1px solid #E3EAEE",borderRadius:20,padding:"5px 11px 5px 6px",fontSize:12,fontWeight:600}}>
+                  <span style={{width:24,height:24,borderRadius:"50%",background:"#E2EEF5",color:"#2F6586",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>
+                    {m.nome ? m.nome.slice(0,1).toUpperCase() : "?"}
+                  </span>
+                  {m.nome}
+                  <i className="ti ti-x" onClick={function(){rimuovi(idx);}}
+                    style={{fontSize:14,color:"#8A949B",cursor:"pointer"}}/>
+                </span>
+              );
+            })}
+            <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{lista.length} aggiunti</span>
           </div>
         )}
 
-        <div style={{background:"#fff",borderRadius:18,padding:"15px 16px",marginBottom:16,border:"1px solid #E3EAEE"}}>
-          <div style={{fontSize:13,fontWeight:800,color:"#2C3338",marginBottom:12}}>Nuovo familiare</div>
-          <input placeholder="Nome" value={nome}
-            onChange={function(e){setNome(e.target.value);}} style={inputStyle}/>
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Data di nascita</div>
-          <input type="date" value={dataN}
-            onChange={function(e){setDataN(e.target.value);}} style={inputStyle}/>
+        <div style={{background:"#fff",borderRadius:18,padding:"16px 15px",marginBottom:16,border:"1px solid #E3EAEE"}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#2F6586",marginBottom:13}}>Nuovo familiare</div>
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Nome</label>
+            <input placeholder="Nome" value={nome}
+              onChange={function(e){setNome(e.target.value);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+          </div>
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Data di nascita</label>
+            <input type="date" value={dataN}
+              onChange={function(e){setDataN(e.target.value);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+          </div>
 
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:10,marginBottom:13}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Sesso</div>
-              <select value={sesso} onChange={function(e){setSesso(e.target.value);setCalcolo(null);}} style={inputStyle}>
+              <label style={labelStyle}>Sesso</label>
+              <select value={sesso} onChange={function(e){setSesso(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
                 <option value="femmina">Femmina</option>
                 <option value="maschio">Maschio</option>
               </select>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Obiettivo</div>
-              <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={inputStyle}>
+              <label style={labelStyle}>Obiettivo</label>
+              <select value={obiettivo} onChange={function(e){setObiettivo(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
                 <option value="mantenere">Mantieni</option>
-                <option value="dimagrire">Dimagrire</option>
-                <option value="ingrassare">Aumenta</option>
+                <option value="dimagrire">Perdere peso</option>
+                <option value="ingrassare">Aumentare</option>
               </select>
             </div>
           </div>
 
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Peso e altezza (per un calcolo piu preciso - opzionale)</div>
-          <div style={{display:"flex",gap:8}}>
-            <input placeholder="Peso (kg)" inputMode="decimal" value={peso}
-              onChange={function(e){setPeso(e.target.value.replace(/[^0-9.]/g,""));setCalcolo(null);}} style={inputStyle}/>
-            <input placeholder="Altezza (cm)" inputMode="numeric" value={altezza}
-              onChange={function(e){setAltezza(e.target.value.replace(/[^0-9]/g,""));setCalcolo(null);}} style={inputStyle}/>
-          </div>
-
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Livello di attivita</div>
-          <select value={attivita} onChange={function(e){setAttivita(e.target.value);setCalcolo(null);}} style={inputStyle}>
-            <option value="sedentario">Sedentario (poco o nessun esercizio)</option>
-            <option value="leggero">Leggero (1-3 giorni/settimana)</option>
-            <option value="moderato">Moderato (3-5 giorni/settimana)</option>
-            <option value="intenso">Intenso (6-7 giorni/settimana)</option>
-          </select>
-
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:4}}>Regime alimentare</div>
-          <div onClick={function(){ setRegOpen(!regOpen); }}
-            style={{display:"flex",alignItems:"center",gap:8,padding:"12px",borderRadius:13,
-              border:"1px solid #E3EAEE",background:"#fff",cursor:"pointer",marginBottom:regOpen?0:10}}>
-            <span style={{flex:1,fontSize:13,color:selPat.length?"#2C3338":"#8A949B",
-              whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:selPat.length?600:400}}>
-              {regSummary}
-            </span>
-            {selPat.length>0&&<span style={{fontSize:11,fontWeight:700,color:"#2F6586",background:"#E2EEF5",borderRadius:20,padding:"1px 8px"}}>{selPat.length}</span>}
-            <i className={"ti "+(regOpen?"ti-chevron-up":"ti-chevron-down")} style={{color:"#8A949B",fontSize:16}}/>
-          </div>
-          {regOpen&&(
-            <div style={{border:"1px solid #E3EAEE",borderTop:"none",borderRadius:"0 0 13px 13px",
-              maxHeight:200,overflowY:"auto",marginBottom:10}}>
-              {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p){
-                var sel = patologie.indexOf(p.id) >= 0;
-                return (
-                  <label key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
-                    cursor:"pointer",fontSize:13,borderTop:"1px solid #F0F4F6",
-                    background:sel?"#E2EEF5":"#fff"}}>
-                    <input type="checkbox" checked={sel} onChange={function(){ togglePat(p.id); }}
-                      style={{accentColor:"#2F6586",width:16,height:16}}/>
-                    <span style={{color:sel?"#2F6586":"#2C3338",fontWeight:sel?700:500}}>{p.label}</span>
-                  </label>
-                );
-              })}
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 12px",
-                borderTop:"1px solid #F0F4F6",color:"#8A949B",fontSize:13}}>
-                <i className="ti ti-plus"/>Aggiungi restrizione
-              </div>
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Peso e altezza - opzionale</label>
+            <div style={{display:"flex",gap:10}}>
+              <input placeholder="kg" inputMode="decimal" value={peso}
+                onChange={function(e){setPeso(e.target.value.replace(/[^0-9.]/g,""));setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+              <input placeholder="cm" inputMode="numeric" value={altezza}
+                onChange={function(e){setAltezza(e.target.value.replace(/[^0-9]/g,""));setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
             </div>
-          )}
+          </div>
+
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Livello di attivita</label>
+            <select value={attivita} onChange={function(e){setAttivita(e.target.value);setCalcolo(null);}} style={Object.assign({},inputStyle,{marginBottom:0})}>
+              <option value="sedentario">Sedentario</option>
+              <option value="leggero">Leggero (1-3 gg/sett)</option>
+              <option value="moderato">Moderato (3-5 gg/sett)</option>
+              <option value="intenso">Intenso (6-7 gg/sett)</option>
+            </select>
+          </div>
+
+          <div style={{marginBottom:13}}>
+            <label style={labelStyle}>Regime alimentare · piu scelte</label>
+            <div onClick={function(){ setRegOpen(!regOpen); }}
+              style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
+                padding:"12px 14px",borderRadius:13,border:"1.5px solid "+(selPat.length?"#6BA6C9":"#E3EAEE"),
+                background:selPat.length?"#E2EEF5":"#fff",cursor:"pointer",
+                fontSize:14,fontWeight:600,color:selPat.length?"#2F6586":"#8A949B"}}>
+              <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{regSummary}</span>
+              <i className={"ti "+(regOpen?"ti-chevron-up":"ti-chevron-down")}
+                style={{color:selPat.length?"#2F6586":"#8A949B",fontSize:18}}/>
+            </div>
+            {regOpen&&(
+              <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,marginTop:7,overflow:"hidden",
+                maxHeight:220,overflowY:"auto"}}>
+                {PATOLOGIE_LIST.filter(function(p){ return p.id !== "nessuna"; }).map(function(p, i){
+                  var sel = patologie.indexOf(p.id) >= 0;
+                  return (
+                    <div key={p.id} onClick={function(){ togglePat(p.id); }}
+                      style={{display:"flex",alignItems:"center",gap:11,padding:"11px 13px",cursor:"pointer",
+                        fontSize:13,color:"#2C3338",borderTop:i===0?"none":"1px solid #E3EAEE",
+                        background:sel?"#E2EEF5":"#fff",fontWeight:sel?700:500}}>
+                      <span style={{width:20,height:20,borderRadius:6,flexShrink:0,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),
+                        background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                        {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                      </span>
+                      {p.label}
+                    </div>
+                  );
+                })}
+                <div style={{display:"flex",alignItems:"center",gap:9,padding:"11px 13px",
+                  borderTop:"1px solid #E3EAEE",fontSize:13,fontWeight:600,color:"#2F6586"}}>
+                  <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi restrizione
+                </div>
+              </div>
+            )}
+          </div>
 
           {showProt&&(
             <input placeholder="Proteine max prescritte dal medico (g)" inputMode="numeric" value={vProt}
@@ -5291,12 +5306,14 @@ function OnboardingFamiglia(props) {
               onChange={function(e){setVPhe(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
           )}
 
-          <div style={{fontSize:10,color:"#8A949B",marginBottom:6}}>Parametri manuali (opzionale, lascia vuoto per automatico)</div>
-          <div style={{display:"flex",gap:8}}>
-            <input placeholder="kcal/die" inputMode="numeric" value={ovKcal}
-              onChange={function(e){setOvKcal(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
-            <input placeholder="prot max/die" inputMode="numeric" value={ovProt}
-              onChange={function(e){setOvProt(e.target.value.replace(/[^0-9]/g,""));}} style={inputStyle}/>
+          <div style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:600,color:"#8A949B",marginBottom:8}}>
+            <i className="ti ti-adjustments-alt" style={{fontSize:16}}/>Parametri manuali · opzionale
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <input placeholder="kcal/die (auto)" inputMode="numeric" value={ovKcal}
+              onChange={function(e){setOvKcal(e.target.value.replace(/[^0-9]/g,""));}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
+            <input placeholder="prot max (auto)" inputMode="numeric" value={ovProt}
+              onChange={function(e){setOvProt(e.target.value.replace(/[^0-9]/g,""));}} style={Object.assign({},inputStyle,{marginBottom:0})}/>
           </div>
 
           <button onClick={calcola} disabled={!canAdd}
@@ -5330,22 +5347,24 @@ function OnboardingFamiglia(props) {
         </div>
 
         <button onClick={aggiungi} disabled={!canAdd}
-          style={{width:"100%",padding:"15px",borderRadius:15,border:"none",marginBottom:10,
+          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",marginBottom:10,
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
             background:canAdd?"#2F6586":"#ccc",color:"#fff",fontSize:15,fontWeight:700,
             cursor:canAdd?"pointer":"default"}}>
-          Salva familiare
+          <i className="ti ti-device-floppy" style={{fontSize:17}}/>Salva familiare
         </button>
         <button onClick={aggiungi} disabled={!canAdd}
-          style={{width:"100%",padding:"14px",borderRadius:15,marginBottom:10,
-            border:"1px solid #2F6586",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:700,
+          style={{width:"100%",padding:"14px",borderRadius:14,marginBottom:10,
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+            border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:700,
             cursor:canAdd?"pointer":"default"}}>
-          Aggiungi un altro familiare
+          <i className="ti ti-user-plus" style={{fontSize:16}}/>Aggiungi un altro familiare
         </button>
         <button onClick={inizia} disabled={lista.length===0}
-          style={{width:"100%",padding:"12px",borderRadius:15,border:"none",background:"transparent",
+          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"transparent",
             color:lista.length===0?"#B4BEC4":"#2F6586",fontSize:15,fontWeight:700,
             cursor:lista.length===0?"default":"pointer"}}>
-          Continua <i className="ti ti-arrow-right" style={{verticalAlign:"-2px"}}/>
+          Continua →
         </button>
         {lista.length===0&&(
           <div style={{fontSize:11,color:"#8A949B",textAlign:"center",marginTop:8}}>
