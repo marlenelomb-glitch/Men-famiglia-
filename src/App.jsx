@@ -36,6 +36,18 @@ function createSupabaseClient() {
         body: JSON.stringify({email:email, password:password})
       }).then(function(r){return r.json();});
     },
+    resendConfirm: function(email) {
+      return fetch(auth_url("/resend"), {
+        method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+        body: JSON.stringify({type:"signup", email:email})
+      }).then(function(r){return r.json();});
+    },
+    recover: function(email) {
+      return fetch(auth_url("/recover"), {
+        method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+        body: JSON.stringify({email:email})
+      }).then(function(r){return r.json();});
+    },
     signOut: function() {
       return fetch(auth_url("/logout"), {
         method:"POST", headers:headers()
@@ -213,6 +225,17 @@ function aiOpzioniCena(profili, giorno) {
 
 // ── Notifica nuove iscrizioni (Web3Forms) ───────────────────
 var WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY || "";
+
+function traduciErroreAuth(msg) {
+  var m = (msg || "").toLowerCase();
+  if(m.indexOf("invalid login") >= 0) return "Email o password non corretti.";
+  if(m.indexOf("email not confirmed") >= 0) return "Devi confermare l'email prima di accedere. Controlla la posta (anche spam).";
+  if(m.indexOf("already registered") >= 0 || m.indexOf("already been registered") >= 0) return "Questa email e gia registrata. Prova ad accedere.";
+  if(m.indexOf("password should be at least") >= 0 || m.indexOf("at least 6") >= 0) return "La password deve avere almeno 6 caratteri.";
+  if(m.indexOf("unable to validate email") >= 0 || m.indexOf("invalid email") >= 0) return "Email non valida.";
+  if(m.indexOf("rate limit") >= 0 || m.indexOf("too many") >= 0) return "Troppi tentativi. Riprova tra qualche minuto.";
+  return msg || "Si e verificato un errore.";
+}
 
 function salvaIscritto(emailUtente, userId) {
   try {
@@ -6575,6 +6598,8 @@ export default function App() {
   var s_pwd     = useState(""); var pwdInput=s_pwd[0]; var setPwdInput=s_pwd[1];
   var s_isReg   = useState(false); var isReg=s_isReg[0]; var setIsReg=s_isReg[1];
   var s_authView = useState("intro"); var authView=s_authView[0]; var setAuthView=s_authView[1];
+  var s_authMsg = useState(""); var authMsg=s_authMsg[0]; var setAuthMsg=s_authMsg[1];
+  var s_needConfirm = useState(false); var needConfirm=s_needConfirm[0]; var setNeedConfirm=s_needConfirm[1];
   var s_syncing = useState(false); var syncing=s_syncing[0]; var setSyncing=s_syncing[1];
 
   const [tab, setTab] = useState("home");
@@ -6654,19 +6679,44 @@ export default function App() {
   }
 
   function doLogin() {
-    setAuthErr("");setLoading(true);
+    setAuthErr("");setAuthMsg("");setNeedConfirm(false);setLoading(true);
     supabase.signIn(emailInput,pwdInput).then(function(res){
-      if(res.error){setAuthErr(res.error.message||"Errore");setLoading(false);}
+      if(res.error){
+        var m = res.error.message || "Errore";
+        setAuthErr(traduciErroreAuth(m));
+        if((m).toLowerCase().indexOf("email not confirmed") >= 0) setNeedConfirm(true);
+        setLoading(false);
+      }
       else{sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:res.user.email});initFamily(res.user.id);}
     }).catch(function(){setAuthErr("Errore di rete");setLoading(false);});
   }
 
   function doSignup() {
-    setAuthErr("");setLoading(true);
+    setAuthErr("");setAuthMsg("");setNeedConfirm(false);setLoading(true);
     supabase.signUp(emailInput,pwdInput).then(function(res){
-      if(res.error){setAuthErr(res.error.message||"Errore");setLoading(false);}
-      else{var uid=res.user?res.user.id:res.id;notificaIscrizione(emailInput);salvaIscritto(emailInput,uid);sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(uid);}
+      if(res.error){setAuthErr(traduciErroreAuth(res.error.message||"Errore"));setLoading(false);return;}
+      var uid = res.user ? res.user.id : res.id;
+      notificaIscrizione(emailInput); salvaIscritto(emailInput, uid);
+      if(!res.access_token){
+        setLoading(false); setAuthView("confirm");
+        return;
+      }
+      sbSession=res;localStorage.setItem("mf_session",JSON.stringify(res));setUtente({email:emailInput});initFamily(uid);
     }).catch(function(){setAuthErr("Errore di rete");setLoading(false);});
+  }
+
+  function doResend() {
+    if(!emailInput){ setAuthErr("Inserisci l'email per reinviare la conferma."); return; }
+    setAuthErr("");
+    supabase.resendConfirm(emailInput).then(function(){ setAuthMsg("Email di conferma reinviata. Controlla la posta (anche spam)."); },
+      function(){ setAuthMsg("Email di conferma reinviata. Controlla la posta (anche spam)."); });
+  }
+
+  function doRecover() {
+    if(!emailInput){ setAuthErr("Inserisci l'email per recuperare la password."); return; }
+    setAuthErr("");
+    supabase.recover(emailInput).then(function(){ setAuthMsg("Ti abbiamo inviato un'email per reimpostare la password."); },
+      function(){ setAuthMsg("Ti abbiamo inviato un'email per reimpostare la password."); });
   }
 
   function doLogout() {
@@ -6976,17 +7026,62 @@ export default function App() {
               {authErr&&(
                 <div style={{fontSize:12,color:"#C0392B",textAlign:"center"}}>{authErr}</div>
               )}
+              {authMsg&&(
+                <div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{authMsg}</div>
+              )}
+              {needConfirm&&(
+                <button onClick={doResend}
+                  style={{width:"100%",padding:"10px",borderRadius:12,border:"1.5px solid #6BA6C9",
+                    background:"#E2EEF5",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                  Reinvia email di conferma
+                </button>
+              )}
               <button onClick={isReg?doSignup:doLogin}
                 style={{width:"100%",padding:"15px",borderRadius:15,border:"none",
                   background:"#2F6586",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>
                 {isReg?"Registrati":"Accedi"}
               </button>
             </div>
-            <button onClick={function(){setIsReg(!isReg);setAuthErr("");}}
-              style={{width:"100%",padding:"12px",borderRadius:15,marginTop:12,
+            {!isReg&&(
+              <button onClick={doRecover}
+                style={{width:"100%",padding:"10px",marginTop:8,border:"none",background:"transparent",
+                  color:"#8A949B",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                Password dimenticata?
+              </button>
+            )}
+            <button onClick={function(){setIsReg(!isReg);setAuthErr("");setAuthMsg("");setNeedConfirm(false);}}
+              style={{width:"100%",padding:"12px",borderRadius:15,marginTop:4,
                 border:"none",background:"transparent",
                 color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer"}}>
               {isReg?"Hai gia un account? Accedi":"Non hai un account? Registrati"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Conferma email dopo registrazione */}
+      {!loading&&!utente&&authView==="confirm"&&(
+        <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",display:"flex",alignItems:"center",
+          justifyContent:"center",padding:"24px",boxSizing:"border-box",background:"#F2F6F8"}}>
+          <div style={{width:"100%",maxWidth:340,textAlign:"center"}}>
+            <div style={{width:64,height:64,borderRadius:18,background:"#E2EEF5",color:"#2F6586",
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,margin:"0 auto 14px"}}>
+              <i className="ti ti-mail-check"/>
+            </div>
+            <div style={{fontSize:22,fontWeight:800,color:"#2C3338"}}>Controlla la tua email</div>
+            <div style={{fontSize:14,color:"#8A949B",marginTop:8,lineHeight:1.5}}>
+              Ti abbiamo inviato un link di conferma a <b>{emailInput}</b>. Apri l'email (controlla anche lo spam) e poi torna ad accedere.
+            </div>
+            {authMsg&&<div style={{fontSize:12,color:"#2F6586",fontWeight:600,marginTop:12}}>{authMsg}</div>}
+            <button onClick={doResend}
+              style={{width:"100%",padding:"12px",borderRadius:13,marginTop:18,border:"1.5px solid #6BA6C9",
+                background:"#E2EEF5",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+              Reinvia email di conferma
+            </button>
+            <button onClick={function(){setIsReg(false);setAuthErr("");setAuthMsg("");setAuthView("form");}}
+              style={{width:"100%",padding:"12px",borderRadius:13,marginTop:10,border:"none",
+                background:"#2F6586",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+              Vai all'accesso
             </button>
           </div>
         </div>
