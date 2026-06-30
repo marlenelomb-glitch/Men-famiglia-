@@ -4830,12 +4830,14 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </div>
       )}
 
-      <div style={{background:"linear-gradient(135deg,#2C3338,#2F6586)",padding:"10px 14px",borderRadius:12,marginBottom:10,color:"#fff"}}>
-        <div style={{fontSize:13,fontWeight:800,marginBottom:2}}>Costruttore Menu</div>
-        <div style={{fontSize:10,opacity:0.7}}>{completati}/{totale} pasti completi</div>
-        <div style={{background:"rgba(255,255,255,.2)",borderRadius:10,height:4,marginTop:5}}>
-          <div style={{width:(totale>0?completati/totale*100:0)+"%",height:"100%",background:"#E8637A",borderRadius:10}}/>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingTop:4}}>
+        <div>
+          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Builder</div>
+          <div style={{fontSize:13,color:"#8A949B"}}>{completati}/{totale} pasti completi</div>
         </div>
+        <span style={{fontSize:13,fontWeight:700,color:"#2F6586",background:"#E2EEF5",borderRadius:20,padding:"7px 14px"}}>
+          {totale>0?Math.round(completati/totale*100):0}%
+        </span>
       </div>
 
       <div style={{background:"#fff",padding:"8px",borderRadius:10,marginBottom:8,border:"1px solid #eee"}}>
@@ -4845,15 +4847,15 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             var isSel=giornoSel===i;
             return (
               <button key={g} onClick={function(){cambiaGiorno(i);}}
-                style={{minWidth:46,padding:"6px 3px",borderRadius:10,flexShrink:0,
-                  border:"2px solid "+(isSel?"#2F6586":hasAny?"#E3EAEE":"#eee"),
-                  background:isSel?"#2F6586":hasAny?"#EBF3FA":"#fff",
-                  color:isSel?"#fff":hasAny?"#2F6586":"#8A949B",
-                  fontSize:10,fontWeight:isSel?800:400,cursor:"pointer",textAlign:"center"}}>
+                style={{flex:1,minWidth:42,padding:"9px 0 7px",borderRadius:12,flexShrink:0,
+                  border:"1px solid "+(isSel?"#2F6586":"#E3EAEE"),
+                  background:isSel?"#2F6586":hasAny?"#E2EEF5":"#fff",
+                  color:isSel?"#fff":"#2F6586",
+                  fontSize:13,fontWeight:isSel?700:600,cursor:"pointer",textAlign:"center"}}>
                 {g.slice(0,3)}
-                <div style={{display:"flex",gap:2,justifyContent:"center",marginTop:2}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Pranzo")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.2)":"#eee")}}/>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Cena")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.2)":"#eee")}}/>
+                <div style={{display:"flex",gap:3,justifyContent:"center",marginTop:3}}>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Pranzo")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.25)":"#E3EAEE")}}/>
+                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Cena")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.25)":"#E3EAEE")}}/>
                 </div>
               </button>
             );
