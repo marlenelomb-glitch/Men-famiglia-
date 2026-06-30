@@ -5539,6 +5539,193 @@ function SaluteView(props) {
   );
 }
 
+var CAT_SPESA = [
+  {id:"frutta_verdura", label:"Frutta e verdura", ic:"ti-apple"},
+  {id:"carne_pesce",    label:"Carne e pesce",    ic:"ti-meat"},
+  {id:"latticini",      label:"Latticini e uova", ic:"ti-cheese"},
+  {id:"dispensa",       label:"Dispensa",         ic:"ti-baguette"},
+  {id:"colazione",      label:"Colazione e dolci",ic:"ti-coffee"},
+  {id:"bevande",        label:"Bevande",          ic:"ti-bottle"},
+  {id:"surgelati",      label:"Surgelati",        ic:"ti-snowflake"},
+  {id:"detersivi",      label:"Detersivi e casa", ic:"ti-spray"},
+  {id:"igiene",         label:"Igiene e cura",    ic:"ti-bath"},
+  {id:"altro",          label:"Altro",            ic:"ti-shopping-bag"}
+];
+
+function normSpesa(arr) {
+  return (arr || []).map(function(it){
+    if(typeof it === "string") return {nome:it, cat:"altro", fatto:false};
+    return {nome:it.nome, cat:it.cat || "altro", fatto:!!it.fatto};
+  });
+}
+
+function catLabel(id) {
+  var c = CAT_SPESA.find(function(x){ return x.id === id; });
+  return c ? c.label : "Altro";
+}
+
+function ListaSpesaView(props) {
+  var spesa = props.spesa || [];
+  var setSpesa = props.setSpesa || function(){};
+  var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
+  var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
+  var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
+
+  var items = normSpesa(spesa);
+
+  function aggiungi() {
+    if(!nome.trim()) return;
+    setSpesa(items.concat([{nome:nome.trim(), cat:cat, fatto:false}]));
+    setNome("");
+  }
+  function toggle(i) {
+    var arr = normSpesa(spesa).slice();
+    arr[i] = {nome:arr[i].nome, cat:arr[i].cat, fatto:!arr[i].fatto};
+    setSpesa(arr);
+  }
+  function rimuovi(i) {
+    setSpesa(normSpesa(spesa).filter(function(_,j){ return j !== i; }));
+  }
+  function svuotaFatti() {
+    setSpesa(normSpesa(spesa).filter(function(x){ return !x.fatto; }));
+  }
+
+  function testoLista() {
+    var righe = ["Lista della spesa", ""];
+    CAT_SPESA.forEach(function(c){
+      var inCat = items.filter(function(x){ return x.cat === c.id; });
+      if(!inCat.length) return;
+      righe.push(c.label + ":");
+      inCat.forEach(function(x){ righe.push("- " + x.nome + (x.fatto ? " (preso)" : "")); });
+      righe.push("");
+    });
+    return righe.join("\n");
+  }
+
+  function condividi() {
+    var txt = testoLista();
+    if(typeof navigator !== "undefined" && navigator.share) {
+      navigator.share({title:"Lista della spesa", text:txt}).catch(function(){});
+    } else if(typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(txt).then(function(){ setMsg("Lista copiata negli appunti"); setTimeout(function(){ setMsg(""); }, 2500); });
+    }
+  }
+
+  function salvaPDF() {
+    var w = window.open("", "_blank");
+    if(!w) { setMsg("Abilita i popup per salvare il PDF"); setTimeout(function(){ setMsg(""); }, 2500); return; }
+    var body = "";
+    CAT_SPESA.forEach(function(c){
+      var inCat = items.filter(function(x){ return x.cat === c.id; });
+      if(!inCat.length) return;
+      body += "<h2>" + c.label + "</h2><ul>";
+      inCat.forEach(function(x){ body += "<li" + (x.fatto ? " style='text-decoration:line-through;color:#888'" : "") + ">" + x.nome + "</li>"; });
+      body += "</ul>";
+    });
+    if(!body) body = "<p>Lista vuota</p>";
+    w.document.write("<html><head><title>Lista della spesa</title><meta charset='utf-8'>" +
+      "<style>body{font-family:system-ui,Arial,sans-serif;color:#2C3338;padding:24px;max-width:600px;margin:0 auto}" +
+      "h1{font-size:22px}h2{font-size:15px;color:#2F6586;margin:16px 0 6px;border-bottom:1px solid #E3EAEE;padding-bottom:4px}" +
+      "ul{margin:0;padding-left:20px}li{margin:4px 0;font-size:14px}</style></head><body>" +
+      "<h1>Lista della spesa</h1>" + body + "</body></html>");
+    w.document.close(); w.focus();
+    setTimeout(function(){ w.print(); }, 300);
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Lista della spesa</div>
+        <span style={{fontSize:13,color:"#8A949B"}}>{items.length} articoli</span>
+      </div>
+
+      <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+        <input placeholder="Aggiungi un articolo (es. detersivo piatti)" value={nome}
+          onKeyDown={function(e){ if(e.key==="Enter") aggiungi(); }}
+          onChange={function(e){setNome(e.target.value);}}
+          style={{padding:"12px 14px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",
+            width:"100%",boxSizing:"border-box",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+        <div style={{display:"flex",gap:8}}>
+          <select value={cat} onChange={function(e){setCat(e.target.value);}}
+            style={{flex:1,padding:"12px 14px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",
+              background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+            {CAT_SPESA.map(function(c){ return <option key={c.id} value={c.id}>{c.label}</option>; })}
+          </select>
+          <button onClick={aggiungi}
+            style={{padding:"12px 18px",borderRadius:13,border:"none",background:"#2F6586",color:"#fff",
+              fontSize:14,fontWeight:700,cursor:"pointer"}}>Aggiungi</button>
+        </div>
+      </div>
+
+      {CAT_SPESA.map(function(c){
+        var inCat = [];
+        items.forEach(function(x, i){ if(x.cat === c.id) inCat.push({x:x, i:i}); });
+        if(!inCat.length) return null;
+        return (
+          <div key={c.id}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+              <i className={"ti "+c.ic} style={{fontSize:16,color:"#6BA6C9"}}/>
+              <span className="cap">{c.label}</span>
+            </div>
+            <div className="mf-card flush">
+              {inCat.map(function(r){
+                return (
+                  <div key={r.i} className="mf-row">
+                    <span onClick={function(){ toggle(r.i); }}
+                      style={{width:22,height:22,borderRadius:7,flexShrink:0,cursor:"pointer",
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        border:"1.5px solid "+(r.x.fatto?"#2F6586":"#C9D3D9"),
+                        background:r.x.fatto?"#2F6586":"#fff",color:"#fff"}}>
+                      {r.x.fatto&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                    </span>
+                    <span style={{flex:1,fontSize:14,color:r.x.fatto?"#8A949B":"#2C3338",
+                      textDecoration:r.x.fatto?"line-through":"none"}}>{r.x.nome}</span>
+                    <i className="ti ti-x" onClick={function(){ rimuovi(r.i); }}
+                      style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {items.length===0&&(
+        <div className="mf-card" style={{textAlign:"center",color:"#8A949B",fontSize:13}}>
+          La lista e vuota. Aggiungi gli articoli qui sopra.
+        </div>
+      )}
+
+      {msg&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{msg}</div>}
+
+      {items.length>0&&(
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={condividi}
+            style={{flex:1,padding:"13px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",
+              color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <i className="ti ti-share" style={{fontSize:16}}/>Condividi
+          </button>
+          <button onClick={salvaPDF}
+            style={{flex:1,padding:"13px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",
+              fontSize:14,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <i className="ti ti-file-type-pdf" style={{fontSize:16}}/>Salva PDF
+          </button>
+        </div>
+      )}
+
+      {items.some(function(x){ return x.fatto; })&&(
+        <button onClick={svuotaFatti}
+          style={{width:"100%",padding:"11px",borderRadius:14,border:"none",background:"transparent",
+            color:"#8A949B",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+          Rimuovi articoli presi
+        </button>
+      )}
+    </div>
+  );
+}
+
 function dispensaLow(it) {
   if(!it) return false;
   var q = parseFloat(it.qty);
@@ -5566,9 +5753,12 @@ function DispensaView(props) {
     setNome(""); setQty(""); setShowAdd(false);
   }
   function aggiungiAllaSpesa() {
-    var low = dispensa.filter(dispensaLow).map(function(it){ return it.nome; });
-    var nuovi = low.filter(function(n){ return spesa.indexOf(n) < 0; });
-    if(nuovi.length) setSpesa(spesa.concat(nuovi));
+    var attuali = normSpesa(spesa);
+    var esistenti = attuali.map(function(x){ return x.nome; });
+    var nuovi = dispensa.filter(dispensaLow)
+      .filter(function(it){ return esistenti.indexOf(it.nome) < 0; })
+      .map(function(it){ return {nome:it.nome, cat:"dispensa", fatto:false}; });
+    if(nuovi.length) setSpesa(attuali.concat(nuovi));
   }
 
   return (
@@ -5857,7 +6047,7 @@ function HomeView(props) {
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
-        <div className="mf-card" onClick={function(){ setTab("dispensa"); }}
+        <div className="mf-card" onClick={function(){ setTab("spesa"); }}
           style={{display:"flex",alignItems:"center",gap:10,padding:13,cursor:"pointer"}}>
           <i className="ti ti-shopping-bag" style={{fontSize:19,color:"#6BA6C9"}}/>
           <div>
@@ -6299,7 +6489,8 @@ export default function App() {
   var SHEET_ITEMS = [
     {id:"calorie",     l:"Calorie",       ic:"ti-flame",              s:"Consumo e andamento"},
     {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
-    {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte e lista spesa"},
+    {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
+    {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
     {id:"salute",      l:"Salute",        ic:"ti-heart-rate-monitor", s:"Profili e obiettivi"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
@@ -6557,6 +6748,9 @@ export default function App() {
         {tab==="dispensa" && (
           <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
             spesa={spesa} setSpesa={setSpesaLS}/>
+        )}
+        {tab==="spesa" && (
+          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
