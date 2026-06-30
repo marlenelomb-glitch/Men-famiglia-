@@ -6820,6 +6820,13 @@ export default function App() {
 
       <div key={tab} className="mf-fade" style={{padding:"8px 16px 96px"}}>
         <BannerScadenze dispensa={dispensa}/>
+        {tab!=="home" && (
+          <button onClick={function(){ setSheetOpen(false); handleSetTab("home"); }}
+            style={{display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",
+              color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",padding:"0 0 4px"}}>
+            <i className="ti ti-arrow-left" style={{fontSize:18}}/>Home
+          </button>
+        )}
         {tab==="home" && (
           <HomeView profili={profili} menu={menu} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
         )}
