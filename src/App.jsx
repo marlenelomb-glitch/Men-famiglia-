@@ -5542,6 +5542,71 @@ function kcalPastoAdulto(id) {
   return 0;
 }
 
+function IscrittiView(props) {
+  var setTab = props.setTab || function(){};
+  var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
+  var s_load = useState(true); var loading = s_load[0]; var setLoading = s_load[1];
+  var s_err = useState(""); var err = s_err[0]; var setErr = s_err[1];
+
+  function carica() {
+    setLoading(true); setErr("");
+    supabase.from("iscritti").select("*").order("created_at", {ascending:false}).then(function(rows){
+      if(rows && rows.length) setLista(rows);
+      else setLista([]);
+      setLoading(false);
+    }, function(e){ setErr("Errore di caricamento (controlla che la tabella iscritti esista)"); setLoading(false); });
+  }
+
+  useEffect(function(){ carica(); }, []);
+
+  function dataFmt(s) {
+    if(!s) return "";
+    var d = new Date(s);
+    if(isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("it-IT") + " " + d.toLocaleTimeString("it-IT", {hour:"2-digit", minute:"2-digit"});
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Iscritti</div>
+        <i className="ti ti-refresh" onClick={carica} style={{fontSize:19,color:"#2F6586",cursor:"pointer"}}/>
+      </div>
+
+      {loading&&<div style={{textAlign:"center",color:"#8A949B",fontSize:13}}>Caricamento...</div>}
+      {err&&!loading&&(
+        <div style={{fontSize:13,color:"#C0392B",background:"#FDEDEC",borderRadius:12,padding:"12px"}}>{err}</div>
+      )}
+
+      {!loading&&!err&&(
+        <div style={{fontSize:13,color:"#8A949B"}}>{lista.length} utenti registrati</div>
+      )}
+
+      {!loading&&!err&&lista.length>0&&(
+        <div className="mf-card flush">
+          {lista.map(function(r, i){
+            return (
+              <div key={r.id || i} className="mf-row">
+                <div className="mf-ic"><i className="ti ti-user"/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.email}</div>
+                  <div style={{fontSize:11,color:"#8A949B"}}>{dataFmt(r.created_at)}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {!loading&&!err&&lista.length===0&&(
+        <div className="mf-card" style={{textAlign:"center",color:"#8A949B",fontSize:13}}>
+          Nessun iscritto ancora.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PiramideView() {
   var bande = [
     {w:30,  bg:"#2F6586", col:"#fff",     t:"Dolci - raramente"},
@@ -6947,11 +7012,25 @@ export default function App() {
           <CalorieView menu={menu} profili={profili}/>
         )}
         {tab==="impostazioni" && (
-          <TabImpostazioni
-            profili={profili} setProfili={setProfiliLS}
-            pianificazione={pianificazione} setPianificazione={setPianificazione}
-            pesoLog={pesoLog} setPesoLog={setPesoLogLS}
-            pin={pin} setPin={setPinLS}/>
+          <div>
+            <div className="mf-card" onClick={function(){ handleSetTab("iscritti"); }}
+              style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,cursor:"pointer"}}>
+              <div className="mf-ic"><i className="ti ti-users"/></div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Iscritti all'app</div>
+                <div style={{fontSize:11,color:"#8A949B"}}>Elenco degli utenti registrati</div>
+              </div>
+              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+            </div>
+            <TabImpostazioni
+              profili={profili} setProfili={setProfiliLS}
+              pianificazione={pianificazione} setPianificazione={setPianificazione}
+              pesoLog={pesoLog} setPesoLog={setPesoLogLS}
+              pin={pin} setPin={setPinLS}/>
+          </div>
+        )}
+        {tab==="iscritti" && (
+          <IscrittiView setTab={handleSetTab}/>
         )}
         {tab==="piramide" && (
           <PiramideView/>
