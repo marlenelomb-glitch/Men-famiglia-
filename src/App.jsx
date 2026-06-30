@@ -5506,15 +5506,15 @@ function lunediSettimana() {
 
 function MenuView(props) {
   var menu = props.menu || {};
+  var builder = props.builder || {};
   var setTab = props.setTab || function(){};
   var lun = lunediSettimana();
   var dom = new Date(lun.getTime()); dom.setDate(lun.getDate()+6);
   var range = lun.getDate() + "-" + dom.getDate() + " " + MESI_ABBR[dom.getMonth()];
 
   function nomePasto(giorno, m) {
-    var cell = menu[giorno+"-"+m];
-    if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) return DB_PASTI[cell.pastoId].nome;
-    return null;
+    var info = pastoUnificato(builder, menu, giorno, m);
+    return info ? info.nome : null;
   }
 
   return (
@@ -5565,6 +5565,41 @@ function kcalPastoAdulto(id) {
   var p = DB_PASTI[id];
   if(p && p.adulto && typeof p.adulto.kcal === "number") return p.adulto.kcal;
   return 0;
+}
+
+var PORZ_STD = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
+  "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100};
+
+function ingById(id) {
+  var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI);
+  return all.find(function(x){ return x.id === id; });
+}
+
+function valoriPastoBuilder(scelta) {
+  if(!scelta) return null;
+  var campi = [["carbo",0],["proteina",0],["verdura",150],["verdura2",150],["frutta",120],["latticino",100]];
+  var nomi = []; var kcal = 0; var prot = 0;
+  campi.forEach(function(c){
+    var id = scelta[c[0]];
+    if(!id) return;
+    var it = ingById(id);
+    if(!it || !it.kcal_p) return;
+    var g = PORZ_STD[it.cat] || c[1] || 100;
+    kcal += Math.round(it.kcal_p * g / 100);
+    prot += Math.round((it.prot_p || 0) * g / 100);
+    nomi.push(it.nome);
+  });
+  if(!nomi.length) return null;
+  return {nome:nomi.join(", "), kcal:kcal, prot:prot};
+}
+
+function pastoUnificato(builder, menu, giorno, pasto) {
+  var b = (builder || {})[giorno + "-" + pasto];
+  var vb = valoriPastoBuilder(b);
+  if(vb) return {nome:vb.nome, kcal:vb.kcal, prot:vb.prot, fonte:"builder"};
+  var cell = (menu || {})[giorno + "-" + pasto];
+  if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) return {nome:DB_PASTI[cell.pastoId].nome, kcal:kcalPastoAdulto(cell.pastoId), prot:0, fonte:"menu"};
+  return null;
 }
 
 function IscrittiView(props) {
@@ -6078,14 +6113,14 @@ function DispensaView(props) {
 
 function CalorieView(props) {
   var menu = props.menu || {};
+  var builder = props.builder || {};
   var profili = props.profili || {};
   var now = new Date();
   var oggiIdx = (now.getDay()+6)%7;
   var oggiApp = DAYS[oggiIdx];
   function kcalPasto(giorno, m) {
-    var cell = menu[giorno+"-"+m];
-    if(cell && cell.pastoId) return kcalPastoAdulto(cell.pastoId);
-    return 0;
+    var info = pastoUnificato(builder, menu, giorno, m);
+    return info ? info.kcal : 0;
   }
   var pasti = [
     {m:"Colazione", k:kcalPasto(oggiApp,"Colazione")},
@@ -6159,6 +6194,7 @@ function CalorieView(props) {
 
 function DiarioView(props) {
   var menu = props.menu || {};
+  var builder = props.builder || {};
   var profili = props.profili || {};
   var s_acqua = useState(0); var acqua = s_acqua[0]; var setAcqua = s_acqua[1];
   var now = new Date();
@@ -6166,10 +6202,8 @@ function DiarioView(props) {
   var ordine = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
   var righe = [];
   ordine.forEach(function(m){
-    var cell = menu[oggiApp+"-"+m];
-    if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) {
-      righe.push({m:m, nome:DB_PASTI[cell.pastoId].nome, kcal:kcalPastoAdulto(cell.pastoId)});
-    }
+    var info = pastoUnificato(builder, menu, oggiApp, m);
+    if(info) righe.push({m:m, nome:info.nome, kcal:info.kcal});
   });
   var consumate = righe.reduce(function(s,x){ return s + x.kcal; }, 0);
   var vals = Object.values(profili);
@@ -6233,6 +6267,7 @@ function DiarioView(props) {
 function HomeView(props) {
   var profili = props.profili || {};
   var menu = props.menu || {};
+  var builder = props.builder || {};
   var dispensa = props.dispensa || [];
   var spesa = props.spesa || [];
   var setTab = props.setTab || function(){};
@@ -6243,17 +6278,15 @@ function HomeView(props) {
   var now = new Date();
   var dataLabel = giorniIt[now.getDay()] + " " + now.getDate() + " " + mesiIt[now.getMonth()];
   var oggiApp = DAYS[(now.getDay()+6)%7];
-  function pastoNome(m) {
-    var cell = menu[oggiApp+"-"+m];
-    if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) return DB_PASTI[cell.pastoId].nome;
-    return null;
+  function pastoInfo(m) {
+    return pastoUnificato(builder, menu, oggiApp, m);
   }
   var pasti = [
     {m:"Colazione", ic:"ti-coffee"},
     {m:"Pranzo", ic:"ti-tools-kitchen-2"},
     {m:"Cena", ic:"ti-soup"}
   ];
-  var pianificati = pasti.filter(function(x){ return pastoNome(x.m); }).length;
+  var pianificati = pasti.filter(function(x){ return pastoInfo(x.m); }).length;
   var pct = Math.round(pianificati / pasti.length * 100);
   var inEsaurimento = dispensa.filter(function(it){
     if(!it || !it.scadenza) return false;
@@ -6300,16 +6333,17 @@ function HomeView(props) {
         </div>
         <div className="mf-card flush">
           {pasti.map(function(p){
-            var nome = pastoNome(p.m);
+            var info = pastoInfo(p.m);
             return (
               <div key={p.m} className="mf-row">
                 <div className="mf-ic"><i className={"ti "+p.ic}/></div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:11,color:"#8A949B"}}>{p.m}</div>
-                  <div style={{fontSize:14,fontWeight:500,lineHeight:1.35,marginTop:1,color:nome?"#2C3338":"#8A949B"}}>
-                    {nome || "Da pianificare"}
+                  <div style={{fontSize:14,fontWeight:500,lineHeight:1.35,marginTop:1,color:info?"#2C3338":"#8A949B"}}>
+                    {info ? info.nome : "Da pianificare"}
                   </div>
                 </div>
+                {info&&info.kcal>0&&<span className="kc" style={{fontSize:13,color:"#8A949B"}}>{info.kcal} kcal</span>}
               </div>
             );
           })}
@@ -7106,13 +7140,13 @@ export default function App() {
           </button>
         )}
         {tab==="home" && (
-          <HomeView profili={profili} menu={menu} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
+          <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
         )}
         {tab==="menu" && (
-          <MenuView menu={menu} setTab={handleSetTab}/>
+          <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}/>
         )}
         {tab==="diario" && (
-          <DiarioView menu={menu} profili={profili}/>
+          <DiarioView menu={menu} builder={builderScelte} profili={profili}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setTab={handleSetTab}/>
@@ -7129,7 +7163,7 @@ export default function App() {
             profili={profili}/>
         )}
         {tab==="calorie" && (
-          <CalorieView menu={menu} profili={profili}/>
+          <CalorieView menu={menu} builder={builderScelte} profili={profili}/>
         )}
         {tab==="impostazioni" && (
           <div>
