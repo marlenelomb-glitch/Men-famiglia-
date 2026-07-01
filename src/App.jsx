@@ -506,218 +506,6 @@ function Btn({onClick,children,bg,color,border,small}) {
 }
 
 // ── GESTIONE FAMIGLIA ─────────────────────────────────────────
-function TabFamiglia({profili, setProfili}) {
-  const [showForm, setShowForm] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({
-    nome:"", emoji:"", patologia:"nessuna",
-    eta:30, peso:0, altezza:170, colore:"#6BA6C9",
-    kcal_custom:"", prot_custom:"", note:""
-  });
-
-  const patInfo = PATOLOGIE_LIST.find(p => p.id === form.patologia) || PATOLOGIE_LIST[0];
-
-  const apri = (pid) => {
-    if(pid) {
-      const p = profili[pid];
-      setForm({nome:p.nome, emoji:p.emoji, patologia:p.patologia||"nessuna",
-        eta:p.eta||30, peso:p.peso||0, altezza:p.altezza||170,
-        colore:p.colore||"#6BA6C9", kcal_custom:p.kcal_custom||"",
-        prot_custom:p.prot_custom||"", note:p.note||""});
-      setEditId(pid);
-    } else {
-      const usedColors = Object.values(profili).map(p=>p.colore);
-      const freeColor = COLORI.find(c=>!usedColors.includes(c)) || COLORI[0];
-      setForm({nome:"",emoji:"",patologia:"nessuna",eta:30,peso:0,altezza:170,
-        colore:freeColor,kcal_custom:"",prot_custom:"",note:""});
-      setEditId(null);
-    }
-    setShowForm(true);
-  };
-
-  const salva = () => {
-    if(!form.nome.trim()) return;
-    const kcal = form.kcal_custom ? parseInt(form.kcal_custom) : patInfo.kcal;
-    const prot = form.prot_custom ? parseFloat(form.prot_custom) : patInfo.prot;
-    const id = editId || ("m_"+Date.now());
-    const profilo = {id, nome:form.nome.trim(), emoji:form.emoji,
-      patologia:form.patologia, kcal_target:kcal, prot_max:prot,
-      colore:form.colore, eta:form.eta, peso:form.peso, altezza:form.altezza,
-      kcal_custom:form.kcal_custom, prot_custom:form.prot_custom, note:form.note};
-    setProfili(prev => ({...prev, [id]: profilo}));
-    setShowForm(false);
-  };
-
-  const rimuovi = (pid) => {
-    if(Object.keys(profili).length <= 1) return;
-    setProfili(prev => {const n={...prev}; delete n[pid]; return n;});
-  };
-
-  const EMOJIS = ["?","?","?","?","?","?","?","?"];
-
-  return (
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>La tua famiglia</div>
-        <button onClick={()=>apri(null)} style={{background:"#2F6586",color:"#fff",border:"none",
-          borderRadius:20,padding:"6px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-          + Aggiungi
-        </button>
-      </div>
-
-      {!showForm && Object.entries(profili).map(([pid,p]) => (
-        <div key={pid} style={{background:"#fff",borderRadius:14,padding:"12px 14px",
-          marginBottom:10,boxShadow:"0 1px 6px rgba(0,0,0,.07)",borderLeft:"4px solid "+p.colore}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:22}}>{p.nome.slice(0,1)}</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,fontWeight:800}}>{p.nome}</div>
-              <div style={{display:"flex",gap:5,marginTop:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:9,background:p.colore+"22",color:p.colore,
-                  fontWeight:700,padding:"2px 8px",borderRadius:20}}>
-                  {(PATOLOGIE_LIST.find(x=>x.id===p.patologia)||{}).label||"Nessuna"}
-                </span>
-                <span style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 8px",borderRadius:20}}>
-                  {p.kcal_target} kcal
-                </span>
-                <span style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 8px",borderRadius:20}}>
-                  max {p.prot_max}g prot
-                </span>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:6}}>
-              <button onClick={()=>apri(pid)} style={{background:"#EBF3FA",border:"none",
-                borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:700,cursor:"pointer",color:"#2F6586"}}>
-                Modifica
-              </button>
-              {Object.keys(profili).length > 1 && (
-                <button onClick={()=>rimuovi(pid)} style={{background:"#FDE8E4",border:"none",
-                  borderRadius:20,padding:"4px 10px",fontSize:10,cursor:"pointer",color:"#C0392B"}}>
-                  Rimuovi
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-
-      {showForm && (
-        <div style={{background:"#EBF3FA",borderRadius:14,padding:"14px",border:"1.5px solid #C8E6C9"}}>
-          <div style={{fontSize:12,fontWeight:800,color:"#2F6586",marginBottom:12}}>
-            {editId ? "Modifica membro" : "Nuovo membro"}
-          </div>
-
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <div>
-              <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:4}}>Emoji</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",maxWidth:160}}>
-                {EMOJIS.map((e,i) => (
-                  <button key={i} onClick={()=>setForm(f=>({...f,emoji:e}))}
-                    style={{fontSize:18,background:form.emoji===e?"#2F658622":"transparent",
-                      border:form.emoji===e?"2px solid #2F6586":"2px solid transparent",
-                      borderRadius:8,padding:"2px",cursor:"pointer"}}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:3}}>Nome</div>
-              <input value={form.nome} onChange={e=>setForm(f=>({...f,nome:e.target.value}))}
-                placeholder="Es. Mamma, Marco..."
-                style={{width:"100%",padding:"8px",borderRadius:8,border:"1.5px solid #C8E6C9",
-                  fontSize:12,boxSizing:"border-box"}}/>
-            </div>
-          </div>
-
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:10}}>
-            {[{k:"eta",l:"Eta (anni)"},{k:"peso",l:"Peso (kg)"},{k:"altezza",l:"Altezza (cm)"}].map(f=>(
-              <div key={f.k}>
-                <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:3}}>{f.l}</div>
-                <input type="number" value={form[f.k]||""}
-                  onChange={e=>setForm(p=>({...p,[f.k]:parseFloat(e.target.value)||0}))}
-                  style={{width:"100%",padding:"6px 8px",borderRadius:8,border:"1.5px solid #C8E6C9",
-                    fontSize:11,boxSizing:"border-box"}}/>
-              </div>
-            ))}
-          </div>
-
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:4}}>Colore</div>
-            <div style={{display:"flex",gap:5}}>
-              {COLORI.map(c => (
-                <button key={c} onClick={()=>setForm(f=>({...f,colore:c}))}
-                  style={{width:24,height:24,borderRadius:"50%",background:c,cursor:"pointer",
-                    border:form.colore===c?"3px solid #333":"3px solid transparent"}}/>
-              ))}
-            </div>
-          </div>
-
-          <div style={{marginBottom:10}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#333",marginBottom:6}}>Patologia / esigenza</div>
-            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-              {PATOLOGIE_LIST.map(pat => (
-                <button key={pat.id} onClick={()=>setForm(f=>({...f,patologia:pat.id,
-                  kcal_custom:"",prot_custom:""}))}
-                  style={{background:form.patologia===pat.id?"#2F6586":"#fff",
-                    color:form.patologia===pat.id?"#fff":"#444",
-                    border:"1.5px solid "+(form.patologia===pat.id?"#2F6586":"#ddd"),
-                    borderRadius:20,padding:"3px 10px",fontSize:10,cursor:"pointer"}}>
-                  {pat.label}
-                </button>
-              ))}
-            </div>
-            {form.patologia !== "nessuna" && (
-              <div style={{background:"#EBF3FA",borderRadius:8,padding:"8px 10px",marginTop:6,fontSize:10}}>
-                <b>{patInfo.note}</b>
-                <div style={{marginTop:4,color:"#8A949B"}}>
-                  Default: {patInfo.kcal} kcal/die, max {patInfo.prot}g prot/die
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:3}}>
-                Kcal prescritte (lascia vuoto = auto)
-              </div>
-              <input type="number" placeholder={"Auto: "+patInfo.kcal}
-                value={form.kcal_custom}
-                onChange={e=>setForm(f=>({...f,kcal_custom:e.target.value}))}
-                style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #C8E6C9",
-                  fontSize:12,fontWeight:700,boxSizing:"border-box"}}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:3}}>
-                Prot max prescritte (g/die)
-              </div>
-              <input type="number" step="0.5" placeholder={"Auto: "+patInfo.prot}
-                value={form.prot_custom}
-                onChange={e=>setForm(f=>({...f,prot_custom:e.target.value}))}
-                style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #C8E6C9",
-                  fontSize:12,fontWeight:700,boxSizing:"border-box"}}/>
-            </div>
-          </div>
-
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setShowForm(false)} style={{flex:1,padding:"10px",borderRadius:12,
-              border:"1.5px solid #ddd",background:"#fff",fontSize:12,cursor:"pointer",color:"#666"}}>
-              Annulla
-            </button>
-            <button onClick={salva} disabled={!form.nome.trim()} style={{flex:2,padding:"10px",
-              borderRadius:12,border:"none",
-              background:form.nome.trim()?"#2F6586":"#ccc",
-              color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-              {editId ? "Aggiorna" : "Aggiungi"}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── TAB MENU ──────────────────────────────────────────────────
 // ── BADGE COMPLETEZZA PASTO ───────────────────────────────────
 const CAT_CEREALI  = ["Colazione","Pranzo","Cena"];
@@ -3388,7 +3176,7 @@ const GIORNI_IMP = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato",
 const ORI_IMP    = ["07:00","08:00","09:00","10:00","17:00","18:00","19:00","20:00","21:00"];
 
 function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione,
-                          pesoLog, setPesoLog, pin, setPin}) {
+                          pesoLog, setPesoLog, pin, setPin, onModificaFamiglia}) {
   const [sezione, setSezione] = useState("famiglia");
   const [nuovoPin, setNuovoPin] = useState("");
   const [confPin, setConfPin] = useState("");
@@ -3445,7 +3233,42 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
 
       {/* ── FAMILIARI ── */}
       {sezione==="famiglia" && (
-        <TabFamiglia profili={profili} setProfili={setProfili}/>
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>La tua famiglia</div>
+            <button onClick={function(){ if(onModificaFamiglia) onModificaFamiglia(); }}
+              style={{background:"#2F6586",color:"#fff",border:"none",borderRadius:20,
+                padding:"6px 14px",fontSize:11,fontWeight:700,cursor:"pointer",
+                display:"flex",alignItems:"center",gap:6}}>
+              <i className="ti ti-edit" style={{fontSize:14}}/>Modifica
+            </button>
+          </div>
+          {Object.entries(profili).map(function(ent){
+            var pid = ent[0]; var p = ent[1];
+            var patLabel = (PATOLOGIE_LIST.find(function(x){ return x.id === p.patologia; })||{}).label || "Nessuna restrizione";
+            return (
+              <div key={pid} style={{background:"#fff",borderRadius:14,padding:"12px 14px",
+                marginBottom:10,boxShadow:"0 1px 6px rgba(0,0,0,.07)",borderLeft:"4px solid "+(p.colore||"#6BA6C9")}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <span style={{width:34,height:34,borderRadius:"50%",background:"#E2EEF5",color:"#2F6586",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800}}>
+                    {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
+                  </span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:800,color:"#2C3338"}}>{p.nome}</div>
+                    <div style={{display:"flex",gap:5,marginTop:3,flexWrap:"wrap"}}>
+                      <span style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",fontWeight:700,padding:"2px 8px",borderRadius:20}}>{patLabel}</span>
+                      <span style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 8px",borderRadius:20}}>{p.kcal_target} kcal</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{fontSize:11,color:"#8A949B",marginTop:4}}>
+            Usa "Modifica" per aggiungere, rimuovere o cambiare i profili della famiglia.
+          </div>
+        </div>
       )}
 
       {/* ── ESIGENZE NUTRIZIONALI ── */}
@@ -5116,9 +4939,36 @@ function kcalMifflin(peso, altezza, anni, sesso, fattore) {
   return Math.round(bmr * (fattore || 1.375));
 }
 
+function profiloToMembro(p) {
+  var pats = p.patologie ? p.patologie.slice()
+    : (p.patologia && p.patologia !== "nessuna" ? [p.patologia] : []);
+  return {
+    id: p.id,
+    nome: p.nome || "",
+    dataNascita: p.dataNascita || "",
+    sesso: p.sesso || "femmina",
+    patologie: pats,
+    obiettivo: p.obiettivo || "mantenere",
+    regime: p.regime || "onnivoro",
+    peso: (p.peso ? String(p.peso) : ""),
+    altezza: (p.altezza ? String(p.altezza) : ""),
+    attivita: p.attivita || "leggero",
+    valoriMedico: p.valoriMedico || {prot:"", phe:""},
+    override: p.override || {kcal:"", prot_max:""}
+  };
+}
+
 function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
-  var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
+  var onExit = props.onExit;
+  var modifica = !!props.profiliIniziali;
+  var s_lista = useState(function(){
+    if(props.profiliIniziali) {
+      return Object.keys(props.profiliIniziali).map(function(k){ return profiloToMembro(props.profiliIniziali[k]); });
+    }
+    return [];
+  }); var lista = s_lista[0]; var setLista = s_lista[1];
+  var s_editId = useState(null); var editId = s_editId[0]; var setEditId = s_editId[1];
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_data = useState(""); var dataN = s_data[0]; var setDataN = s_data[1];
   var s_sesso = useState("femmina"); var sesso = s_sesso[0]; var setSesso = s_sesso[1];
@@ -5142,11 +4992,25 @@ function OnboardingFamiglia(props) {
   }
 
   function membroCorrente() {
-    return { nome: nome.trim(), dataNascita: dataN, sesso: sesso,
+    return { id: editId, nome: nome.trim(), dataNascita: dataN, sesso: sesso,
       patologie: patologie.slice(), obiettivo: obiettivo, regime: regime,
       peso: peso, altezza: altezza, attivita: attivita,
       valoriMedico: {prot: vProt, phe: vPhe},
       override: {kcal: ovKcal, prot_max: ovProt} };
+  }
+
+  function modificaMembro(idx) {
+    var m = lista[idx];
+    setEditId(m.id || null);
+    setNome(m.nome || ""); setDataN(m.dataNascita || ""); setSesso(m.sesso || "femmina");
+    setPatologie((m.patologie || []).slice()); setObiettivo(m.obiettivo || "mantenere");
+    setRegime(m.regime || "onnivoro"); setPeso(m.peso || ""); setAltezza(m.altezza || "");
+    setAttivita(m.attivita || "leggero");
+    setVProt((m.valoriMedico && m.valoriMedico.prot) || ""); setVPhe((m.valoriMedico && m.valoriMedico.phe) || "");
+    setOvKcal((m.override && m.override.kcal) || ""); setOvProt((m.override && m.override.prot_max) || "");
+    setLista(lista.filter(function(x,i){ return i !== idx; }));
+    setCalcolo(null);
+    if(typeof window !== "undefined") window.scrollTo(0, 0);
   }
 
   function patologieEffettive(m) {
@@ -5204,6 +5068,7 @@ function OnboardingFamiglia(props) {
   function aggiungi() {
     if(!nome.trim() || !dataN) return;
     setLista(lista.concat([membroCorrente()]));
+    setEditId(null);
     setNome(""); setDataN(""); setSesso("femmina"); setPatologie([]);
     setObiettivo("mantenere"); setPeso(""); setAltezza(""); setAttivita("leggero");
     setRegime("onnivoro"); setRegimeOpen(false);
@@ -5216,8 +5081,10 @@ function OnboardingFamiglia(props) {
 
   function inizia() {
     var pf = {};
-    lista.forEach(function(m, idx) {
-      var id = "m_" + idx + "_" + Date.now();
+    var tutti = lista.slice();
+    if(nome.trim() && dataN) tutti.push(membroCorrente());
+    tutti.forEach(function(m, idx) {
+      var id = m.id || ("m_" + idx + "_" + Date.now());
       var patEff = patologieEffettive(m);
       var fin = getParametriFinali({dataNascita:m.dataNascita, sesso:m.sesso, patologie:patEff, valoriMedico:m.valoriMedico, override:m.override});
       var v = valoriFinali(m);
@@ -5255,7 +5122,7 @@ function OnboardingFamiglia(props) {
     <div style={{minHeight:"100vh",background:"#F2F6F8",padding:"18px 20px 28px",boxSizing:"border-box",maxWidth:420,margin:"0 auto"}}>
       <div style={{maxWidth:420,margin:"0 auto"}}>
         <div style={{display:"flex",alignItems:"center",marginBottom:8}}>
-          <button onClick={function(){ if(lista.length) inizia(); }} aria-label="Indietro"
+          <button onClick={function(){ if(onExit) onExit(); else if(lista.length) inizia(); }} aria-label="Indietro"
             style={{width:34,height:34,borderRadius:11,border:"1px solid #E3EAEE",background:"#fff",
               color:"#2C3338",fontSize:19,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
             <i className="ti ti-chevron-left"/>
@@ -5267,8 +5134,8 @@ function OnboardingFamiglia(props) {
             display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>
             <i className="ti ti-tools-kitchen-2"/>
           </div>
-          <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Benvenuto</div>
-          <div style={{fontSize:13,color:"#8A949B",fontWeight:500}}>Configura i profili nutrizionali della famiglia</div>
+          <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>{modifica?"Modifica famiglia":"Benvenuto"}</div>
+          <div style={{fontSize:13,color:"#8A949B",fontWeight:500}}>{modifica?"Tocca un familiare per modificarlo, o aggiungine uno nuovo":"Configura i profili nutrizionali della famiglia"}</div>
           <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:3}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:"#E3EAEE"}}/>
             <span style={{width:18,height:7,borderRadius:7,background:"#6BA6C9"}}/>
@@ -5282,11 +5149,13 @@ function OnboardingFamiglia(props) {
               return (
                 <span key={idx} style={{display:"flex",alignItems:"center",gap:7,background:"#fff",
                   border:"1px solid #E3EAEE",borderRadius:20,padding:"5px 11px 5px 6px",fontSize:12,fontWeight:600}}>
-                  <span style={{width:24,height:24,borderRadius:"50%",background:"#E2EEF5",color:"#2F6586",
-                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>
-                    {m.nome ? m.nome.slice(0,1).toUpperCase() : "?"}
+                  <span onClick={function(){modificaMembro(idx);}} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer"}}>
+                    <span style={{width:24,height:24,borderRadius:"50%",background:"#E2EEF5",color:"#2F6586",
+                      display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>
+                      {m.nome ? m.nome.slice(0,1).toUpperCase() : "?"}
+                    </span>
+                    {m.nome}
                   </span>
-                  {m.nome}
                   <i className="ti ti-x" onClick={function(){rimuovi(idx);}}
                     style={{fontSize:14,color:"#8A949B",cursor:"pointer"}}/>
                 </span>
@@ -5297,7 +5166,7 @@ function OnboardingFamiglia(props) {
         )}
 
         <div style={{background:"#fff",borderRadius:18,padding:"16px 15px",marginBottom:16,border:"1px solid #E3EAEE"}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#2F6586",marginBottom:13}}>Nuovo familiare</div>
+          <div style={{fontSize:14,fontWeight:700,color:"#2F6586",marginBottom:13}}>{editId?"Modifica familiare":"Nuovo familiare"}</div>
           <div style={{marginBottom:13}}>
             <label style={labelStyle}>Nome</label>
             <input placeholder="Nome" value={nome}
@@ -5479,7 +5348,7 @@ function OnboardingFamiglia(props) {
             display:"flex",alignItems:"center",justifyContent:"center",gap:8,
             background:canAdd?"#2F6586":"#ccc",color:"#fff",fontSize:15,fontWeight:700,
             cursor:canAdd?"pointer":"default"}}>
-          <i className="ti ti-device-floppy" style={{fontSize:17}}/>Salva familiare
+          <i className="ti ti-device-floppy" style={{fontSize:17}}/>{editId?"Aggiorna familiare":"Salva familiare"}
         </button>
         <button onClick={aggiungi} disabled={!canAdd}
           style={{width:"100%",padding:"14px",borderRadius:14,marginBottom:10,
@@ -5488,13 +5357,15 @@ function OnboardingFamiglia(props) {
             cursor:canAdd?"pointer":"default"}}>
           <i className="ti ti-user-plus" style={{fontSize:16}}/>Aggiungi un altro familiare
         </button>
-        <button onClick={inizia} disabled={lista.length===0}
-          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"transparent",
-            color:lista.length===0?"#B4BEC4":"#2F6586",fontSize:15,fontWeight:700,
-            cursor:lista.length===0?"default":"pointer"}}>
-          Continua →
+        <button onClick={inizia} disabled={lista.length===0&&!canAdd}
+          style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
+            background:modifica?((lista.length===0&&!canAdd)?"#ccc":"#2F6586"):"transparent",
+            color:modifica?"#fff":((lista.length===0&&!canAdd)?"#B4BEC4":"#2F6586"),fontSize:15,fontWeight:700,
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+            cursor:(lista.length===0&&!canAdd)?"default":"pointer"}}>
+          {modifica&&<i className="ti ti-check" style={{fontSize:17}}/>}{modifica?"Salva modifiche":"Continua →"}
         </button>
-        {lista.length===0&&(
+        {lista.length===0&&!canAdd&&(
           <div style={{fontSize:11,color:"#8A949B",textAlign:"center",marginTop:8}}>
             Aggiungi almeno un familiare per continuare
           </div>
@@ -6647,6 +6518,7 @@ export default function App() {
   var s_syncing = useState(false); var syncing=s_syncing[0]; var setSyncing=s_syncing[1];
 
   const [tab, setTab] = useState("home");
+  const [modificaFam, setModificaFam] = useState(false);
   const [orariPasti, setOrariPasti] = useState({
     Colazione:"07:30", Spuntino:"10:30", Pranzo:"12:30",
     Merenda:"16:00", Cena:"19:00", Extra:"21:00"
@@ -7136,6 +7008,15 @@ export default function App() {
         <OnboardingFamiglia onComplete={setProfiliLS}/>
       )}
 
+      {!loading&&utente&&Object.keys(profili).length>0&&modificaFam&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"#F2F6F8",
+          zIndex:1000,overflowY:"auto"}}>
+          <OnboardingFamiglia profiliIniziali={profili}
+            onComplete={function(pf){ setProfiliLS(pf); setModificaFam(false); }}
+            onExit={function(){ setModificaFam(false); }}/>
+        </div>
+      )}
+
       {/* App principale */}
       {!loading&&utente&&Object.keys(profili).length>0&&(
       <div style={{background:"#F2F6F8",minHeight:"100vh",maxWidth:390,margin:"0 auto",position:"relative",fontFamily:"'Nunito',system-ui,sans-serif"}}>
@@ -7190,7 +7071,8 @@ export default function App() {
               profili={profili} setProfili={setProfiliLS}
               pianificazione={pianificazione} setPianificazione={setPianificazione}
               pesoLog={pesoLog} setPesoLog={setPesoLogLS}
-              pin={pin} setPin={setPinLS}/>
+              pin={pin} setPin={setPinLS}
+              onModificaFamiglia={function(){ setModificaFam(true); }}/>
           </div>
         )}
         {tab==="iscritti" && (
