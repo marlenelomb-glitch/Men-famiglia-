@@ -7567,6 +7567,14 @@ export default function App() {
                 {isReg?"Crea il tuo account":"Bentornato"}
               </div>
             </div>
+            {isReg&&(
+              <div className="mf-card acc" style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:12}}>
+                <i className="ti ti-info-circle" style={{fontSize:18,marginTop:1}}/>
+                <div style={{flex:1,fontSize:12,lineHeight:1.5}}>
+                  <b>Non è uno strumento medico.</b> Menu Famiglia è pensato per l'organizzazione dei pasti della famiglia. Per diete, patologie o esigenze cliniche segui sempre le indicazioni del tuo medico o nutrizionista.
+                </div>
+              </div>
+            )}
             <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:12}}>
               <div>
                 <div className="cap" style={{marginBottom:6}}>Email</div>
