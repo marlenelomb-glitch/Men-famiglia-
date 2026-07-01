@@ -5686,8 +5686,8 @@ var CAT_SPESA = [
 
 function normSpesa(arr) {
   return (arr || []).map(function(it){
-    if(typeof it === "string") return {nome:it, cat:"altro", fatto:false};
-    return {nome:it.nome, cat:it.cat || "altro", fatto:!!it.fatto};
+    if(typeof it === "string") return {nome:it, cat:"altro", fatto:false, nota:""};
+    return {nome:it.nome, cat:it.cat || "altro", fatto:!!it.fatto, nota:it.nota || ""};
   });
 }
 
@@ -5749,6 +5749,8 @@ function ListaSpesaView(props) {
   var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
   var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
   var s_guidaS = useState(false); var guidaS = s_guidaS[0]; var setGuidaS = s_guidaS[1];
+  var s_editNota = useState(-1); var editNota = s_editNota[0]; var setEditNota = s_editNota[1];
+  var s_notaVal = useState(""); var notaVal = s_notaVal[0]; var setNotaVal = s_notaVal[1];
 
   var items = normSpesa(spesa);
 
@@ -5764,7 +5766,12 @@ function ListaSpesaView(props) {
   }
   function toggle(i) {
     var arr = normSpesa(spesa).slice();
-    arr[i] = {nome:arr[i].nome, cat:arr[i].cat, fatto:!arr[i].fatto};
+    arr[i] = {nome:arr[i].nome, cat:arr[i].cat, fatto:!arr[i].fatto, nota:arr[i].nota||""};
+    setSpesa(arr);
+  }
+  function salvaNota(i, val) {
+    var arr = normSpesa(spesa).slice();
+    arr[i] = {nome:arr[i].nome, cat:arr[i].cat, fatto:arr[i].fatto, nota:val};
     setSpesa(arr);
   }
   function rimuovi(i) {
@@ -5814,7 +5821,7 @@ function ListaSpesaView(props) {
       var inCat = items.filter(function(x){ return x.cat === c.id; });
       if(!inCat.length) return;
       righe.push(c.label + ":");
-      inCat.forEach(function(x){ righe.push("- " + x.nome + (x.fatto ? " (preso)" : "")); });
+      inCat.forEach(function(x){ righe.push("- " + x.nome + (x.nota ? " (" + x.nota + ")" : "") + (x.fatto ? " [preso]" : "")); });
       righe.push("");
     });
     return righe.join("\n");
@@ -5837,7 +5844,7 @@ function ListaSpesaView(props) {
       var inCat = items.filter(function(x){ return x.cat === c.id; });
       if(!inCat.length) return;
       body += "<h2>" + c.label + "</h2><ul>";
-      inCat.forEach(function(x){ body += "<li" + (x.fatto ? " style='text-decoration:line-through;color:#888'" : "") + ">" + x.nome + "</li>"; });
+      inCat.forEach(function(x){ body += "<li" + (x.fatto ? " style='text-decoration:line-through;color:#888'" : "") + ">" + x.nome + (x.nota ? " <span style='color:#8A949B;font-style:italic'>· " + x.nota + "</span>" : "") + "</li>"; });
       body += "</ul>";
     });
     if(!body) body = "<p>Lista vuota</p>";
@@ -5918,8 +5925,9 @@ function ListaSpesaView(props) {
             </div>
             <div className="mf-card flush">
               {inCat.map(function(r){
+                var inEdit = editNota === r.i;
                 return (
-                  <div key={r.i} className="mf-row">
+                  <div key={r.i} className="mf-row" style={{flexWrap:"wrap"}}>
                     <span onClick={function(){ toggle(r.i); }}
                       style={{width:22,height:22,borderRadius:7,flexShrink:0,cursor:"pointer",
                         display:"flex",alignItems:"center",justifyContent:"center",
@@ -5927,10 +5935,29 @@ function ListaSpesaView(props) {
                         background:r.x.fatto?"#2F6586":"#fff",color:"#fff"}}>
                       {r.x.fatto&&<i className="ti ti-check" style={{fontSize:14}}/>}
                     </span>
-                    <span style={{flex:1,fontSize:14,color:r.x.fatto?"#8A949B":"#2C3338",
-                      textDecoration:r.x.fatto?"line-through":"none"}}>{r.x.nome}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,color:r.x.fatto?"#8A949B":"#2C3338",
+                        textDecoration:r.x.fatto?"line-through":"none"}}>{r.x.nome}</div>
+                      {r.x.nota&&!inEdit&&(
+                        <div style={{fontSize:11,color:"#8A949B",fontStyle:"italic"}}>
+                          <i className="ti ti-tag" style={{fontSize:11,marginRight:3,verticalAlign:"-1px"}}/>{r.x.nota}
+                        </div>
+                      )}
+                    </div>
+                    <i className="ti ti-tag" onClick={function(){ setEditNota(r.i); setNotaVal(r.x.nota||""); }}
+                      style={{fontSize:16,color:r.x.nota?"#2F6586":"#B4BEC4",cursor:"pointer",marginRight:4}}/>
                     <i className="ti ti-x" onClick={function(){ rimuovi(r.i); }}
                       style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                    {inEdit&&(
+                      <div style={{flexBasis:"100%",display:"flex",gap:6,marginTop:8}}>
+                        <input autoFocus placeholder="Nota o marca (es. Barilla, senza lattosio)" value={notaVal}
+                          onChange={function(e){ setNotaVal(e.target.value); }}
+                          onKeyDown={function(e){ if(e.key==="Enter"){ salvaNota(r.i, notaVal.trim()); setEditNota(-1); } }}
+                          style={{flex:1,padding:"9px 11px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                        <button onClick={function(){ salvaNota(r.i, notaVal.trim()); setEditNota(-1); }}
+                          style={{padding:"9px 14px",borderRadius:11,border:"none",background:"#2F6586",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>OK</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -5959,7 +5986,7 @@ function ListaSpesaView(props) {
             style={{flex:1,padding:"13px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",
               fontSize:14,fontWeight:700,cursor:"pointer",
               display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <i className="ti ti-file-type-pdf" style={{fontSize:16}}/>Salva PDF
+            <i className="ti ti-file-type-pdf" style={{fontSize:16}}/>Invia PDF
           </button>
         </div>
       )}
