@@ -6003,16 +6003,75 @@ var STILE_CONT = {
   freezer:  {bg:"linear-gradient(180deg,#E8F6FA,#CFEAF2)", bordo:"#BADFEA", ripiano:"rgba(110,170,190,.45)", ic:"ti-snowflake",  titolo:"Congelatore", accent:"#2F7C86", testo:"#2C3338"}
 };
 
+var ORTOFRUTTA_K = ["insalata","lattuga","rucola","spinaci","pomodoro","pomodori","carota","carote",
+  "zucchina","zucchine","cetriolo","broccoli","broccolo","cavolo","verza","peperone","peperoni",
+  "melanzana","melanzane","limone","limoni","mela","mele","fragola","fragole","uva","banana","banane",
+  "arancia","arance","mandarini","frutta","verdura","finocchi","sedano","radicchio","funghi","pera","pere","kiwi"];
+
+function isOrtofrutta(nome) {
+  var n = (nome || "").toLowerCase();
+  var i;
+  for(i=0;i<ORTOFRUTTA_K.length;i++) { if(n.indexOf(ORTOFRUTTA_K[i]) >= 0) return true; }
+  return false;
+}
+
+function TesseraAlimento(props) {
+  var cell = props.cell;
+  var st = props.st || STILE_CONT.dispensa;
+  var onRemove = props.onRemove || function(){};
+  var low = dispensaLow(cell.it);
+  return (
+    <div style={{flex:"0 0 22%",maxWidth:"22%",position:"relative",
+      display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+      <div onClick={function(){ onRemove(cell.i); }}
+        style={{position:"absolute",top:-7,left:0,width:16,height:16,borderRadius:"50%",
+          background:"#fff",border:"1px solid "+st.bordo,display:"flex",alignItems:"center",
+          justifyContent:"center",cursor:"pointer",zIndex:2}}>
+        <i className="ti ti-x" style={{fontSize:9,color:"#C0392B"}}/>
+      </div>
+      {cell.it.qty && String(cell.it.qty) !== "" && (
+        <div style={{position:"absolute",top:-7,right:0,background:"#fff",
+          border:"1px solid "+st.bordo,borderRadius:9,fontSize:8,fontWeight:800,
+          color:st.accent,padding:"0 4px",minWidth:14,textAlign:"center",zIndex:2}}>{cell.it.qty}</div>
+      )}
+      <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
+      <div style={{fontSize:8.5,fontWeight:600,color:st.testo,textAlign:"center",lineHeight:1.1,
+        whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{cell.it.nome}</div>
+    </div>
+  );
+}
+
+function ScaffaleRipiani(props) {
+  var items = props.items || [];
+  var perRow = props.perRow || 4;
+  var minRip = props.minRip || 1;
+  var st = props.st || STILE_CONT.dispensa;
+  var coloreRip = props.coloreRipiano || st.ripiano;
+  var onRemove = props.onRemove || function(){};
+  var nRip = Math.max(minRip, Math.ceil(items.length / perRow));
+  var ripiani = [];
+  var r;
+  for(r=0;r<nRip;r++) { ripiani.push(items.slice(r*perRow, r*perRow + perRow)); }
+  return (
+    <div>
+      {ripiani.map(function(row, ri){
+        return (
+          <div key={ri} style={{display:"flex",alignItems:"flex-end",gap:4,minHeight:60,
+            borderBottom:"3px solid "+coloreRip,padding:"10px 2px 4px"}}>
+            {row.length===0 && <div style={{flex:1,height:38}}/>}
+            {row.map(function(cell){ return <TesseraAlimento key={cell.i} cell={cell} st={st} onRemove={onRemove}/>; })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RipianiBox(props) {
   var tipo = props.tipo;
   var items = props.items || [];
   var onRemove = props.onRemove || function(){};
   var st = STILE_CONT[tipo] || STILE_CONT.dispensa;
-  var perRow = 4;
-  var nRip = Math.max(3, Math.ceil(items.length / perRow));
-  var ripiani = [];
-  var r;
-  for(r=0;r<nRip;r++) { ripiani.push(items.slice(r*perRow, r*perRow + perRow)); }
   return (
     <div style={{borderRadius:18,overflow:"hidden",border:"1.5px solid "+st.bordo,
       boxShadow:"0 2px 10px rgba(0,0,0,.06)"}}>
@@ -6022,36 +6081,58 @@ function RipianiBox(props) {
         <span style={{fontSize:11,fontWeight:700,opacity:.85}}>{items.length}</span>
       </div>
       <div style={{background:st.bg,padding:"4px 10px 10px"}}>
-        {ripiani.map(function(row, ri){
-          return (
-            <div key={ri} style={{display:"flex",alignItems:"flex-end",gap:4,minHeight:62,
-              borderBottom:"3px solid "+st.ripiano,padding:"10px 2px 4px"}}>
-              {row.length===0 && <div style={{flex:1,height:40}}/>}
-              {row.map(function(cell){
-                var low = dispensaLow(cell.it);
-                return (
-                  <div key={cell.i} style={{flex:"0 0 22%",maxWidth:"22%",position:"relative",
-                    display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-                    <div onClick={function(){ onRemove(cell.i); }}
-                      style={{position:"absolute",top:-7,left:0,width:16,height:16,borderRadius:"50%",
-                        background:"#fff",border:"1px solid "+st.bordo,display:"flex",alignItems:"center",
-                        justifyContent:"center",cursor:"pointer",zIndex:2}}>
-                      <i className="ti ti-x" style={{fontSize:9,color:"#C0392B"}}/>
-                    </div>
-                    {cell.it.qty && String(cell.it.qty) !== "" && (
-                      <div style={{position:"absolute",top:-7,right:0,background:"#fff",
-                        border:"1px solid "+st.bordo,borderRadius:9,fontSize:8,fontWeight:800,
-                        color:st.accent,padding:"0 4px",minWidth:14,textAlign:"center",zIndex:2}}>{cell.it.qty}</div>
-                    )}
-                    <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
-                    <div style={{fontSize:8.5,fontWeight:600,color:st.testo,textAlign:"center",lineHeight:1.1,
-                      whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{cell.it.nome}</div>
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+        <ScaffaleRipiani items={items} perRow={4} minRip={3} st={st} onRemove={onRemove}/>
+      </div>
+    </div>
+  );
+}
+
+function FrigoLG(props) {
+  var freezer = props.freezer || [];
+  var ripiano = props.ripiano || [];
+  var cassetti = props.cassetti || [];
+  var onRemove = props.onRemove || function(){};
+  var stF = STILE_CONT.freezer;
+  var stR = STILE_CONT.frigo;
+  var totale = freezer.length + ripiano.length + cassetti.length;
+  return (
+    <div style={{borderRadius:20,overflow:"hidden",border:"2px solid #AEB6BD",
+      background:"linear-gradient(180deg,#E4E8EB,#CDD3D8)",boxShadow:"0 4px 16px rgba(0,0,0,.12)",padding:6}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px 8px"}}>
+        <span style={{fontSize:16,fontWeight:900,color:"#A50034",letterSpacing:"0.02em"}}>LG</span>
+        <span style={{flex:1,fontSize:10,fontWeight:700,color:"#6B7278"}}>GTF744PZPED · Il mio frigo</span>
+        <span style={{fontSize:10,fontWeight:700,color:"#6B7278"}}>{totale} prodotti</span>
+      </div>
+
+      <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid "+stF.bordo,marginBottom:7,background:stF.bg}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stF.accent,color:"#fff"}}>
+          <i className="ti ti-snowflake" style={{fontSize:15}}/>
+          <span style={{fontSize:12,fontWeight:800,flex:1}}>Congelatore</span>
+          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{freezer.length}</span>
+        </div>
+        <div style={{padding:"2px 10px 8px"}}>
+          <ScaffaleRipiani items={freezer} perRow={4} minRip={2} st={stF} onRemove={onRemove}/>
+        </div>
+      </div>
+
+      <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid "+stR.bordo,background:stR.bg}}>
+        <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stR.accent,color:"#fff"}}>
+          <i className="ti ti-fridge" style={{fontSize:15}}/>
+          <span style={{fontSize:12,fontWeight:800,flex:1}}>Frigorifero</span>
+          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{ripiano.length + cassetti.length}</span>
+        </div>
+        <div style={{padding:"2px 10px 4px"}}>
+          <ScaffaleRipiani items={ripiano} perRow={4} minRip={3} st={stR} onRemove={onRemove}/>
+        </div>
+        <div style={{padding:"8px 10px 10px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
+            <i className="ti ti-salad" style={{fontSize:13,color:stR.accent}}/>
+            <span style={{fontSize:9.5,fontWeight:800,color:stR.accent,letterSpacing:"0.04em"}}>CASSETTI FRUTTA E VERDURA</span>
+          </div>
+          <div style={{borderRadius:10,border:"1.5px solid "+stR.bordo,background:"rgba(255,255,255,.45)",padding:"2px 8px 4px"}}>
+            <ScaffaleRipiani items={cassetti} perRow={4} minRip={2} st={stR} coloreRipiano="rgba(120,160,190,.28)" onRemove={onRemove}/>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -6138,12 +6219,14 @@ function DispensaView(props) {
 
       {vista==="ripiani" ? (
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <RipianiBox tipo="frigo" items={gruppo("frigo")} onRemove={rimuoviItem}/>
+          <FrigoLG freezer={gruppo("freezer")}
+            ripiano={gruppo("frigo").filter(function(c){ return !isOrtofrutta(c.it.nome); })}
+            cassetti={gruppo("frigo").filter(function(c){ return isOrtofrutta(c.it.nome); })}
+            onRemove={rimuoviItem}/>
           <RipianiBox tipo="dispensa" items={gruppo("dispensa")} onRemove={rimuoviItem}/>
-          <RipianiBox tipo="freezer" items={gruppo("freezer")} onRemove={rimuoviItem}/>
           {dispensa.length===0 && (
             <div style={{fontSize:12,color:"#8A949B",textAlign:"center"}}>
-              Aggiungi un prodotto col + in alto: comparira da solo sul ripiano giusto.
+              Aggiungi un prodotto col + in alto: comparira da solo al posto giusto.
             </div>
           )}
         </div>
