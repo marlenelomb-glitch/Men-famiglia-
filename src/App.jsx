@@ -2336,6 +2336,21 @@ const RICETTE_ESTATE = [
   {titolo:"Insalata di polpo e patate",emoji:"?",categoria:"Secondo",descrizione:"Polpo tenero con patate lesse, prezzemolo e olio EVO. Fresco e saporito.",tempo:"45 min",tag:["pesce","estivo","classico"]},
 ];
 
+function filtraNotaRicetta(note, hasApro, hasNeo) {
+  if(!note) return "";
+  var parts = note.split(/\.\s+/);
+  var keep = [];
+  parts.forEach(function(f){
+    var low = f.toLowerCase();
+    if(!hasApro && low.indexOf("aproteic") >= 0) return;
+    if(!hasNeo && (low.indexOf("neonat") >= 0 || low.indexOf("svezzament") >= 0)) return;
+    if(f.trim()) keep.push(f.trim());
+  });
+  var out = keep.join(". ");
+  if(out && out.charAt(out.length-1) !== ".") out += ".";
+  return out;
+}
+
 function TabIdee({profili, dispensa}) {
   const [vista, setVista] = useState("live");
   const [ricette, setRicette] = useState([]);
@@ -2489,6 +2504,19 @@ function TabIdee({profili, dispensa}) {
     }, 400);
   };
 
+  var tipiFam = {adulti:false, bimbo:false, apro:false, neo:false};
+  Object.values(profili).forEach(function(p){
+    var pat = p.patologia;
+    var eta = p.dataNascita ? calcolaEta(p.dataNascita).anni : (p.eta || 30);
+    if(pat==="svezzamento") tipiFam.neo = true;
+    else if(pat==="ipoproteica") tipiFam.apro = true;
+    else if(eta < 12) tipiFam.bimbo = true;
+    else tipiFam.adulti = true;
+  });
+  var hasApro = tipiFam.apro;
+  var hasNeo = tipiFam.neo;
+  var hasBimbo = tipiFam.bimbo;
+
   return (
     <div>
       <div style={{fontSize:14,fontWeight:800,color:"#2F6586",marginBottom:4}}>Idee e ispirazioni</div>
@@ -2602,8 +2630,8 @@ function TabIdee({profili, dispensa}) {
                         </div>
                       );
                     })}
-                    {ric.note&&<div style={{fontSize:9,color:"#8A949B",fontStyle:"italic",
-                      marginTop:6,paddingTop:6,borderTop:"1px solid #E3EAEE"}}>{ric.note}</div>}
+                    {filtraNotaRicetta(ric.note,hasApro,hasNeo)&&<div style={{fontSize:9,color:"#8A949B",fontStyle:"italic",
+                      marginTop:6,paddingTop:6,borderTop:"1px solid #E3EAEE"}}>{filtraNotaRicetta(ric.note,hasApro,hasNeo)}</div>}
                   </div>
                 )}
                 <button onClick={()=>setRicAperta(ricAperta===ric?null:ric)}
@@ -2933,7 +2961,9 @@ function TabIdee({profili, dispensa}) {
                     marginBottom:7,fontSize:10,color:"#2F6586"}}>
                     <b>Base:</b> {ric.base}
                   </div>
-                  {[{e:"Adulti",k:"adulti"},{e:"Bambini",k:"bimbo"},{e:"Aproteico",k:"apro"},{e:"Neonato",k:"neo"}].map(p=>
+                  {[{e:"Adulti",k:"adulti"},{e:"Bambini",k:"bimbo"},{e:"Aproteico",k:"apro"},{e:"Neonato",k:"neo"}]
+                    .filter(function(p){ return p.k==="adulti" || (p.k==="bimbo"&&hasBimbo) || (p.k==="apro"&&hasApro) || (p.k==="neo"&&hasNeo); })
+                    .map(p=>
                     ric[p.k]?(
                       <div key={p.k} style={{display:"flex",gap:7,padding:"3px 0",
                         borderTop:"1px solid #f5f5f5",fontSize:10,color:"#333"}}>
@@ -2941,7 +2971,7 @@ function TabIdee({profili, dispensa}) {
                       </div>
                     ):null
                   )}
-                  {ric.note&&<div style={{marginTop:6,fontSize:9,color:"#8A949B",fontStyle:"italic"}}>{ric.note}</div>}
+                  {filtraNotaRicetta(ric.note,hasApro,hasNeo)&&<div style={{marginTop:6,fontSize:9,color:"#8A949B",fontStyle:"italic"}}>{filtraNotaRicetta(ric.note,hasApro,hasNeo)}</div>}
                 </div>
               ))}
             </div>
@@ -4665,18 +4695,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var totale=GIORNI_B.length*PASTI_B.length;
 
   return (
-    <div style={{background:"#F5F8FC",minHeight:"60vh"}}>
+    <div style={{minHeight:"60vh"}}>
       <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
         <button onClick={function(){setSettB(0);setStepCorrente(1);}}
-          style={{flex:1,padding:"8px",borderRadius:10,border:"2px solid "+(settB===0?"#2F6586":"#eee"),
-            background:settB===0?"#2F6586":"#fff",color:settB===0?"#fff":"#8A949B",
-            fontSize:11,fontWeight:settB===0?800:400,cursor:"pointer"}}>
+          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
+            background:settB===0?"#2F6586":"#fff",color:settB===0?"#fff":"#555",
+            fontSize:12,fontWeight:settB===0?700:500,boxShadow:settB===0?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
           Questa settimana
         </button>
         <button onClick={function(){setSettB(1);setStepCorrente(1);}}
-          style={{flex:1,padding:"8px",borderRadius:10,border:"2px solid "+(settB===1?"#2F6586":"#eee"),
-            background:settB===1?"#2F6586":"#fff",color:settB===1?"#fff":"#8A949B",
-            fontSize:11,fontWeight:settB===1?800:400,cursor:"pointer"}}>
+          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
+            background:settB===1?"#2F6586":"#fff",color:settB===1?"#fff":"#555",
+            fontSize:12,fontWeight:settB===1?700:500,boxShadow:settB===1?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
           Settimana prossima
         </button>
         <button onClick={function(){
@@ -4712,7 +4742,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </span>
       </div>
 
-      <div style={{background:"#fff",padding:"8px",borderRadius:10,marginBottom:8,border:"1px solid #eee"}}>
+      <div style={{background:"#fff",padding:"10px",borderRadius:16,marginBottom:8,border:"1px solid #E3EAEE"}}>
         <div style={{display:"flex",gap:4,marginBottom:8,overflowX:"auto"}}>
           {GIORNI_B.map(function(g,i){
             var hasAny=PASTI_B.some(function(p){return hasSaved(g,p);});
@@ -4780,7 +4810,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </div>
       </div>
 
-      <div style={{background:"#fff",padding:"10px",borderRadius:10,marginTop:8,border:"1px solid #eee"}}>
+      <div style={{background:"#fff",padding:"10px",borderRadius:10,marginTop:8,border:"1px solid #E3EAEE"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
           <span style={{fontSize:10,fontWeight:800,color:"#2C3338"}}>Settimana</span>
           <button onClick={function(){setShowSpesa(true);}}
@@ -4853,7 +4883,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         </button>
                         <button onClick={function(){
                           setRicette(ricette.filter(function(_,i){return i!==ri;}));
-                        }} style={{padding:"4px 8px",borderRadius:20,border:"1px solid #eee",
+                        }} style={{padding:"4px 8px",borderRadius:20,border:"1px solid #E3EAEE",
                           background:"#fff",color:"#C0392B",fontSize:9,cursor:"pointer"}}>
                           x
                         </button>
@@ -6238,8 +6268,8 @@ function FrigoLG(props) {
         background:acciaio,boxShadow:"0 8px 22px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -3px 8px rgba(0,0,0,.06)",
         padding:"7px 24px 9px 7px"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 6px 8px"}}>
-          <span style={{fontSize:17,fontWeight:900,color:"#A50034",letterSpacing:"0.02em"}}>LG</span>
-          <span style={{flex:1,fontSize:10,fontWeight:700,color:"#5C636A"}}>GTF744PZPED · Il mio frigo</span>
+          <i className="ti ti-fridge" style={{fontSize:16,color:"#5C636A"}}/>
+          <span style={{flex:1,fontSize:11,fontWeight:800,color:"#5C636A"}}>Il mio frigo</span>
           <span style={{fontSize:10,fontWeight:700,color:"#5C636A"}}>{totale} prodotti</span>
         </div>
 
@@ -6561,19 +6591,60 @@ function DiarioView(props) {
   var menu = props.menu || {};
   var builder = props.builder || {};
   var profili = props.profili || {};
-  var s_acqua = useState(0); var acqua = s_acqua[0]; var setAcqua = s_acqua[1];
+  var diario = props.diario || {};
+  var setDiario = props.setDiario || function(){};
+  var vals = Object.values(profili);
+
+  var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
+  var s_showAdd = useState(false); var showAdd = s_showAdd[0]; var setShowAdd = s_showAdd[1];
+  var s_an = useState(""); var addNome = s_an[0]; var setAddNome = s_an[1];
+  var s_ak = useState(""); var addKcal = s_ak[0]; var setAddKcal = s_ak[1];
+  var s_ap = useState("Pranzo"); var addPasto = s_ap[0]; var setAddPasto = s_ap[1];
+
   var now = new Date();
+  var dateKey = now.getFullYear() + "-" + ("0"+(now.getMonth()+1)).slice(-2) + "-" + ("0"+now.getDate()).slice(-2);
   var oggiApp = DAYS[(now.getDay()+6)%7];
   var ordine = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
-  var righe = [];
+
+  var membro = profili[midSel] || vals[0] || null;
+  var mkey = membro ? membro.id : "";
+  var giornoRec = diario[dateKey] || {};
+  var rec = giornoRec[mkey] || {items:[], acqua:0};
+  var items = rec.items || [];
+  var acqua = rec.acqua || 0;
+  var target = membro ? (membro.kcal_target || 2000) : 2000;
+  var consumate = items.reduce(function(s,x){ return s + (x.kcal||0); }, 0);
+  var rimaste = Math.max(0, target - consumate);
+  var pct = target > 0 ? Math.min(100, Math.round(consumate/target*100)) : 0;
+
+  function salvaRec(nuovoRec) {
+    var g = Object.assign({}, diario[dateKey] || {});
+    g[mkey] = nuovoRec;
+    var nd = Object.assign({}, diario);
+    nd[dateKey] = g;
+    setDiario(nd);
+  }
+  function aggiungiVoce(pasto, nome, kcal) {
+    var id = "e" + now.getTime() + "_" + Math.round(consumate + items.length + nome.length);
+    salvaRec({items: items.concat([{id:id, pasto:pasto, nome:nome, kcal:kcal||0}]), acqua:acqua});
+  }
+  function rimuoviVoce(id) {
+    salvaRec({items: items.filter(function(x){ return x.id !== id; }), acqua:acqua});
+  }
+  function setAcqua(n) {
+    salvaRec({items:items, acqua: Math.max(0, Math.min(12, n))});
+  }
+  function addExtra() {
+    if(!addNome.trim()) return;
+    aggiungiVoce(addPasto, addNome.trim(), parseInt(addKcal, 10) || 0);
+    setAddNome(""); setAddKcal(""); setShowAdd(false);
+  }
+
+  var suggeriti = [];
   ordine.forEach(function(m){
     var info = pastoUnificato(builder, menu, oggiApp, m);
-    if(info) righe.push({m:m, nome:info.nome, kcal:info.kcal});
+    if(info) suggeriti.push({pasto:m, nome:info.nome, kcal:info.kcal});
   });
-  var consumate = righe.reduce(function(s,x){ return s + x.kcal; }, 0);
-  var vals = Object.values(profili);
-  var target = vals.length ? Math.max.apply(null, vals.map(function(p){ return p.kcal_target || 2000; })) : 2000;
-  var rimaste = Math.max(0, target - consumate);
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -6582,37 +6653,118 @@ function DiarioView(props) {
         <span style={{fontSize:13,color:"#8A949B"}}>Oggi</span>
       </div>
 
-      <div className="mf-card" style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div>
-          <div className="cap">Consumate</div>
-          <div style={{fontSize:23,fontWeight:700}}>{consumate} <span style={{fontSize:13,color:"#8A949B",fontWeight:400}}>/ {target} kcal</span></div>
+      {vals.length===0 ? (
+        <div className="mf-card" style={{textAlign:"center",color:"#8A949B",fontSize:13}}>
+          Aggiungi prima un membro della famiglia dalle Impostazioni.
         </div>
-        <div style={{textAlign:"right"}}>
-          <div className="cap">Rimaste</div>
-          <div style={{fontSize:19,fontWeight:700,color:"#2F6586"}}>{rimaste}</div>
+      ) : (
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+      <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+        {vals.map(function(p){
+          var on = mkey === p.id;
+          return (
+            <button key={p.id} onClick={function(){ setMidSel(p.id); }}
+              style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px 6px 6px",borderRadius:22,
+                flexShrink:0,cursor:"pointer",border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),
+                background:on?"#E2EEF5":"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              <span style={{width:26,height:26,borderRadius:"50%",background:p.colore||"#6BA6C9",color:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>
+                {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
+              </span>
+              <span style={{fontSize:13,fontWeight:on?800:600,color:on?"#2F6586":"#2C3338"}}>{p.nome}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mf-card">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div>
+            <div className="cap">Consumate {membro ? "· "+membro.nome : ""}</div>
+            <div style={{fontSize:23,fontWeight:700}}>{consumate} <span style={{fontSize:13,color:"#8A949B",fontWeight:400}}>/ {target} kcal</span></div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div className="cap">Rimaste</div>
+            <div style={{fontSize:19,fontWeight:700,color:rimaste>0?"#2F6586":"#C0392B"}}>{rimaste}</div>
+          </div>
+        </div>
+        <div className="mf-track"><span style={{width:pct+"%",background:consumate>target?"#C2355A":"#6BA6C9"}}/></div>
+      </div>
+
+      <div>
+        <div className="cap" style={{marginBottom:8}}>Mangiato oggi</div>
+        <div className="mf-card flush">
+          {items.length===0&&(
+            <div className="mf-row">
+              <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #B7C7CF",color:"#8A949B"}}><i className="ti ti-checkbox"/></div>
+              <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Segna cosa ha mangiato {membro ? membro.nome : ""}: usa i suggerimenti sotto o aggiungi un cibo.</div>
+            </div>
+          )}
+          {ordine.map(function(m){
+            var rows = items.filter(function(x){ return x.pasto === m; });
+            if(!rows.length) return null;
+            return rows.map(function(r){
+              return (
+                <div key={r.id} className="mf-row">
+                  <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[m]||"ti-tools-kitchen-2")}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:500}}>{r.nome}</div>
+                    <div style={{fontSize:11,color:"#8A949B"}}>{m}</div>
+                  </div>
+                  <span style={{fontSize:13,color:"#8A949B",marginRight:8}}>{r.kcal ? r.kcal+" kcal" : "-"}</span>
+                  <i className="ti ti-x" onClick={function(){ rimuoviVoce(r.id); }}
+                    style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                </div>
+              );
+            });
+          })}
         </div>
       </div>
 
-      <div className="mf-card flush">
-        {righe.map(function(r){
-          return (
-            <div key={r.m} className="mf-row">
-              <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[r.m]||"ti-tools-kitchen-2")}/></div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:14,fontWeight:500}}>{r.nome}</div>
-                <div style={{fontSize:11,color:"#8A949B"}}>{r.m}</div>
-              </div>
-              <span style={{fontSize:13,color:"#8A949B"}}>{r.kcal||"-"}</span>
-            </div>
-          );
-        })}
-        {righe.length===0&&(
-          <div className="mf-row">
-            <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #B7C7CF",color:"#8A949B"}}><i className="ti ti-plus"/></div>
-            <div style={{flex:1,fontSize:14,color:"#8A949B"}}>Nessun pasto pianificato per oggi</div>
+      {suggeriti.length>0&&(
+        <div>
+          <div className="cap" style={{marginBottom:8}}>Dal menu di oggi · tocca per segnare come mangiato</div>
+          <div className="mf-card flush">
+            {suggeriti.map(function(s){
+              return (
+                <div key={s.pasto} className="mf-row" style={{cursor:"pointer"}}
+                  onClick={function(){ aggiungiVoce(s.pasto, s.nome, s.kcal); }}>
+                  <div className="mf-ic" style={{background:"#EBF3FA"}}><i className={"ti "+(ICONE_PASTO[s.pasto]||"ti-tools-kitchen-2")}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:500}}>{s.nome}</div>
+                    <div style={{fontSize:11,color:"#8A949B"}}>{s.pasto}{s.kcal?" · "+s.kcal+" kcal":""}</div>
+                  </div>
+                  <i className="ti ti-plus" style={{fontSize:18,color:"#2F6586"}}/>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {showAdd ? (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:8}}>
+          <input placeholder="Cosa ha mangiato" value={addNome} onChange={function(e){setAddNome(e.target.value);}}
+            style={{padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <select value={addPasto} onChange={function(e){setAddPasto(e.target.value);}}
+              style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              {ordine.map(function(m){ return <option key={m} value={m}>{m}</option>; })}
+            </select>
+            <input placeholder="kcal" inputMode="numeric" value={addKcal} onChange={function(e){setAddKcal(e.target.value.replace(/[^0-9]/g,""));}}
+              style={{width:80,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            <button onClick={addExtra} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={function(){ setShowAdd(true); }}
+          style={{width:"100%",padding:"12px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",
+            color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <i className="ti ti-plus" style={{fontSize:17}}/>Aggiungi un cibo mangiato
+        </button>
+      )}
 
       <div className="mf-card" style={{display:"flex",alignItems:"center",gap:12}}>
         <i className="ti ti-droplet" style={{fontSize:19,color:"#6BA6C9"}}/>
@@ -6620,11 +6772,14 @@ function DiarioView(props) {
           <div style={{fontSize:13,fontWeight:700,marginBottom:6}}>Acqua - {acqua} / 8 bicchieri</div>
           <div className="mf-track"><span style={{width:Math.min(100,acqua/8*100)+"%"}}/></div>
         </div>
-        <button onClick={function(){ setAcqua(acqua>0?acqua-1:0); }}
+        <button onClick={function(){ setAcqua(acqua-1); }}
           style={{width:32,height:32,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:18,cursor:"pointer"}}>-</button>
-        <button onClick={function(){ setAcqua(acqua<8?acqua+1:8); }}
+        <button onClick={function(){ setAcqua(acqua+1); }}
           style={{width:32,height:32,borderRadius:10,border:"none",background:"#6BA6C9",color:"#fff",fontSize:18,cursor:"pointer"}}>+</button>
       </div>
+
+      </div>
+      )}
     </div>
   );
 }
@@ -7050,7 +7205,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -7150,6 +7305,7 @@ export default function App() {
   const [dispensa, setDispensa] = useState(loadLS("dispensa", []));
   const [spesa, setSpesa] = useState(loadLS("spesa", []));
   const [mealPrep, setMealPrep] = useState(loadLS("mealPrep", []));
+  const [diarioLog, setDiarioLog] = useState(loadLS("diarioLog", {}));
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -7258,6 +7414,7 @@ export default function App() {
   var setDispensaLS           = mkSetterSync("dispensa", setDispensa);
   var setSpesaLS              = mkSetterSync("spesa", setSpesa);
   var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
+  var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -7521,7 +7678,8 @@ export default function App() {
           <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}/>
         )}
         {tab==="diario" && (
-          <DiarioView menu={menu} builder={builderScelte} profili={profili}/>
+          <DiarioView menu={menu} builder={builderScelte} profili={profili}
+            diario={diarioLog} setDiario={setDiarioLogLS}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setTab={handleSetTab}/>
