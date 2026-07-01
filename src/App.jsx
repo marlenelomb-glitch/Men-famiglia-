@@ -6015,14 +6015,19 @@ var ALIMENTI_IMG = [
 
 function alimentoInfo(nome) {
   var n = (nome || "").toLowerCase();
+  var best = null, bestLen = 0;
   var i, j;
   for(i=0;i<ALIMENTI_IMG.length;i++) {
     var a = ALIMENTI_IMG[i];
     for(j=0;j<a.k.length;j++) {
-      if(n.indexOf(a.k[j]) >= 0) return a;
+      var kw = a.k[j];
+      if(n.indexOf(kw) >= 0 && kw.length > bestLen) { best = a; bestLen = kw.length; }
     }
   }
-  return null;
+  if(n.indexOf("surgelat") >= 0 || n.indexOf("congelat") >= 0) {
+    return {e: best ? best.e : "🧊", c:"freezer"};
+  }
+  return best;
 }
 function alimentoEmoji(nome) { var a = alimentoInfo(nome); return a ? a.e : "🍽️"; }
 function alimentoContenitore(nome) { var a = alimentoInfo(nome); return a ? a.c : "dispensa"; }
@@ -6223,42 +6228,59 @@ function FrigoLG(props) {
   var totale = frigo.length + freezer.length;
   function zr(z) { return frigo.filter(function(c){ return zonaFrigo(c.it.nome) === z; }); }
   function zf(z) { return freezer.filter(function(c){ return zonaFreezer(c.it.nome) === z; }); }
+  var acciaio = "repeating-linear-gradient(90deg,#DCE1E5 0px,#EDF1F3 2px,#D4DADF 4px,#CBD1D6 6px)";
+  var maniglia = {position:"absolute",right:-15,width:7,borderRadius:5,
+    background:"linear-gradient(90deg,#8C949B,#C7CDD2 55%,#9AA1A7)",
+    boxShadow:"0 1px 3px rgba(0,0,0,.35)"};
   return (
-    <div style={{borderRadius:20,overflow:"hidden",border:"2px solid #AEB6BD",
-      background:"linear-gradient(180deg,#E4E8EB,#CDD3D8)",boxShadow:"0 4px 16px rgba(0,0,0,.12)",padding:6}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px 8px"}}>
-        <span style={{fontSize:16,fontWeight:900,color:"#A50034",letterSpacing:"0.02em"}}>LG</span>
-        <span style={{flex:1,fontSize:10,fontWeight:700,color:"#6B7278"}}>GTF744PZPED · Il mio frigo</span>
-        <span style={{fontSize:10,fontWeight:700,color:"#6B7278"}}>{totale} prodotti</span>
-      </div>
+    <div style={{position:"relative",paddingBottom:9}}>
+      <div style={{position:"relative",borderRadius:"22px 22px 12px 12px",border:"2px solid #A9B1B8",
+        background:acciaio,boxShadow:"0 8px 22px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -3px 8px rgba(0,0,0,.06)",
+        padding:"7px 24px 9px 7px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 6px 8px"}}>
+          <span style={{fontSize:17,fontWeight:900,color:"#A50034",letterSpacing:"0.02em"}}>LG</span>
+          <span style={{flex:1,fontSize:10,fontWeight:700,color:"#5C636A"}}>GTF744PZPED · Il mio frigo</span>
+          <span style={{fontSize:10,fontWeight:700,color:"#5C636A"}}>{totale} prodotti</span>
+        </div>
 
-      <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid "+stF.bordo,marginBottom:7,background:stF.bg}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stF.accent,color:"#fff"}}>
-          <i className="ti ti-snowflake" style={{fontSize:15}}/>
-          <span style={{fontSize:12,fontWeight:800,flex:1}}>Congelatore</span>
-          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{freezer.length}</span>
+        <div style={{position:"relative",marginBottom:9}}>
+          <div style={{borderRadius:12,overflow:"hidden",border:"1.5px solid "+stF.bordo,background:stF.bg,
+            boxShadow:"inset 0 0 0 2px rgba(255,255,255,.5)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stF.accent,color:"#fff"}}>
+              <i className="ti ti-snowflake" style={{fontSize:15}}/>
+              <span style={{fontSize:12,fontWeight:800,flex:1}}>Congelatore</span>
+              <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{freezer.length}</span>
+            </div>
+            <div style={{padding:"0 10px 8px"}}>
+              <ZonaRipiano label="GELATI E GHIACCIO" items={zf("alto")} st={stF} minRip={1} onRemove={onRemove}/>
+              <ZonaRipiano label="SURGELATI" items={zf("basso")} st={stF} minRip={1} onRemove={onRemove}/>
+            </div>
+          </div>
+          <div style={Object.assign({}, maniglia, {top:"26%",height:"48%"})}/>
         </div>
-        <div style={{padding:"0 10px 8px"}}>
-          <ZonaRipiano label="GELATI E GHIACCIO" items={zf("alto")} st={stF} minRip={1} onRemove={onRemove}/>
-          <ZonaRipiano label="SURGELATI" items={zf("basso")} st={stF} minRip={1} onRemove={onRemove}/>
-        </div>
-      </div>
 
-      <div style={{borderRadius:14,overflow:"hidden",border:"1.5px solid "+stR.bordo,background:stR.bg}}>
-        <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stR.accent,color:"#fff"}}>
-          <i className="ti ti-fridge" style={{fontSize:15}}/>
-          <span style={{fontSize:12,fontWeight:800,flex:1}}>Frigorifero</span>
-          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{frigo.length}</span>
-        </div>
-        <div style={{padding:"0 10px 10px"}}>
-          <ZonaRipiano label="RIPIANO ALTO · PRONTI E BEVANDE" items={zr("alto")} st={stR} minRip={1} onRemove={onRemove}/>
-          <ZonaRipiano label="RIPIANO CENTRALE · LATTICINI, UOVA, SALUMI" items={zr("centrale")} st={stR} minRip={1} onRemove={onRemove}/>
-          <ZonaRipiano label="RIPIANO BASSO · CARNE E PESCE (PIU FREDDO)" items={zr("basso")} st={stR} minRip={1} onRemove={onRemove}/>
-          <ZonaRipiano label="BALCONCINI PORTA · SALSE E BEVANDE" items={zr("porta")} st={stR} minRip={1} boxed={true} onRemove={onRemove}/>
-          <ZonaRipiano label="CASSETTI FRUTTA E VERDURA" items={zr("cassetto")} st={stR} minRip={1} boxed={true}
-            coloreRipiano="rgba(120,160,190,.28)" onRemove={onRemove}/>
+        <div style={{position:"relative"}}>
+          <div style={{borderRadius:12,overflow:"hidden",border:"1.5px solid "+stR.bordo,background:stR.bg,
+            boxShadow:"inset 0 0 0 2px rgba(255,255,255,.5)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stR.accent,color:"#fff"}}>
+              <i className="ti ti-fridge" style={{fontSize:15}}/>
+              <span style={{fontSize:12,fontWeight:800,flex:1}}>Frigorifero</span>
+              <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{frigo.length}</span>
+            </div>
+            <div style={{padding:"0 10px 10px"}}>
+              <ZonaRipiano label="RIPIANO ALTO · PRONTI E BEVANDE" items={zr("alto")} st={stR} minRip={1} onRemove={onRemove}/>
+              <ZonaRipiano label="RIPIANO CENTRALE · LATTICINI, UOVA, SALUMI" items={zr("centrale")} st={stR} minRip={1} onRemove={onRemove}/>
+              <ZonaRipiano label="RIPIANO BASSO · CARNE E PESCE (PIU FREDDO)" items={zr("basso")} st={stR} minRip={1} onRemove={onRemove}/>
+              <ZonaRipiano label="BALCONCINI PORTA · SALSE E BEVANDE" items={zr("porta")} st={stR} minRip={1} boxed={true} onRemove={onRemove}/>
+              <ZonaRipiano label="CASSETTI FRUTTA E VERDURA" items={zr("cassetto")} st={stR} minRip={1} boxed={true}
+                coloreRipiano="rgba(120,160,190,.28)" onRemove={onRemove}/>
+            </div>
+          </div>
+          <div style={Object.assign({}, maniglia, {top:"8%",height:"32%"})}/>
         </div>
       </div>
+      <div style={{position:"absolute",bottom:0,left:16,width:22,height:9,borderRadius:"0 0 5px 5px",background:"#8A9299"}}/>
+      <div style={{position:"absolute",bottom:0,right:16,width:22,height:9,borderRadius:"0 0 5px 5px",background:"#8A9299"}}/>
     </div>
   );
 }
