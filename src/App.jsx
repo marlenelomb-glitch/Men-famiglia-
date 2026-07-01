@@ -5715,6 +5715,7 @@ function ListaSpesaView(props) {
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
   var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
+  var s_guidaS = useState(false); var guidaS = s_guidaS[0]; var setGuidaS = s_guidaS[1];
 
   var items = normSpesa(spesa);
 
@@ -5722,6 +5723,11 @@ function ListaSpesaView(props) {
     if(!nome.trim()) return;
     setSpesa(items.concat([{nome:nome.trim(), cat:cat, fatto:false}]));
     setNome("");
+  }
+  function aggiungiRapidoSpesa(n) {
+    var gia = items.some(function(x){ return (x.nome||"").toLowerCase() === n.toLowerCase(); });
+    if(gia) return;
+    setSpesa(items.concat([{nome:n, cat:catDaParola(n), fatto:false}]));
   }
   function toggle(i) {
     var arr = normSpesa(spesa).slice();
@@ -5835,6 +5841,30 @@ function ListaSpesaView(props) {
               fontSize:14,fontWeight:700,cursor:"pointer"}}>Aggiungi</button>
         </div>
       </div>
+
+      <div className="mf-card acc" onClick={function(){ setGuidaS(!guidaS); }}
+        style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:"11px 14px"}}>
+        <i className="ti ti-bulb" style={{fontSize:17}}/>
+        <span style={{flex:1,fontSize:13,fontWeight:700}}>Guida rapida · articoli comuni</span>
+        <i className={"ti "+(guidaS?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16}}/>
+      </div>
+      {guidaS&&(
+        <div className="mf-card" style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {SUGGERIMENTI_SPESA.map(function(n){
+            var gia = items.some(function(x){ return (x.nome||"").toLowerCase() === n.toLowerCase(); });
+            return (
+              <button key={n} onClick={function(){ aggiungiRapidoSpesa(n); }} disabled={gia}
+                style={{display:"flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:20,
+                  border:"1.5px solid "+(gia?"#D7E0E5":"#BFD9EA"),cursor:gia?"default":"pointer",
+                  background:gia?"#F2F6F8":"#fff",color:gia?"#B4BEC4":"#2C3338",fontSize:12,fontWeight:600,
+                  fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                <span style={{fontSize:14}}>{alimentoEmoji(n)}</span>{n}
+                {!gia&&<i className="ti ti-plus" style={{fontSize:12,color:"#2F6586"}}/>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <button onClick={generaDallaSettimana}
         style={{width:"100%",padding:"13px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#E2EEF5",
@@ -5997,6 +6027,69 @@ function alimentoInfo(nome) {
 function alimentoEmoji(nome) { var a = alimentoInfo(nome); return a ? a.e : "🍽️"; }
 function alimentoContenitore(nome) { var a = alimentoInfo(nome); return a ? a.c : "dispensa"; }
 
+var COTTURA_MAP = [
+  {k:["capellini","angel hair"], m:3},
+  {k:["spaghettini","vermicelli"], m:6},
+  {k:["spaghetti","linguine","bucatini"], m:9},
+  {k:["penne","fusilli","rigatoni","farfalle","mezze maniche","sedani","caserecce"], m:11},
+  {k:["tortiglioni","paccheri","maccheroni"], m:13},
+  {k:["lasagne","cannelloni"], m:0},
+  {k:["ravioli","tortellini","gnocchi","cappelletti","pasta fresca"], m:4},
+  {k:["riso","risotto"], m:16},
+  {k:["orzo perlato"], m:30},
+  {k:["farro"], m:25},
+  {k:["cous cous","couscous"], m:5},
+  {k:["polenta"], m:40},
+  {k:["pasta"], m:10}
+];
+function tempoCottura(nome) {
+  var n = (nome || "").toLowerCase();
+  var i, j;
+  for(i=0;i<COTTURA_MAP.length;i++) {
+    for(j=0;j<COTTURA_MAP[i].k.length;j++) {
+      if(n.indexOf(COTTURA_MAP[i].k[j]) >= 0) return COTTURA_MAP[i].m;
+    }
+  }
+  return null;
+}
+
+function zonaFrigo(nome) {
+  var n = (nome || "").toLowerCase();
+  if(isOrtofrutta(nome)) return "cassetto";
+  var basso = ["carne","manzo","maiale","pollo","tacchino","salsiccia","macinat","bistecca","vitello",
+    "pesce","salmone","gamber","orata","branzino","merluzzo","seppia","cozze","hamburger","spiedini","wurstel"];
+  var porta = ["salsa","sugo","ketchup","maionese","senape","condimento","succo","spremuta","bibita",
+    "aranciata","acqua","the freddo","te freddo","vino","birra","burro"];
+  var alto = ["avanzi","avanzo","pronto","torta","dolce","dessert","budino","panna cotta","tiramisu","cotto"];
+  var i;
+  for(i=0;i<basso.length;i++) { if(n.indexOf(basso[i]) >= 0) return "basso"; }
+  for(i=0;i<alto.length;i++) { if(n.indexOf(alto[i]) >= 0) return "alto"; }
+  for(i=0;i<porta.length;i++) { if(n.indexOf(porta[i]) >= 0) return "porta"; }
+  return "centrale";
+}
+function zonaFreezer(nome) {
+  var n = (nome || "").toLowerCase();
+  if(n.indexOf("gelato") >= 0 || n.indexOf("ghiaccio") >= 0 || n.indexOf("cubetti") >= 0 || n.indexOf("sorbetto") >= 0) return "alto";
+  return "basso";
+}
+
+function scadStato(scadenza) {
+  if(!scadenza) return null;
+  var d = new Date(scadenza);
+  if(isNaN(d.getTime())) return null;
+  var diff = (d.getTime() - new Date().getTime()) / 86400000;
+  if(diff < 0) return {t:"Scaduto", c:"#C0392B"};
+  if(diff <= 3) return {t:"In scadenza", c:"#E67E22"};
+  return {t:"OK", c:"#2E9E5B"};
+}
+
+var SUGGERIMENTI_DISPENSA = [
+  {g:"Frigo", items:["Latte","Uova","Yogurt","Burro","Parmigiano","Mozzarella","Prosciutto","Pollo","Insalata","Pomodori","Carote","Zucchine"]},
+  {g:"Dispensa", items:["Pasta","Riso","Passata","Tonno","Fagioli","Ceci","Olio","Sale","Zucchero","Caffe","Farina","Biscotti"]},
+  {g:"Congelatore", items:["Piselli surgelati","Spinaci surgelati","Bastoncini di pesce","Gelato","Minestrone surgelato"]}
+];
+var SUGGERIMENTI_SPESA = ["Pane","Latte","Uova","Frutta","Verdura","Pasta","Passata","Acqua","Caffe","Yogurt","Formaggio","Carne","Pesce","Detersivo piatti","Carta igienica","Olio"];
+
 var STILE_CONT = {
   frigo:    {bg:"linear-gradient(180deg,#EAF4FB,#D6EAF6)", bordo:"#BFD9EA", ripiano:"rgba(120,160,190,.38)", ic:"ti-fridge",     titolo:"Frigorifero", accent:"#2F6586", testo:"#2C3338"},
   dispensa: {bg:"linear-gradient(180deg,#F3E7D2,#E7D3B4)", bordo:"#D8C09A", ripiano:"rgba(150,120,80,.40)",  ic:"ti-box",        titolo:"Dispensa",    accent:"#9A6B2F", testo:"#4A4038"},
@@ -6020,6 +6113,8 @@ function TesseraAlimento(props) {
   var st = props.st || STILE_CONT.dispensa;
   var onRemove = props.onRemove || function(){};
   var low = dispensaLow(cell.it);
+  var scad = scadStato(cell.it.scadenza);
+  var cott = tempoCottura(cell.it.nome);
   return (
     <div style={{flex:"0 0 22%",maxWidth:"22%",position:"relative",
       display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
@@ -6034,9 +6129,19 @@ function TesseraAlimento(props) {
           border:"1px solid "+st.bordo,borderRadius:9,fontSize:8,fontWeight:800,
           color:st.accent,padding:"0 4px",minWidth:14,textAlign:"center",zIndex:2}}>{cell.it.qty}</div>
       )}
-      <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
+      <div style={{position:"relative"}}>
+        <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
+        {scad && scad.t !== "OK" && (
+          <span style={{position:"absolute",bottom:-1,right:-3,width:10,height:10,borderRadius:"50%",
+            background:scad.c,border:"1.5px solid #fff"}}/>
+        )}
+      </div>
       <div style={{fontSize:8.5,fontWeight:600,color:st.testo,textAlign:"center",lineHeight:1.1,
         whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{cell.it.nome}</div>
+      {cott !== null && cott > 0 && (
+        <div style={{fontSize:7.5,fontWeight:800,color:"#9A6B2F",background:"#F6ECD9",
+          borderRadius:6,padding:"0 4px",lineHeight:1.5}}>⏱ {cott}'</div>
+      )}
     </div>
   );
 }
@@ -6087,14 +6192,37 @@ function RipianiBox(props) {
   );
 }
 
+function ZonaRipiano(props) {
+  var label = props.label;
+  var items = props.items || [];
+  var st = props.st || STILE_CONT.frigo;
+  var body = (
+    <ScaffaleRipiani items={items} perRow={4} minRip={props.minRip || 1} st={st}
+      coloreRipiano={props.coloreRipiano} onRemove={props.onRemove}/>
+  );
+  return (
+    <div style={{marginTop:4}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,margin:"3px 0 1px"}}>
+        {props.icon && <i className={"ti "+props.icon} style={{fontSize:12,color:st.accent}}/>}
+        <span style={{fontSize:9,fontWeight:800,color:st.accent,letterSpacing:"0.03em",flex:1}}>{label}</span>
+        <span style={{fontSize:9,fontWeight:700,color:st.accent,opacity:.55}}>{items.length}</span>
+      </div>
+      {props.boxed ? (
+        <div style={{borderRadius:10,border:"1.5px solid "+st.bordo,background:"rgba(255,255,255,.45)",padding:"2px 8px 2px"}}>{body}</div>
+      ) : body}
+    </div>
+  );
+}
+
 function FrigoLG(props) {
+  var frigo = props.frigo || [];
   var freezer = props.freezer || [];
-  var ripiano = props.ripiano || [];
-  var cassetti = props.cassetti || [];
   var onRemove = props.onRemove || function(){};
   var stF = STILE_CONT.freezer;
   var stR = STILE_CONT.frigo;
-  var totale = freezer.length + ripiano.length + cassetti.length;
+  var totale = frigo.length + freezer.length;
+  function zr(z) { return frigo.filter(function(c){ return zonaFrigo(c.it.nome) === z; }); }
+  function zf(z) { return freezer.filter(function(c){ return zonaFreezer(c.it.nome) === z; }); }
   return (
     <div style={{borderRadius:20,overflow:"hidden",border:"2px solid #AEB6BD",
       background:"linear-gradient(180deg,#E4E8EB,#CDD3D8)",boxShadow:"0 4px 16px rgba(0,0,0,.12)",padding:6}}>
@@ -6110,8 +6238,9 @@ function FrigoLG(props) {
           <span style={{fontSize:12,fontWeight:800,flex:1}}>Congelatore</span>
           <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{freezer.length}</span>
         </div>
-        <div style={{padding:"2px 10px 8px"}}>
-          <ScaffaleRipiani items={freezer} perRow={4} minRip={2} st={stF} onRemove={onRemove}/>
+        <div style={{padding:"0 10px 8px"}}>
+          <ZonaRipiano label="GELATI E GHIACCIO" items={zf("alto")} st={stF} minRip={1} onRemove={onRemove}/>
+          <ZonaRipiano label="SURGELATI" items={zf("basso")} st={stF} minRip={1} onRemove={onRemove}/>
         </div>
       </div>
 
@@ -6119,19 +6248,15 @@ function FrigoLG(props) {
         <div style={{display:"flex",alignItems:"center",gap:7,padding:"7px 12px",background:stR.accent,color:"#fff"}}>
           <i className="ti ti-fridge" style={{fontSize:15}}/>
           <span style={{fontSize:12,fontWeight:800,flex:1}}>Frigorifero</span>
-          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{ripiano.length + cassetti.length}</span>
+          <span style={{fontSize:10,fontWeight:700,opacity:.85}}>{frigo.length}</span>
         </div>
-        <div style={{padding:"2px 10px 4px"}}>
-          <ScaffaleRipiani items={ripiano} perRow={4} minRip={3} st={stR} onRemove={onRemove}/>
-        </div>
-        <div style={{padding:"8px 10px 10px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-            <i className="ti ti-salad" style={{fontSize:13,color:stR.accent}}/>
-            <span style={{fontSize:9.5,fontWeight:800,color:stR.accent,letterSpacing:"0.04em"}}>CASSETTI FRUTTA E VERDURA</span>
-          </div>
-          <div style={{borderRadius:10,border:"1.5px solid "+stR.bordo,background:"rgba(255,255,255,.45)",padding:"2px 8px 4px"}}>
-            <ScaffaleRipiani items={cassetti} perRow={4} minRip={2} st={stR} coloreRipiano="rgba(120,160,190,.28)" onRemove={onRemove}/>
-          </div>
+        <div style={{padding:"0 10px 10px"}}>
+          <ZonaRipiano label="RIPIANO ALTO · PRONTI E BEVANDE" items={zr("alto")} st={stR} minRip={1} onRemove={onRemove}/>
+          <ZonaRipiano label="RIPIANO CENTRALE · LATTICINI, UOVA, SALUMI" items={zr("centrale")} st={stR} minRip={1} onRemove={onRemove}/>
+          <ZonaRipiano label="RIPIANO BASSO · CARNE E PESCE (PIU FREDDO)" items={zr("basso")} st={stR} minRip={1} onRemove={onRemove}/>
+          <ZonaRipiano label="BALCONCINI PORTA · SALSE E BEVANDE" items={zr("porta")} st={stR} minRip={1} boxed={true} onRemove={onRemove}/>
+          <ZonaRipiano label="CASSETTI FRUTTA E VERDURA" items={zr("cassetto")} st={stR} minRip={1} boxed={true}
+            coloreRipiano="rgba(120,160,190,.28)" onRemove={onRemove}/>
         </div>
       </div>
     </div>
@@ -6146,15 +6271,24 @@ function DispensaView(props) {
   var s_add = useState(false); var showAdd = s_add[0]; var setShowAdd = s_add[1];
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_qty = useState(""); var qty = s_qty[0]; var setQty = s_qty[1];
+  var s_scad = useState(""); var scad = s_scad[0]; var setScad = s_scad[1];
   var s_cont = useState("auto"); var contSel = s_cont[0]; var setContSel = s_cont[1];
   var s_vista = useState("ripiani"); var vista = s_vista[0]; var setVista = s_vista[1];
+  var s_mob = useState("frigo"); var mobile = s_mob[0]; var setMobile = s_mob[1];
+  var s_guida = useState(false); var guida = s_guida[0]; var setGuida = s_guida[1];
 
   function aggiungi() {
     if(!nome.trim()) return;
     var cont = contSel === "auto" ? alimentoContenitore(nome) : contSel;
-    var nuovo = {nome:nome.trim(), qty:qty||"1", unita:"pz", cat:"dispensa", contenitore:cont, scadenza:""};
+    var nuovo = {nome:nome.trim(), qty:qty||"1", unita:"pz", cat:"dispensa", contenitore:cont, scadenza:scad};
     setDispensa(dispensa.concat([nuovo]));
-    setNome(""); setQty(""); setContSel("auto"); setShowAdd(false);
+    setNome(""); setQty(""); setScad(""); setContSel("auto"); setShowAdd(false);
+  }
+  function aggiungiRapido(n) {
+    var cont = alimentoContenitore(n);
+    var gia = dispensa.some(function(x){ return (x.nome||"").toLowerCase() === n.toLowerCase(); });
+    if(gia) return;
+    setDispensa(dispensa.concat([{nome:n, qty:"1", unita:"pz", cat:"dispensa", contenitore:cont, scadenza:""}]));
   }
   function rimuoviItem(idx) {
     setDispensa(dispensa.filter(function(x, i){ return i !== idx; }));
@@ -6200,8 +6334,48 @@ function DispensaView(props) {
               <option value="dispensa">Dispensa</option>
               <option value="freezer">Congelatore</option>
             </select>
-            <button onClick={aggiungi} style={{padding:"10px 18px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
+            <input type="date" value={scad} onChange={function(e){setScad(e.target.value);}}
+              title="Scadenza"
+              style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
           </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <span style={{flex:1,fontSize:11,color:"#8A949B"}}>La scadenza e facoltativa</span>
+            <button onClick={aggiungi} style={{padding:"10px 22px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>Aggiungi</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mf-card acc" onClick={function(){ setGuida(!guida); }}
+        style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",padding:"11px 14px"}}>
+        <i className="ti ti-bulb" style={{fontSize:17}}/>
+        <span style={{flex:1,fontSize:13,fontWeight:700}}>Guida rapida · tocca per riempire la dispensa</span>
+        <i className={"ti "+(guida?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16}}/>
+      </div>
+      {guida&&(
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+          {SUGGERIMENTI_DISPENSA.map(function(grp){
+            var st = STILE_CONT[grp.g==="Frigo"?"frigo":grp.g==="Congelatore"?"freezer":"dispensa"];
+            return (
+              <div key={grp.g}>
+                <div style={{fontSize:10,fontWeight:800,color:st.accent,marginBottom:6,letterSpacing:"0.03em"}}>{grp.g.toUpperCase()}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {grp.items.map(function(n){
+                    var gia = dispensa.some(function(x){ return (x.nome||"").toLowerCase() === n.toLowerCase(); });
+                    return (
+                      <button key={n} onClick={function(){ aggiungiRapido(n); }} disabled={gia}
+                        style={{display:"flex",alignItems:"center",gap:5,padding:"6px 10px",borderRadius:20,
+                          border:"1.5px solid "+(gia?"#D7E0E5":st.bordo),cursor:gia?"default":"pointer",
+                          background:gia?"#F2F6F8":"#fff",color:gia?"#B4BEC4":"#2C3338",fontSize:12,fontWeight:600,
+                          fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                        <span style={{fontSize:14}}>{alimentoEmoji(n)}</span>{n}
+                        {!gia&&<i className="ti ti-plus" style={{fontSize:12,color:st.accent}}/>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -6218,15 +6392,28 @@ function DispensaView(props) {
       </div>
 
       {vista==="ripiani" ? (
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <FrigoLG freezer={gruppo("freezer")}
-            ripiano={gruppo("frigo").filter(function(c){ return !isOrtofrutta(c.it.nome); })}
-            cassetti={gruppo("frigo").filter(function(c){ return isOrtofrutta(c.it.nome); })}
-            onRemove={rimuoviItem}/>
-          <RipianiBox tipo="dispensa" items={gruppo("dispensa")} onRemove={rimuoviItem}/>
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",gap:6}}>
+            {[{id:"frigo",l:"Frigo · Congelatore",ic:"ti-fridge"},{id:"dispensa",l:"Dispensa",ic:"ti-box"}].map(function(v){
+              var on = mobile === v.id;
+              return (
+                <button key={v.id} onClick={function(){ setMobile(v.id); }}
+                  style={{flex:1,padding:"7px",borderRadius:10,border:"1.5px solid "+(on?"#6BA6C9":"#E3EAEE"),cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                    background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",fontWeight:on?700:600,fontSize:12}}>
+                  <i className={"ti "+v.ic} style={{fontSize:15}}/>{v.l}
+                </button>
+              );
+            })}
+          </div>
+          {mobile==="frigo" ? (
+            <FrigoLG frigo={gruppo("frigo")} freezer={gruppo("freezer")} onRemove={rimuoviItem}/>
+          ) : (
+            <RipianiBox tipo="dispensa" items={gruppo("dispensa")} onRemove={rimuoviItem}/>
+          )}
           {dispensa.length===0 && (
             <div style={{fontSize:12,color:"#8A949B",textAlign:"center"}}>
-              Aggiungi un prodotto col + in alto: comparira da solo al posto giusto.
+              Aggiungi un prodotto col + in alto o dalla guida rapida: comparira al posto giusto.
             </div>
           )}
         </div>
@@ -6237,12 +6424,18 @@ function DispensaView(props) {
         )}
         {dispensa.map(function(it, i){
           var low = dispensaLow(it);
+          var ss = scadStato(it.scadenza);
+          var cott = tempoCottura(it.nome);
           return (
             <div key={i} className="mf-row">
               <div className="mf-ic" style={{fontSize:20}}>{alimentoEmoji(it.nome)}</div>
-              <div style={{flex:1}}>
+              <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:500}}>{it.nome}</div>
-                <div style={{fontSize:11,color:"#8A949B"}}>{(it.qty||"")+" "+(it.unita||"")}</div>
+                <div style={{fontSize:11,color:"#8A949B",display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <span>{(it.qty||"")+" "+(it.unita||"")}</span>
+                  {cott !== null && cott > 0 && <span style={{color:"#9A6B2F",fontWeight:700}}>⏱ {cott} min</span>}
+                  {ss && <span style={{color:ss.c,fontWeight:700}}>{ss.t==="OK"?"Scade "+it.scadenza:ss.t}</span>}
+                </div>
               </div>
               <span className={"pill "+(low?"low":"ok")}>{low?"In esaurimento":"OK"}</span>
               <i className="ti ti-x" onClick={function(){ rimuoviItem(i); }}
