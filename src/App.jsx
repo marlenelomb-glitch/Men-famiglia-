@@ -3857,28 +3857,29 @@ function PiramideLive(props) {
 function Drop(props) {
   var sel=props.opts.find(function(o){return o.id===props.value;});
   return (
-    <div style={{marginBottom:8}}>
-      <div style={{fontSize:9,fontWeight:700,marginBottom:3,
-        color:props.warn?"#C0392B":props.color||"#555"}}>{props.label}</div>
+    <div style={{marginBottom:10}}>
+      <div style={{fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:"0.02em",
+        color:props.warn?"#C0392B":props.color||"#8A949B"}}>{props.label}</div>
       <select value={props.value||""} onChange={function(e){props.onChange(e.target.value||null);}}
-        style={{width:"100%",padding:"7px 10px",borderRadius:10,
-          border:"1.5px solid "+(props.value?props.color:props.warn?"#C0392B":"#ddd"),
-          background:props.value?props.color+"15":"#fff",
-          color:props.value?"#222":"#8A949B",fontSize:11,cursor:"pointer",outline:"none"}}>
-        <option value="">-- scegli --</option>
+        style={{width:"100%",padding:"11px 12px",borderRadius:13,
+          border:"1.5px solid "+(props.value?props.color:props.warn?"#C0392B":"#E3EAEE"),
+          background:props.value?props.color+"12":"#fff",
+          color:props.value?"#2C3338":"#8A949B",fontSize:14,fontWeight:props.value?600:400,
+          cursor:"pointer",outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+        <option value="">Scegli...</option>
         {props.opts.map(function(o){
           return (
             <option key={o.id} value={o.disabled?"":o.id} disabled={!!o.disabled}>
-              {o.emoji?o.emoji+"?":""}{o.nome}
+              {o.emoji?o.emoji+" ":""}{o.nome}
             </option>
           );
         })}
       </select>
       {sel&&!sel.disabled&&(
-        <div style={{display:"flex",justifyContent:"space-between",padding:"2px 4px 0"}}>
-          <span style={{fontSize:10,color:props.color,fontWeight:700}}>{sel.emoji} {sel.nome}</span>
-          <button onClick={function(){props.onChange(null);}}
-            style={{background:"none",border:"none",color:"#ccc",fontSize:13,cursor:"pointer"}}>x</button>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 4px 0"}}>
+          <span style={{fontSize:12,color:props.color,fontWeight:700}}>{sel.emoji} {sel.nome}</span>
+          <i className="ti ti-x" onClick={function(){props.onChange(null);}}
+            style={{color:"#B4BEC4",fontSize:15,cursor:"pointer"}}/>
         </div>
       )}
     </div>
@@ -3895,13 +3896,13 @@ function TwoLevelDrop(props) {
   var setOpenCat=openCatState[1];
   var itemsForCat=openCat?db.filter(function(x){return x.cat===openCat;}):[];
   return (
-    <div style={{marginBottom:10}}>
-      <div style={{fontSize:9,fontWeight:700,marginBottom:5,color:props.warn?"#C0392B":props.color||"#555"}}>
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:11,fontWeight:600,marginBottom:6,letterSpacing:"0.02em",color:props.warn?"#C0392B":props.color||"#8A949B"}}>
         {props.label}
-        {selItem&&<span style={{marginLeft:6,fontWeight:800,fontSize:10,color:props.color}}>{selItem.emoji} {selItem.nome}</span>}
-        {selItem&&<button onClick={function(){props.onChange(null);}} style={{marginLeft:6,background:"none",border:"none",color:"#8A949B",fontSize:11,cursor:"pointer"}}>x</button>}
+        {selItem&&<span style={{marginLeft:6,fontWeight:800,fontSize:12,color:props.color}}>{selItem.emoji} {selItem.nome}</span>}
+        {selItem&&<i className="ti ti-x" onClick={function(){props.onChange(null);}} style={{marginLeft:6,color:"#B4BEC4",fontSize:14,cursor:"pointer",verticalAlign:"-2px"}}/>}
       </div>
-      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:openCat?6:0}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:openCat?7:0}}>
         {Object.keys(cats).map(function(cat){
           var nome=cats[cat];
           if(!db.some(function(x){return x.cat===cat;})) return null;
@@ -3909,27 +3910,27 @@ function TwoLevelDrop(props) {
           var hasVal=selItem&&selItem.cat===cat;
           return (
             <button key={cat} onClick={function(){setOpenCat(isSel&&!hasVal?null:cat);}}
-              style={{padding:"5px 11px",borderRadius:20,fontSize:10,cursor:"pointer",
-                border:"1.5px solid "+(hasVal?"#2F6586":isSel?props.color:props.warn?"#C0392B":"#ddd"),
+              style={{padding:"7px 13px",borderRadius:20,fontSize:12,cursor:"pointer",
+                border:"1.5px solid "+(hasVal?"#2F6586":isSel?props.color:props.warn?"#C0392B":"#E3EAEE"),
                 background:hasVal?"#2F6586":isSel?props.color+"15":"#fff",
                 color:hasVal?"#fff":isSel?props.color:"#555",
-                fontWeight:hasVal||isSel?700:400}}>
+                fontWeight:hasVal||isSel?700:500,fontFamily:"'Nunito',system-ui,sans-serif"}}>
               {nome}
             </button>
           );
         })}
       </div>
       {openCat&&itemsForCat.length>0&&(
-        <div style={{background:"#F5F8FC",borderRadius:10,padding:"8px",border:"1.5px solid "+props.color+"33"}}>
+        <div style={{background:"#F2F6F8",borderRadius:13,padding:"9px",border:"1px solid #E3EAEE"}}>
           <select value={selItem&&selItem.cat===openCat?value:""} onChange={function(e){props.onChange(e.target.value||null);}}
-            style={{width:"100%",padding:"7px 10px",borderRadius:8,
-              border:"1.5px solid "+(value&&selItem&&selItem.cat===openCat?props.color:"#ddd"),
-              fontSize:11,cursor:"pointer",outline:"none"}}>
+            style={{width:"100%",padding:"10px 12px",borderRadius:11,
+              border:"1.5px solid "+(value&&selItem&&selItem.cat===openCat?props.color:"#E3EAEE"),
+              fontSize:14,cursor:"pointer",outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
             <option value="">-- scegli --</option>
             {itemsForCat.map(function(o){
               return (
                 <option key={o.id} value={o.id}>
-                  {o.emoji?o.emoji+"?":""}{o.nome}
+                  {o.emoji?o.emoji+" ":""}{o.nome}
                 </option>
               );
             })}
@@ -4076,26 +4077,26 @@ function NutriPanel(props) {
       </div>
 
       {avvisi.length>0&&(
-        <div style={{background:"#FDEDEC",border:"1.5px solid #E6B0AA",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
-          <div style={{fontSize:9,fontWeight:800,color:"#C0392B",marginBottom:4}}>Avvisi nutrizionali</div>
+        <div style={{background:"#FDEDEC",border:"1px solid #E6B0AA",borderRadius:12,padding:"10px 12px",marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#C0392B",marginBottom:5}}>Avvisi nutrizionali</div>
           {avvisi.map(function(a,i){
-            return <div key={i} style={{fontSize:9,color:"#922B21",lineHeight:1.5}}>- {a}</div>;
+            return <div key={i} style={{fontSize:11,color:"#922B21",lineHeight:1.5}}>- {a}</div>;
           })}
         </div>
       )}
 
-      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:6}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
         {items.map(function(it){
           return (
-            <span key={it.nome} style={{fontSize:8,background:"#EBF3FA",color:"#2F6586",padding:"2px 7px",borderRadius:20}}>
+            <span key={it.nome} style={{fontSize:11,fontWeight:600,background:"#EBF3FA",color:"#2F6586",padding:"3px 9px",borderRadius:20}}>
               {it.emoji} {it.kcal}kcal{it.prot>0?" / "+it.prot+"g":""}
             </span>
           );
         })}
       </div>
 
-      <div style={{fontSize:8,color:"#8A949B"}}>
-        Semaforo: verde entro i parametri - giallo 80-100% del limite - rosso superato
+      <div style={{fontSize:10,color:"#8A949B"}}>
+        Semaforo: verde entro i parametri · giallo 80-100% del limite · rosso superato
       </div>
     </div>
   );
@@ -4189,20 +4190,20 @@ function CostruttorePasto(props) {
 
   return (
     <div style={{flex:1}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:13,fontWeight:800,color:"#2C3338"}}>{giorno} - {pasto}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <div style={{fontSize:15,fontWeight:800,color:"#2C3338"}}>{giorno} · {pasto}</div>
         {isPrinc&&(
-          <div style={{display:"flex",gap:4}}>
-            <div style={{width:22,height:22,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:carbo?"#D4A017":"#f0f0f0",border:"1.5px solid "+(carbo?"#D4A017":"#ddd")}}>
-              <span style={{fontSize:9,fontWeight:800,color:carbo?"#fff":"#bbb"}}>C</span>
+          <div style={{display:"flex",gap:5}}>
+            <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:carbo?"#D4A017":"#EEF1F3"}}>
+              <span style={{fontSize:11,fontWeight:800,color:carbo?"#fff":"#B4BEC4"}}>C</span>
             </div>
-            <div style={{width:22,height:22,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:prot?"#E07A5F":"#f0f0f0",border:"1.5px solid "+(prot?"#E07A5F":"#ddd")}}>
-              <span style={{fontSize:9,fontWeight:800,color:prot?"#fff":"#bbb"}}>P</span>
+            <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:prot?"#E07A5F":"#EEF1F3"}}>
+              <span style={{fontSize:11,fontWeight:800,color:prot?"#fff":"#B4BEC4"}}>P</span>
             </div>
-            <div style={{width:22,height:22,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:verd?"#52B788":"#f0f0f0",border:"1.5px solid "+(verd?"#52B788":"#ddd")}}>
-              <span style={{fontSize:9,fontWeight:800,color:verd?"#fff":"#bbb"}}>V</span>
+            <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:verd?"#52B788":"#EEF1F3"}}>
+              <span style={{fontSize:11,fontWeight:800,color:verd?"#fff":"#B4BEC4"}}>V</span>
             </div>
-            {completo&&<div style={{width:22,height:22,borderRadius:"50%",background:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:9,fontWeight:800,color:"#fff"}}>ok</span></div>}
+            {completo&&<div style={{width:24,height:24,borderRadius:"50%",background:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center"}}><i className="ti ti-check" style={{fontSize:13,color:"#fff"}}/></div>}
           </div>
         )}
       </div>
@@ -4316,9 +4317,9 @@ function CostruttorePasto(props) {
           )}
 
           <button onClick={function(){setStep(2);}} disabled={!haQualcosa}
-            style={{width:"100%",padding:"11px",borderRadius:12,border:"none",marginTop:4,
-              background:completo?"#2F6586":haQualcosa?"#6BA6C9":"#ddd",
-              color:"#fff",fontSize:12,fontWeight:800,cursor:haQualcosa?"pointer":"default"}}>
+            style={{width:"100%",padding:"13px",borderRadius:14,border:"none",marginTop:4,
+              background:completo?"#2F6586":haQualcosa?"#6BA6C9":"#D7E0E5",
+              color:"#fff",fontSize:14,fontWeight:700,cursor:haQualcosa?"pointer":"default"}}>
             {completo?"Avanti: come li cucini?":haQualcosa?"Avanti (manca: "+mancanti.join(", ")+")":"Seleziona alimento"}
           </button>
         </div>
@@ -4351,10 +4352,10 @@ function CostruttorePasto(props) {
                         var n=Object.assign({},prep);
                         n[x.id]=prep[x.id]===p.id?null:p.id;
                         setPrep(n);
-                      }} style={{padding:"5px 10px",borderRadius:20,fontSize:10,cursor:"pointer",
-                        border:"1.5px solid "+(selPrep===p.id?"#2F6586":"#ddd"),
-                        background:selPrep===p.id?"#2F6586":"#fff",
-                        color:selPrep===p.id?"#fff":"#444"}}>
+                      }} style={{padding:"7px 12px",borderRadius:20,fontSize:12,cursor:"pointer",
+                        border:"1.5px solid "+(selPrep===p.id?"#2F6586":"#E3EAEE"),
+                        background:selPrep===p.id?"#2F6586":"#fff",fontFamily:"'Nunito',system-ui,sans-serif",
+                        color:selPrep===p.id?"#fff":"#444",fontWeight:selPrep===p.id?700:500}}>
                         {p.emoji} {p.nome}
                       </button>
                     );
@@ -4365,20 +4366,20 @@ function CostruttorePasto(props) {
           })}
 
           <div style={{marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#555",marginBottom:6}}>Note</div>
+            <div className="cap" style={{marginBottom:6}}>Note</div>
             <textarea value={nota} onChange={function(e){setNota(e.target.value);}}
               placeholder="Es. marinato al limone..." rows={2}
-              style={{width:"100%",padding:"8px 10px",borderRadius:10,border:"1.5px solid #ddd",
-                fontSize:11,resize:"none",fontFamily:"inherit",boxSizing:"border-box"}}></textarea>
+              style={{width:"100%",padding:"11px 12px",borderRadius:13,border:"1.5px solid #E3EAEE",
+                fontSize:14,resize:"none",fontFamily:"'Nunito',system-ui,sans-serif",boxSizing:"border-box",outline:"none"}}></textarea>
           </div>
 
           <div style={{display:"flex",gap:8}}>
             <button onClick={function(){setStep(1);}}
-              style={{flex:1,padding:"10px",borderRadius:12,border:"1.5px solid #ddd",background:"#fff",fontSize:11,cursor:"pointer",color:"#555"}}>
+              style={{flex:1,padding:"13px",borderRadius:14,border:"1.5px solid #E3EAEE",background:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",color:"#555"}}>
               Indietro
             </button>
             <button onClick={doSalva}
-              style={{flex:2,padding:"10px",borderRadius:12,border:"none",background:"#2F6586",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>
+              style={{flex:2,padding:"13px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
               Salva pasto
             </button>
           </div>
@@ -4714,14 +4715,14 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             setScelteProssima(Object.assign({},scelte));
           }
         }} title="Copia questa sett. nella prossima"
-          style={{padding:"8px 10px",borderRadius:10,border:"1.5px solid #E3EAEE",
-            background:"#EBF3FA",color:"#2F6586",fontSize:11,cursor:"pointer",fontWeight:700}}>
+          style={{padding:"9px 11px",borderRadius:12,border:"none",
+            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700}}>
           Copia
         </button>
         <button onClick={function(){setShowRicette(true);}}
           title="Ricette salvate"
-          style={{padding:"8px 10px",borderRadius:10,border:"1.5px solid #FAE0E5",
-            background:"#FFF0F3",color:"#C2355A",fontSize:11,cursor:"pointer",fontWeight:700}}>
+          style={{padding:"9px 11px",borderRadius:12,border:"none",
+            background:"#FFF0F3",color:"#C2355A",fontSize:12,cursor:"pointer",fontWeight:700}}>
           Ricette
         </button>
       </div>
@@ -4763,42 +4764,42 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             );
           })}
         </div>
-        <div style={{display:"flex",gap:4}}>
+        <div style={{display:"flex",gap:5}}>
           {PASTI_B.map(function(p){
             var g=GIORNI_B[giornoSel];
             var comp=isCompleto(g,p); var saved=hasSaved(g,p); var sel=pastoSel===p;
             return (
               <button key={p} onClick={function(){cambiaPasto(p);}}
-                style={{flex:1,padding:"6px 2px",borderRadius:10,fontSize:9,cursor:"pointer",
-                  border:"2px solid "+(sel?"#C2355A":comp?"#2F6586":saved?"#6BA6C9":"#eee"),
-                  background:sel?"#C2355A":comp?"#EBF3FA":saved?"#F0F6FA":"#fff",
-                  color:sel?"#fff":comp?"#2F6586":saved?"#6BA6C9":"#8A949B",
-                  fontWeight:sel||comp?700:400,textAlign:"center"}}>
-                {p.slice(0,3)}
-                <div style={{fontSize:7,marginTop:1}}>{comp?"ok":saved?"...":"--"}</div>
+                style={{flex:1,padding:"8px 2px",borderRadius:11,fontSize:11,cursor:"pointer",
+                  border:"1.5px solid "+(sel?"#2F6586":comp?"#BFE3CC":saved?"#BFD9EA":"#E3EAEE"),
+                  background:sel?"#2F6586":comp?"#E8F3EC":saved?"#EBF3FA":"#fff",
+                  color:sel?"#fff":comp?"#2E9E5B":saved?"#2F6586":"#8A949B",
+                  fontWeight:sel||comp?700:500,textAlign:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                {p.slice(0,3)}{comp?" ✓":""}
               </button>
             );
           })}
         </div>
       </div>
 
-      <div style={{display:"flex",gap:8}}>
-        <div style={{flex:1}}>
-          {step2Done&&<div style={{background:"#2F6586",color:"#fff",padding:"8px",textAlign:"center",fontSize:11,fontWeight:800,borderRadius:10,marginBottom:8}}>Pasto salvato</div>}
-          <CostruttorePasto
-            key={key}
-            giorno={GIORNI_B[giornoSel]}
-            pasto={pastoSel}
-            scelta={sceltaCorrente}
-            profili={profili}
-            onSalva={salva}
-            stepEst={stepCorrente}
-            setStepEst={setStepCorrente}
-            onLive={setLiveScelta}
-            customIng={customIng}
-            setCustomIng={setCustomIng}/>
-        </div>
-        <div style={{width:100,flexShrink:0}}>
+      <div className="mf-card" style={{padding:"14px 15px",marginBottom:10}}>
+        {step2Done&&<div style={{background:"#2F6586",color:"#fff",padding:"9px",textAlign:"center",fontSize:12,fontWeight:800,borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-check"/>Pasto salvato</div>}
+        <CostruttorePasto
+          key={key}
+          giorno={GIORNI_B[giornoSel]}
+          pasto={pastoSel}
+          scelta={sceltaCorrente}
+          profili={profili}
+          onSalva={salva}
+          stepEst={stepCorrente}
+          setStepEst={setStepCorrente}
+          onLive={setLiveScelta}
+          customIng={customIng}
+          setCustomIng={setCustomIng}/>
+      </div>
+
+      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+        <div style={{width:96,flexShrink:0}}>
           <PiattoVisivo
             carbo={liveScelta.carbo||null}
             prot={liveScelta.proteina||null}
@@ -4806,16 +4807,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             frutta={liveScelta.frutta||null}
             lattic={liveScelta.latticino||null}
             isPrinc={pastoSel==="Pranzo"||pastoSel==="Cena"}/>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
           <PiramideLive scelte={scelteAttive}/>
         </div>
       </div>
 
-      <div style={{background:"#fff",padding:"10px",borderRadius:10,marginTop:8,border:"1px solid #E3EAEE"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-          <span style={{fontSize:10,fontWeight:800,color:"#2C3338"}}>Settimana</span>
+      <div className="mf-card" style={{padding:"12px 14px",marginTop:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <span className="cap">Settimana</span>
           <button onClick={function(){setShowSpesa(true);}}
-            style={{background:"#C2355A",color:"#fff",border:"none",borderRadius:20,padding:"3px 10px",fontSize:9,fontWeight:700,cursor:"pointer"}}>
-            Lista spesa
+            style={{background:"#C2355A",color:"#fff",border:"none",borderRadius:20,padding:"6px 13px",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+            <i className="ti ti-shopping-cart" style={{fontSize:13}}/>Lista spesa
           </button>
         </div>
         <GrigliaSettimana
@@ -4832,7 +4835,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
           <div onClick={function(e){e.stopPropagation();}}
             style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #eee",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #E3EAEE",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:13,fontWeight:800}}>Lista della spesa</div>
               <button onClick={function(){setShowSpesa(false);}} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#8A949B"}}>x</button>
             </div>
@@ -4850,7 +4853,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           <div onClick={function(e){e.stopPropagation();}}
             style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,
               maxHeight:"75vh",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #eee",
+            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #E3EAEE",
               display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:14,fontWeight:800,color:"#C2355A"}}>Ricette preferite</div>
               <button onClick={function(){setShowRicette(null);}}
