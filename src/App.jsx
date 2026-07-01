@@ -5923,6 +5923,140 @@ function dispensaLow(it) {
   return false;
 }
 
+var ALIMENTI_IMG = [
+  {k:["latte"], e:"🥛", c:"frigo"},
+  {k:["yogurt","yoghurt"], e:"🍶", c:"frigo"},
+  {k:["uova","uovo"], e:"🥚", c:"frigo"},
+  {k:["mozzarella","stracchino"], e:"🧀", c:"frigo"},
+  {k:["ricotta"], e:"🧀", c:"frigo"},
+  {k:["formaggio","parmigiano","grana","pecorino","emmental"], e:"🧀", c:"frigo"},
+  {k:["burro"], e:"🧈", c:"frigo"},
+  {k:["panna"], e:"🍶", c:"frigo"},
+  {k:["prosciutto","salame","affettat","mortadella","speck","bresaola","wurstel"], e:"🥓", c:"frigo"},
+  {k:["pollo","tacchino"], e:"🍗", c:"frigo"},
+  {k:["carne","manzo","maiale","bistecca","macinat","vitello","salsiccia"], e:"🥩", c:"frigo"},
+  {k:["pesce","salmone","orata","branzino","merluzzo","gamber","seppia","cozze"], e:"🐟", c:"frigo"},
+  {k:["insalata","lattuga","rucola","spinaci"], e:"🥬", c:"frigo"},
+  {k:["pomodoro","pomodori"], e:"🍅", c:"frigo"},
+  {k:["carota","carote"], e:"🥕", c:"frigo"},
+  {k:["zucchina","zucchine","cetriolo"], e:"🥒", c:"frigo"},
+  {k:["broccoli","broccolo","cavolo","verza"], e:"🥦", c:"frigo"},
+  {k:["peperone","peperoni"], e:"🫑", c:"frigo"},
+  {k:["melanzana","melanzane"], e:"🍆", c:"frigo"},
+  {k:["limone","limoni"], e:"🍋", c:"frigo"},
+  {k:["mela","mele"], e:"🍎", c:"frigo"},
+  {k:["fragola","fragole"], e:"🍓", c:"frigo"},
+  {k:["uva"], e:"🍇", c:"frigo"},
+  {k:["succo","spremuta","aranciata","bibita","coca","the freddo","te freddo"], e:"🧃", c:"frigo"},
+  {k:["gelato"], e:"🍦", c:"freezer"},
+  {k:["ghiaccio","cubetti"], e:"🧊", c:"freezer"},
+  {k:["piselli surgelat","spinaci surgelat","minestrone surgelat","verdure surgelat"], e:"🧊", c:"freezer"},
+  {k:["bastoncini","pesce surgelat","filetti surgelat"], e:"🐟", c:"freezer"},
+  {k:["pizza surgelat"], e:"🍕", c:"freezer"},
+  {k:["surgelat","congelat"], e:"🧊", c:"freezer"},
+  {k:["pasta","spaghetti","penne","fusilli","maccheroni","lasagne","rigatoni"], e:"🍝", c:"dispensa"},
+  {k:["riso","risotto"], e:"🍚", c:"dispensa"},
+  {k:["farina"], e:"🌾", c:"dispensa"},
+  {k:["pane","panini","pancarr","piadina"], e:"🍞", c:"dispensa"},
+  {k:["fette biscottate","cracker","grissini"], e:"🍘", c:"dispensa"},
+  {k:["biscotti","biscotto","merendine","merendina"], e:"🍪", c:"dispensa"},
+  {k:["cioccolato","cioccolata","nutella"], e:"🍫", c:"dispensa"},
+  {k:["cereali","corn flakes","muesli"], e:"🥣", c:"dispensa"},
+  {k:["tonno","sgombro"], e:"🥫", c:"dispensa"},
+  {k:["fagioli","ceci","lenticchie","legumi","piselli"], e:"🫘", c:"dispensa"},
+  {k:["pelati","passata","polpa","sugo","salsa"], e:"🥫", c:"dispensa"},
+  {k:["olio"], e:"🫒", c:"dispensa"},
+  {k:["aceto"], e:"🍾", c:"dispensa"},
+  {k:["sale"], e:"🧂", c:"dispensa"},
+  {k:["zucchero"], e:"🍬", c:"dispensa"},
+  {k:["caffe","caffè","cafe"], e:"☕", c:"dispensa"},
+  {k:["the","tè","tisana","camomilla"], e:"🍵", c:"dispensa"},
+  {k:["acqua","bottiglia"], e:"💧", c:"dispensa"},
+  {k:["vino"], e:"🍷", c:"dispensa"},
+  {k:["birra"], e:"🍺", c:"dispensa"},
+  {k:["patate","patata"], e:"🥔", c:"dispensa"},
+  {k:["cipolla","cipolle","aglio","scalogno"], e:"🧅", c:"dispensa"},
+  {k:["miele"], e:"🍯", c:"dispensa"},
+  {k:["marmellata","confettura"], e:"🍓", c:"dispensa"},
+  {k:["patatine","snack","noccioline","arachidi"], e:"🥨", c:"dispensa"},
+  {k:["banana","banane"], e:"🍌", c:"dispensa"},
+  {k:["arancia","arance","mandarini"], e:"🍊", c:"dispensa"}
+];
+
+function alimentoInfo(nome) {
+  var n = (nome || "").toLowerCase();
+  var i, j;
+  for(i=0;i<ALIMENTI_IMG.length;i++) {
+    var a = ALIMENTI_IMG[i];
+    for(j=0;j<a.k.length;j++) {
+      if(n.indexOf(a.k[j]) >= 0) return a;
+    }
+  }
+  return null;
+}
+function alimentoEmoji(nome) { var a = alimentoInfo(nome); return a ? a.e : "🍽️"; }
+function alimentoContenitore(nome) { var a = alimentoInfo(nome); return a ? a.c : "dispensa"; }
+
+var STILE_CONT = {
+  frigo:    {bg:"linear-gradient(180deg,#EAF4FB,#D6EAF6)", bordo:"#BFD9EA", ripiano:"rgba(120,160,190,.38)", ic:"ti-fridge",     titolo:"Frigorifero", accent:"#2F6586", testo:"#2C3338"},
+  dispensa: {bg:"linear-gradient(180deg,#F3E7D2,#E7D3B4)", bordo:"#D8C09A", ripiano:"rgba(150,120,80,.40)",  ic:"ti-box",        titolo:"Dispensa",    accent:"#9A6B2F", testo:"#4A4038"},
+  freezer:  {bg:"linear-gradient(180deg,#E8F6FA,#CFEAF2)", bordo:"#BADFEA", ripiano:"rgba(110,170,190,.45)", ic:"ti-snowflake",  titolo:"Congelatore", accent:"#2F7C86", testo:"#2C3338"}
+};
+
+function RipianiBox(props) {
+  var tipo = props.tipo;
+  var items = props.items || [];
+  var onRemove = props.onRemove || function(){};
+  var st = STILE_CONT[tipo] || STILE_CONT.dispensa;
+  var perRow = 4;
+  var nRip = Math.max(3, Math.ceil(items.length / perRow));
+  var ripiani = [];
+  var r;
+  for(r=0;r<nRip;r++) { ripiani.push(items.slice(r*perRow, r*perRow + perRow)); }
+  return (
+    <div style={{borderRadius:18,overflow:"hidden",border:"1.5px solid "+st.bordo,
+      boxShadow:"0 2px 10px rgba(0,0,0,.06)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:st.accent,color:"#fff"}}>
+        <i className={"ti "+st.ic} style={{fontSize:18}}/>
+        <span style={{fontSize:14,fontWeight:800,flex:1}}>{st.titolo}</span>
+        <span style={{fontSize:11,fontWeight:700,opacity:.85}}>{items.length}</span>
+      </div>
+      <div style={{background:st.bg,padding:"4px 10px 10px"}}>
+        {ripiani.map(function(row, ri){
+          return (
+            <div key={ri} style={{display:"flex",alignItems:"flex-end",gap:4,minHeight:62,
+              borderBottom:"3px solid "+st.ripiano,padding:"10px 2px 4px"}}>
+              {row.length===0 && <div style={{flex:1,height:40}}/>}
+              {row.map(function(cell){
+                var low = dispensaLow(cell.it);
+                return (
+                  <div key={cell.i} style={{flex:"0 0 22%",maxWidth:"22%",position:"relative",
+                    display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                    <div onClick={function(){ onRemove(cell.i); }}
+                      style={{position:"absolute",top:-7,left:0,width:16,height:16,borderRadius:"50%",
+                        background:"#fff",border:"1px solid "+st.bordo,display:"flex",alignItems:"center",
+                        justifyContent:"center",cursor:"pointer",zIndex:2}}>
+                      <i className="ti ti-x" style={{fontSize:9,color:"#C0392B"}}/>
+                    </div>
+                    {cell.it.qty && String(cell.it.qty) !== "" && (
+                      <div style={{position:"absolute",top:-7,right:0,background:"#fff",
+                        border:"1px solid "+st.bordo,borderRadius:9,fontSize:8,fontWeight:800,
+                        color:st.accent,padding:"0 4px",minWidth:14,textAlign:"center",zIndex:2}}>{cell.it.qty}</div>
+                    )}
+                    <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
+                    <div style={{fontSize:8.5,fontWeight:600,color:st.testo,textAlign:"center",lineHeight:1.1,
+                      whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{cell.it.nome}</div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DispensaView(props) {
   var dispensa = props.dispensa || [];
   var setDispensa = props.setDispensa || function(){};
@@ -5931,12 +6065,26 @@ function DispensaView(props) {
   var s_add = useState(false); var showAdd = s_add[0]; var setShowAdd = s_add[1];
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_qty = useState(""); var qty = s_qty[0]; var setQty = s_qty[1];
+  var s_cont = useState("auto"); var contSel = s_cont[0]; var setContSel = s_cont[1];
+  var s_vista = useState("ripiani"); var vista = s_vista[0]; var setVista = s_vista[1];
 
   function aggiungi() {
     if(!nome.trim()) return;
-    var nuovo = {nome:nome.trim(), qty:qty||"1", unita:"pz", cat:"dispensa", scadenza:""};
+    var cont = contSel === "auto" ? alimentoContenitore(nome) : contSel;
+    var nuovo = {nome:nome.trim(), qty:qty||"1", unita:"pz", cat:"dispensa", contenitore:cont, scadenza:""};
     setDispensa(dispensa.concat([nuovo]));
-    setNome(""); setQty(""); setShowAdd(false);
+    setNome(""); setQty(""); setContSel("auto"); setShowAdd(false);
+  }
+  function rimuoviItem(idx) {
+    setDispensa(dispensa.filter(function(x, i){ return i !== idx; }));
+  }
+  function gruppo(tipo) {
+    var out = [];
+    dispensa.forEach(function(it, i){
+      var c = it.contenitore || alimentoContenitore(it.nome);
+      if(c === tipo) out.push({it:it, i:i, emoji:alimentoEmoji(it.nome)});
+    });
+    return out;
   }
   function aggiungiAllaSpesa() {
     var attuali = normSpesa(spesa);
@@ -5956,15 +6104,50 @@ function DispensaView(props) {
       </div>
 
       {showAdd&&(
-        <div className="mf-card" style={{display:"flex",gap:8,alignItems:"center"}}>
-          <input placeholder="Prodotto" value={nome} onChange={function(e){setNome(e.target.value);}}
-            style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-          <input placeholder="Qta" inputMode="numeric" value={qty} onChange={function(e){setQty(e.target.value);}}
-            style={{width:60,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-          <button onClick={aggiungi} style={{padding:"10px 14px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input placeholder="Prodotto" value={nome} onChange={function(e){setNome(e.target.value);}}
+              style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            <input placeholder="Qta" inputMode="numeric" value={qty} onChange={function(e){setQty(e.target.value);}}
+              style={{width:60,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <select value={contSel} onChange={function(e){setContSel(e.target.value);}}
+              style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              <option value="auto">{nome.trim() ? "Automatico ("+(STILE_CONT[alimentoContenitore(nome)]||STILE_CONT.dispensa).titolo+")" : "Automatico"}</option>
+              <option value="frigo">Frigorifero</option>
+              <option value="dispensa">Dispensa</option>
+              <option value="freezer">Congelatore</option>
+            </select>
+            <button onClick={aggiungi} style={{padding:"10px 18px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
+          </div>
         </div>
       )}
 
+      <div style={{display:"flex",gap:6}}>
+        {[{id:"ripiani",l:"Ripiani"},{id:"lista",l:"Lista"}].map(function(v){
+          var on = vista === v.id;
+          return (
+            <button key={v.id} onClick={function(){ setVista(v.id); }}
+              style={{flex:1,padding:"8px",borderRadius:12,border:"none",cursor:"pointer",
+                background:on?"#2F6586":"#fff",color:on?"#fff":"#555",fontWeight:on?700:400,fontSize:12,
+                boxShadow:on?"none":"0 1px 6px rgba(0,0,0,.07)"}}>{v.l}</button>
+          );
+        })}
+      </div>
+
+      {vista==="ripiani" ? (
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <RipianiBox tipo="frigo" items={gruppo("frigo")} onRemove={rimuoviItem}/>
+          <RipianiBox tipo="dispensa" items={gruppo("dispensa")} onRemove={rimuoviItem}/>
+          <RipianiBox tipo="freezer" items={gruppo("freezer")} onRemove={rimuoviItem}/>
+          {dispensa.length===0 && (
+            <div style={{fontSize:12,color:"#8A949B",textAlign:"center"}}>
+              Aggiungi un prodotto col + in alto: comparira da solo sul ripiano giusto.
+            </div>
+          )}
+        </div>
+      ) : (
       <div className="mf-card flush">
         {dispensa.length===0&&(
           <div className="mf-row"><div style={{flex:1,fontSize:14,color:"#8A949B"}}>Dispensa vuota</div></div>
@@ -5973,16 +6156,19 @@ function DispensaView(props) {
           var low = dispensaLow(it);
           return (
             <div key={i} className="mf-row">
-              <div className="mf-ic"><i className="ti ti-package"/></div>
+              <div className="mf-ic" style={{fontSize:20}}>{alimentoEmoji(it.nome)}</div>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:500}}>{it.nome}</div>
                 <div style={{fontSize:11,color:"#8A949B"}}>{(it.qty||"")+" "+(it.unita||"")}</div>
               </div>
               <span className={"pill "+(low?"low":"ok")}>{low?"In esaurimento":"OK"}</span>
+              <i className="ti ti-x" onClick={function(){ rimuoviItem(i); }}
+                style={{fontSize:16,color:"#B4BEC4",cursor:"pointer",marginLeft:8}}/>
             </div>
           );
         })}
       </div>
+      )}
 
       <div className="mf-card solid" onClick={aggiungiAllaSpesa}
         style={{display:"flex",alignItems:"center",justifyContent:"center",gap:9,fontSize:14,fontWeight:700,cursor:"pointer"}}>
