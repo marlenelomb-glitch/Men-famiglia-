@@ -7297,6 +7297,7 @@ export default function App() {
     if(t !== "menu") setAutoGeneraMenu(false);
     setTab(t);
   };
+  const isAdmin = !!(utente && utente.email && utente.email.toLowerCase() === "marlene.lomb@gmail.com");
   const [settimana, setSettimana] = useState(0);
   const [activeDay, setActiveDay] = useState(0);
   const [profili, setProfili] = useState(loadLS("profili", {}));
@@ -7703,6 +7704,7 @@ export default function App() {
         )}
         {tab==="impostazioni" && (
           <div>
+            {isAdmin&&(
             <div className="mf-card" onClick={function(){ handleSetTab("iscritti"); }}
               style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,cursor:"pointer"}}>
               <div className="mf-ic"><i className="ti ti-users"/></div>
@@ -7712,6 +7714,7 @@ export default function App() {
               </div>
               <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
             </div>
+            )}
             <TabImpostazioni
               profili={profili} setProfili={setProfiliLS}
               pianificazione={pianificazione} setPianificazione={setPianificazione}
@@ -7720,8 +7723,13 @@ export default function App() {
               onModificaFamiglia={function(){ setModificaFam(true); }}/>
           </div>
         )}
-        {tab==="iscritti" && (
+        {tab==="iscritti" && isAdmin && (
           <IscrittiView setTab={handleSetTab}/>
+        )}
+        {tab==="iscritti" && !isAdmin && (
+          <div className="mf-card" style={{textAlign:"center",color:"#8A949B",fontSize:13}}>
+            Sezione riservata.
+          </div>
         )}
         {tab==="piramide" && (
           <PiramideView/>
