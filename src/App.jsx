@@ -5418,17 +5418,53 @@ function lunediSettimana() {
   return m;
 }
 
+var REAZIONI = [
+  {id:"ok",       l:"Accetto",  ic:"ti-check",     c:"#2E9E5B", bg:"#E8F3EC"},
+  {id:"modifica", l:"Modifica", ic:"ti-pencil",    c:"#E67E22", bg:"#FBEEE0"},
+  {id:"fuori",    l:"Fuori",    ic:"ti-door-exit", c:"#C2355A", bg:"#FBE7EC"}
+];
+function reazById(id){ return REAZIONI.find(function(r){ return r.id === id; }) || null; }
+function isoDay(dt){ return dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2)+"-"+("0"+dt.getDate()).slice(-2); }
+
 function MenuView(props) {
   var menu = props.menu || {};
   var builder = props.builder || {};
   var setTab = props.setTab || function(){};
+  var profili = props.profili || {};
+  var feedback = props.feedback || {};
+  var setFeedback = props.setFeedback || function(){};
+  var vals = Object.values(profili);
+
+  var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
+  var s_editDay = useState(""); var editDay = s_editDay[0]; var setEditDay = s_editDay[1];
+  var s_nota = useState(""); var notaVal = s_nota[0]; var setNotaVal = s_nota[1];
+
   var lun = lunediSettimana();
   var dom = new Date(lun.getTime()); dom.setDate(lun.getDate()+6);
   var range = lun.getDate() + "-" + dom.getDate() + " " + MESI_ABBR[dom.getMonth()];
+  var weekKey = isoDay(lun);
+
+  var membro = profili[midSel] || vals[0] || null;
+  var mkey = membro ? membro.id : "";
 
   function nomePasto(giorno, m) {
     var info = pastoUnificato(builder, menu, giorno, m);
     return info ? info.nome : null;
+  }
+  function getReaz(day, mid) {
+    var w = feedback[weekKey]; if(!w) return null;
+    var dd = w[day]; if(!dd) return null;
+    return dd[mid] || null;
+  }
+  function setReaz(day, mid, stato, nota) {
+    var w = Object.assign({}, feedback[weekKey] || {});
+    var dd = Object.assign({}, w[day] || {});
+    var cur = dd[mid] || {};
+    var newStato = (cur.stato === stato && stato !== "modifica") ? null : stato;
+    dd[mid] = {stato:newStato, nota:(nota !== undefined ? nota : (cur.nota || ""))};
+    w[day] = dd;
+    var nf = Object.assign({}, feedback); nf[weekKey] = w;
+    setFeedback(nf);
   }
 
   return (
@@ -5440,28 +5476,107 @@ function MenuView(props) {
         </span>
       </div>
 
-      <div className="mf-card flush">
-        {DAYS.map(function(d, i){
-          var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
-          var pranzo = nomePasto(d, "Pranzo");
-          var cena = nomePasto(d, "Cena");
-          var piatti = [pranzo, cena].filter(Boolean).join(" - ");
-          var vuoto = !piatti;
-          return (
-            <div key={d} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ setTab("builder"); }}>
-              <div style={{width:42}}>
-                <div style={{fontSize:14,fontWeight:700,color:vuoto?"#8A949B":"#2C3338"}}>{GIORNI_ABBR[i]}</div>
+      {vals.length>0&&(
+        <div>
+          <div className="cap" style={{marginBottom:8}}>Chi sei? Rispondi ai pasti della settimana</div>
+          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+            {vals.map(function(p){
+              var on = mkey === p.id;
+              return (
+                <button key={p.id} onClick={function(){ setMidSel(p.id); setEditDay(""); }}
+                  style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px 6px 6px",borderRadius:22,
+                    flexShrink:0,cursor:"pointer",border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),
+                    background:on?"#E2EEF5":"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <span style={{width:26,height:26,borderRadius:"50%",background:p.colore||"#6BA6C9",color:"#fff",
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>
+                    {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
+                  </span>
+                  <span style={{fontSize:13,fontWeight:on?800:600,color:on?"#2F6586":"#2C3338"}}>{p.nome}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {DAYS.map(function(d, i){
+        var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
+        var pranzo = nomePasto(d, "Pranzo");
+        var cena = nomePasto(d, "Cena");
+        var piatti = [pranzo, cena].filter(Boolean).join(" · ");
+        var vuoto = !piatti;
+        var mia = membro ? getReaz(d, mkey) : null;
+        var miaStato = mia ? mia.stato : null;
+        var altri = vals.filter(function(p){ var r = getReaz(d, p.id); return r && r.stato; });
+        return (
+          <div key={d} className="mf-card" style={{padding:"13px 15px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:vuoto?0:2}}>
+              <div style={{width:40}}>
+                <div style={{fontSize:14,fontWeight:800,color:vuoto?"#8A949B":"#2C3338"}}>{GIORNI_ABBR[i]}</div>
                 <div style={{fontSize:11,color:"#8A949B"}}>{data.getDate()}</div>
               </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,color:vuoto?"#8A949B":"#2C3338"}}>{vuoto ? "Da pianificare" : piatti}</div>
-                {!vuoto&&<div style={{fontSize:11,color:"#8A949B"}}>+ colazione</div>}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:600,color:vuoto?"#8A949B":"#2C3338"}}>{vuoto ? "Da pianificare" : piatti}</div>
               </div>
-              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+              <button onClick={function(){ setTab("builder"); }}
+                style={{border:"none",background:"transparent",color:"#2F6586",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>
+                <i className="ti ti-pencil" style={{fontSize:14}}/>Modifica
+              </button>
             </div>
-          );
-        })}
-      </div>
+
+            {membro&&(
+              <div style={{display:"flex",gap:6,marginTop:10}}>
+                {REAZIONI.map(function(rz){
+                  var on = miaStato === rz.id;
+                  return (
+                    <button key={rz.id} onClick={function(){
+                        if(rz.id==="modifica"){ setReaz(d, mkey, "modifica"); setEditDay(d); setNotaVal((mia&&mia.nota)||""); }
+                        else { setReaz(d, mkey, rz.id); if(editDay===d) setEditDay(""); }
+                      }}
+                      style={{flex:1,padding:"8px 4px",borderRadius:11,cursor:"pointer",
+                        border:"1.5px solid "+(on?rz.c:"#E3EAEE"),background:on?rz.bg:"#fff",
+                        color:on?rz.c:"#8A949B",fontSize:12,fontWeight:on?800:600,
+                        display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                        fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                      <i className={"ti "+rz.ic} style={{fontSize:14}}/>{rz.l}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {membro&&miaStato==="modifica"&&editDay===d&&(
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <input autoFocus placeholder="Cosa cambieresti?" value={notaVal}
+                  onChange={function(e){ setNotaVal(e.target.value); }}
+                  onKeyDown={function(e){ if(e.key==="Enter"){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); } }}
+                  style={{flex:1,padding:"9px 11px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                <button onClick={function(){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); }}
+                  style={{padding:"9px 14px",borderRadius:11,border:"none",background:"#2F6586",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>OK</button>
+              </div>
+            )}
+
+            {altri.length>0&&(
+              <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
+                {altri.map(function(p){
+                  var r = getReaz(d, p.id); var rz = reazById(r.stato);
+                  return (
+                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:20,height:20,borderRadius:"50%",background:p.colore||"#6BA6C9",color:"#fff",
+                        display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>
+                        {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
+                      </span>
+                      <span style={{fontSize:12,color:"#2C3338",fontWeight:600}}>{p.nome}</span>
+                      <span style={{fontSize:11,fontWeight:800,color:rz?rz.c:"#8A949B"}}>{rz?rz.l:""}</span>
+                      {r.nota&&<span style={{fontSize:11,color:"#8A949B",fontStyle:"italic",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {r.nota}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       <div className="mf-card acc" onClick={function(){ setTab("ai"); }}
         style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
@@ -7235,7 +7350,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -7337,6 +7452,7 @@ export default function App() {
   const [spesa, setSpesa] = useState(loadLS("spesa", []));
   const [mealPrep, setMealPrep] = useState(loadLS("mealPrep", []));
   const [diarioLog, setDiarioLog] = useState(loadLS("diarioLog", {}));
+  const [feedbackPasti, setFeedbackPasti] = useState(loadLS("feedbackPasti", {}));
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -7446,6 +7562,7 @@ export default function App() {
   var setSpesaLS              = mkSetterSync("spesa", setSpesa);
   var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
   var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
+  var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -7714,7 +7831,8 @@ export default function App() {
           <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
         )}
         {tab==="menu" && (
-          <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}/>
+          <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
+            profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}/>
         )}
         {tab==="diario" && (
           <DiarioView menu={menu} builder={builderScelte} profili={profili}
