@@ -3959,23 +3959,26 @@ function NutriPanel(props) {
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,
     verdura:150,frutta:120};
 
+  var grammi = props.grammi || {};
+  var onGrammi = props.onGrammi || function(){};
   var items = [];
-  function addItem(id, tipo) {
+  function addItem(id, tipo, field) {
     if(!id) return;
     var it = allDB.find(function(x){return x.id===id;});
     if(!it||!it.kcal_p) return;
-    var g = PORZ[it.cat||tipo] || 100;
-    items.push({nome:it.nome, emoji:it.emoji, g:g,
+    var gCustom = parseInt(grammi[field], 10);
+    var g = (!isNaN(gCustom) && gCustom > 0) ? gCustom : (PORZ[it.cat||tipo] || 100);
+    items.push({nome:it.nome, emoji:it.emoji, g:g, field:field,
       kcal:Math.round(it.kcal_p*g/100), prot:Math.round((it.prot_p||0)*g/100),
       carb:Math.round((it.carb_p||0)*g/100), phe:Math.round((it.phe_p||0)*g/100),
       gsat:Math.round((it.gsat_p||0)*g/100*10)/10, na:Math.round((it.na_p||0)*g/100), ing:it});
   }
-  addItem(props.carbo,"carbo");
-  addItem(props.prot,"proteina");
-  addItem(props.verd,"verdura");
-  addItem(props.verd2,"verdura");
-  addItem(props.frutta,"frutta");
-  addItem(props.lattic,"latticino");
+  addItem(props.carbo,"carbo","carbo");
+  addItem(props.prot,"proteina","proteina");
+  addItem(props.verd,"verdura","verdura");
+  addItem(props.verd2,"verdura","verdura2");
+  addItem(props.frutta,"frutta","frutta");
+  addItem(props.lattic,"latticino","latticino");
 
   if(!items.length) return null;
 
@@ -4085,12 +4088,21 @@ function NutriPanel(props) {
         </div>
       )}
 
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+      <div style={{marginBottom:8}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#8A949B",marginBottom:4}}>Porzioni · tocca i grammi per regolarli</div>
         {items.map(function(it){
+          var gv = grammi[it.field];
           return (
-            <span key={it.nome} style={{fontSize:11,fontWeight:600,background:"#EBF3FA",color:"#2F6586",padding:"3px 9px",borderRadius:20}}>
-              {it.emoji} {it.kcal}kcal{it.prot>0?" / "+it.prot+"g":""}
-            </span>
+            <div key={it.field} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #EAF0F4"}}>
+              <span style={{fontSize:16}}>{it.emoji}</span>
+              <span style={{flex:1,minWidth:0,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.nome}</span>
+              <input inputMode="numeric" value={gv !== undefined ? gv : String(it.g)}
+                onChange={function(e){ onGrammi(it.field, e.target.value.replace(/[^0-9]/g,"")); }}
+                style={{width:46,padding:"5px 6px",borderRadius:8,border:"1.5px solid #E3EAEE",fontSize:12,textAlign:"right",outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              <span style={{fontSize:11,color:"#8A949B"}}>g</span>
+              <span style={{fontSize:11,fontWeight:700,color:"#2F6586",minWidth:50,textAlign:"right"}}>{it.kcal} kcal</span>
+              {it.prot>0&&<span style={{fontSize:11,color:"#E07A5F",minWidth:30,textAlign:"right"}}>{it.prot}g</span>}
+            </div>
           );
         })}
       </div>
@@ -4120,12 +4132,19 @@ function CostruttorePasto(props) {
   var s6=useState((scelta&&scelta.salsa)||null); var salsa=s6[0]; var setSalsa=s6[1];
   var s7=useState((scelta&&scelta.prep)||{}); var prep=s7[0]; var setPrep=s7[1];
   var s8=useState((scelta&&scelta.nota)||""); var nota=s8[0]; var setNota=s8[1];
+  var sG=useState((scelta&&scelta.grammi)||{}); var grammi=sG[0]; var setGrammi=sG[1];
   var s9=useState(null); var addingCat=s9[0]; var setAddingCat=s9[1];
   var s10=useState(""); var newIngNome=s10[0]; var setNewIngNome=s10[1];
   var sAI=useState(""); var aiSugg=sAI[0]; var setAiSugg=sAI[1];
   var sAIL=useState(false); var aiLoad=sAIL[0]; var setAiLoad=sAIL[1];
   var step=stepEst||1;
   var setStep=setStepEst||(function(){});
+
+  function setGrammiField(field, val) {
+    var g = Object.assign({}, grammi);
+    if(val === "" || val === null || val === undefined) delete g[field]; else g[field] = val;
+    setGrammi(g);
+  }
 
   function nomeIng(id) {
     var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
@@ -4185,7 +4204,7 @@ function CostruttorePasto(props) {
   var selVerd=VERDURE.find(function(v){return v.id===verd;});
 
   function doSalva(){
-    onSalva({carbo:carbo,proteina:prot,verdura:verd,verdura2:verd2,frutta:frutta,latticino:lattic,salsa:salsa,prep:prep,nota:nota});
+    onSalva({carbo:carbo,proteina:prot,verdura:verd,verdura2:verd2,frutta:frutta,latticino:lattic,salsa:salsa,prep:prep,nota:nota,grammi:grammi});
   }
 
   return (
@@ -4299,7 +4318,8 @@ function CostruttorePasto(props) {
           )}
 
           {haQualcosa&&(
-            <NutriPanel carbo={carbo} prot={prot} verd={verd} verd2={verd2} frutta={frutta} lattic={lattic} pasto={pasto} profili={props.profili}/>
+            <NutriPanel carbo={carbo} prot={prot} verd={verd} verd2={verd2} frutta={frutta} lattic={lattic} pasto={pasto} profili={props.profili}
+              grammi={grammi} onGrammi={setGrammiField}/>
           )}
 
           {haQualcosa&&!completo&&aiAttiva()&&(
@@ -5690,7 +5710,19 @@ function kcalPastoAdulto(id) {
 }
 
 var PORZ_STD = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
-  "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100};
+  "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,
+  verdura:150,frutta:120};
+
+function porzioneStdIng(it, fallback) {
+  if(it && PORZ_STD[it.cat]) return PORZ_STD[it.cat];
+  return fallback || 100;
+}
+function grammiField(scelta, field, it, fallback) {
+  var g = scelta && scelta.grammi ? scelta.grammi[field] : null;
+  var n = parseInt(g, 10);
+  if(!isNaN(n) && n > 0) return n;
+  return porzioneStdIng(it, fallback);
+}
 
 function ingById(id) {
   var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI);
@@ -5706,7 +5738,7 @@ function valoriPastoBuilder(scelta) {
     if(!id) return;
     var it = ingById(id);
     if(!it || !it.kcal_p) return;
-    var g = PORZ_STD[it.cat] || c[1] || 100;
+    var g = grammiField(scelta, c[0], it, c[1]);
     kcal += Math.round(it.kcal_p * g / 100);
     prot += Math.round((it.prot_p || 0) * g / 100);
     nomi.push(it.nome);
