@@ -5447,7 +5447,19 @@ function MenuView(props) {
   var setFeedback = props.setFeedback || function(){};
   var ospiti = props.ospiti || {};
   var setOspiti = props.setOspiti || function(){};
+  var familyId = props.familyId;
   var vals = Object.values(profili);
+
+  var s_shareMsg = useState(""); var shareMsg = s_shareMsg[0]; var setShareMsg = s_shareMsg[1];
+  function condividiMenu() {
+    if(!familyId){ setShareMsg("Accedi per generare il link"); setTimeout(function(){ setShareMsg(""); }, 2500); return; }
+    var url = (typeof window !== "undefined" ? window.location.origin : "") + "/famiglia/" + familyId;
+    if(typeof navigator !== "undefined" && navigator.share){
+      navigator.share({title:"Menu della settimana", text:"Dì la tua sul menu di questa settimana:", url:url}).catch(function(){});
+    } else if(typeof navigator !== "undefined" && navigator.clipboard){
+      navigator.clipboard.writeText(url).then(function(){ setShareMsg("Link copiato! Invialo alla famiglia"); setTimeout(function(){ setShareMsg(""); }, 3000); });
+    }
+  }
 
   var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
   var s_editDay = useState(""); var editDay = s_editDay[0]; var setEditDay = s_editDay[1];
@@ -5506,6 +5518,14 @@ function MenuView(props) {
           <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{range}
         </span>
       </div>
+
+      <button onClick={condividiMenu}
+        style={{width:"100%",padding:"12px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#E2EEF5",
+          color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <i className="ti ti-share" style={{fontSize:16}}/>Condividi il menu con la famiglia
+      </button>
+      {shareMsg&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{shareMsg}</div>}
 
       {vals.length>0&&(
         <div>
@@ -7156,6 +7176,171 @@ function BannerScadenze(props) {
   );
 }
 
+function MenuCondiviso(props) {
+  var familyId = props.familyId;
+  var s_load = useState(true); var loading = s_load[0]; var setLoading = s_load[1];
+  var s_prof = useState({}); var profili = s_prof[0]; var setProfili = s_prof[1];
+  var s_bld = useState({}); var builder = s_bld[0]; var setBuilder = s_bld[1];
+  var s_ovr = useState({}); var menuOverride = s_ovr[0]; var setMenuOverride = s_ovr[1];
+  var s_fb = useState({}); var feedback = s_fb[0]; var setFeedback = s_fb[1];
+  var s_osp = useState({}); var ospiti = s_osp[0]; var setOspiti = s_osp[1];
+  var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
+  var s_editDay = useState(""); var editDay = s_editDay[0]; var setEditDay = s_editDay[1];
+  var s_nota = useState(""); var notaVal = s_nota[0]; var setNotaVal = s_nota[1];
+
+  useEffect(function(){
+    var t = setTimeout(function(){ setLoading(false); }, 8000);
+    supabase.from("profiles").select("*").eq("family_id", familyId).then(function(rows){
+      var pf = {}; (rows||[]).forEach(function(r){ pf[r.profile_id] = r.dati; }); setProfili(pf);
+    }, function(){});
+    supabase.from("builder_scelte").select("*").eq("family_id", familyId).then(function(rows){
+      var q = {}; (rows||[]).forEach(function(r){ if(r.settimana===0) q[r.giorno+"-"+r.pasto] = r.dati; }); setBuilder(q);
+    }, function(){});
+    supabase.from("app_state").select("*").eq("family_id", familyId).then(function(rows){
+      (rows||[]).forEach(function(r){
+        if(r.chiave==="menuOverride" && r.dati) setMenuOverride(r.dati);
+        if(r.chiave==="feedbackPasti" && r.dati) setFeedback(r.dati);
+        if(r.chiave==="ospiti" && r.dati) setOspiti(r.dati);
+      });
+      setLoading(false);
+    }, function(){ setLoading(false); });
+    return function(){ clearTimeout(t); };
+  }, []);
+
+  var lun = lunediSettimana();
+  var weekKey = isoDay(lun);
+  var vals = Object.values(profili);
+  var membro = profili[midSel] || vals[0] || null;
+  var mkey = membro ? membro.id : "";
+  var menuBase = buildMenu(0, profili);
+  var menu = Object.assign({}, menuBase, menuOverride);
+
+  function nomePasto(giorno, m){ var info = pastoUnificato(builder, menu, giorno, m); return info ? info.nome : null; }
+  function getReaz(day, mid){ var w = feedback[weekKey]; if(!w) return null; var dd = w[day]; if(!dd) return null; return dd[mid] || null; }
+  function saveFeedback(nf){ setFeedback(nf); supabase.from("app_state").upsert({family_id:familyId, chiave:"feedbackPasti", dati:nf, updated_at:new Date().toISOString()}, {onConflict:"family_id,chiave"}); }
+  function setReaz(day, mid, stato, nota){
+    var w = Object.assign({}, feedback[weekKey]||{}); var dd = Object.assign({}, w[day]||{}); var cur = dd[mid]||{};
+    var ns = (cur.stato===stato && stato!=="modifica") ? null : stato;
+    dd[mid] = {stato:ns, nota:(nota!==undefined?nota:(cur.nota||""))}; w[day]=dd;
+    var nf = Object.assign({}, feedback); nf[weekKey]=w; saveFeedback(nf);
+  }
+  function getOspRec(day){ var w = ospiti[weekKey]; var r = w && w[day]; if(typeof r==="number") return {n:r,restr:[]}; return r || {n:0,restr:[]}; }
+  function saveOspiti(no){ setOspiti(no); supabase.from("app_state").upsert({family_id:familyId, chiave:"ospiti", dati:no, updated_at:new Date().toISOString()}, {onConflict:"family_id,chiave"}); }
+  function salvaOsp(day, rec){ var w = Object.assign({}, ospiti[weekKey]||{}); w[day]=rec; var no = Object.assign({}, ospiti); no[weekKey]=w; saveOspiti(no); }
+  function setOspN(day, n){ var rec = getOspRec(day); salvaOsp(day, {n:Math.max(0,n), restr:rec.restr}); }
+  function toggleRestr(day, id){ var rec = getOspRec(day); var arr = rec.restr.slice(); var i=arr.indexOf(id); if(i>=0) arr.splice(i,1); else arr.push(id); salvaOsp(day, {n:rec.n, restr:arr}); }
+
+  return (
+    <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",padding:"18px 16px 40px",boxSizing:"border-box",
+      fontFamily:"'Nunito',system-ui,sans-serif",background:"#F2F6F8",color:"#2C3338"}}>
+      <div style={{textAlign:"center",marginBottom:16}}>
+        <div style={{fontSize:30,marginBottom:6}}>🍽</div>
+        <div style={{fontSize:20,fontWeight:800}}>Il menu della settimana</div>
+        <div style={{fontSize:13,color:"#8A949B",marginTop:3}}>Dì la tua: accetta, proponi o segnala se sei fuori</div>
+      </div>
+      {loading&&<div style={{textAlign:"center",color:"#8A949B",fontSize:13}}>Caricamento...</div>}
+      {!loading&&vals.length===0&&(
+        <div style={{fontSize:13,color:"#C0392B",background:"#FDEDEC",borderRadius:12,padding:"14px",textAlign:"center"}}>
+          Nessun dato trovato. Chiedi a chi ti ha mandato il link di controllare.
+        </div>
+      )}
+      {!loading&&vals.length>0&&(
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+            {vals.map(function(p){
+              var on = mkey===p.id;
+              return (
+                <button key={p.id} onClick={function(){ setMidSel(p.id); setEditDay(""); }}
+                  style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px 6px 6px",borderRadius:22,flexShrink:0,cursor:"pointer",
+                    border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <span style={{width:26,height:26,borderRadius:"50%",background:p.colore||"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800}}>{p.nome?p.nome.slice(0,1).toUpperCase():"?"}</span>
+                  <span style={{fontSize:13,fontWeight:on?800:600,color:on?"#2F6586":"#2C3338"}}>{p.nome}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {DAYS.map(function(d,i){
+            var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
+            var piatti = [nomePasto(d,"Pranzo"), nomePasto(d,"Cena")].filter(Boolean).join(" · ");
+            var vuoto = !piatti;
+            var mia = membro ? getReaz(d, mkey) : null; var miaStato = mia ? mia.stato : null;
+            var altri = vals.filter(function(p){ var r = getReaz(d,p.id); return r && r.stato; });
+            var osp = getOspRec(d); var nOsp = osp.n;
+            return (
+              <div key={d} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:18,padding:"13px 15px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{width:40}}><div style={{fontSize:14,fontWeight:800,color:vuoto?"#8A949B":"#2C3338"}}>{GIORNI_ABBR[i]}</div><div style={{fontSize:11,color:"#8A949B"}}>{data.getDate()}</div></div>
+                  <div style={{flex:1,minWidth:0,fontSize:14,fontWeight:600,color:vuoto?"#8A949B":"#2C3338"}}>{vuoto?"Da pianificare":piatti}</div>
+                </div>
+                {membro&&(
+                  <div style={{display:"flex",gap:6,marginTop:10}}>
+                    {REAZIONI.map(function(rz){
+                      var on = miaStato===rz.id;
+                      return (
+                        <button key={rz.id} onClick={function(){
+                            if(rz.id==="modifica"){ setReaz(d, mkey, "modifica"); setEditDay(d); setNotaVal((mia&&mia.nota)||""); }
+                            else { setReaz(d, mkey, rz.id); if(editDay===d) setEditDay(""); }
+                          }}
+                          style={{flex:1,padding:"8px 4px",borderRadius:11,cursor:"pointer",border:"1.5px solid "+(on?rz.c:"#E3EAEE"),
+                            background:on?rz.bg:"#fff",color:on?rz.c:"#8A949B",fontSize:12,fontWeight:on?800:600,
+                            display:"flex",alignItems:"center",justifyContent:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                          <i className={"ti "+rz.ic} style={{fontSize:14}}/>{rz.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {membro&&miaStato==="modifica"&&editDay===d&&(
+                  <div style={{display:"flex",gap:6,marginTop:8}}>
+                    <input autoFocus placeholder="Cosa cambieresti?" value={notaVal} onChange={function(e){ setNotaVal(e.target.value); }}
+                      onKeyDown={function(e){ if(e.key==="Enter"){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); } }}
+                      style={{flex:1,padding:"9px 11px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                    <button onClick={function(){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); }} style={{padding:"9px 14px",borderRadius:11,border:"none",background:"#2F6586",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>OK</button>
+                  </div>
+                )}
+                <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <i className="ti ti-users" style={{fontSize:16,color:nOsp>0?"#2F6586":"#B4BEC4"}}/>
+                    <span style={{flex:1,fontSize:12,fontWeight:600,color:nOsp>0?"#2F6586":"#8A949B"}}>{nOsp>0?("Ospiti: "+nOsp):"Ho ospiti?"}</span>
+                    <button onClick={function(){ setOspN(d, nOsp-1); }} disabled={nOsp<=0} style={{width:28,height:28,borderRadius:9,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:16,cursor:nOsp>0?"pointer":"default"}}>-</button>
+                    <span style={{minWidth:18,textAlign:"center",fontSize:14,fontWeight:800}}>{nOsp}</span>
+                    <button onClick={function(){ setOspN(d, nOsp+1); }} style={{width:28,height:28,borderRadius:9,border:"none",background:"#6BA6C9",color:"#fff",fontSize:16,cursor:"pointer"}}>+</button>
+                  </div>
+                  {nOsp>0&&(
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
+                      {GUEST_RESTR.map(function(rz){
+                        var on = osp.restr.indexOf(rz.id)>=0;
+                        return <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }} style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#FBE7EC":"#fff",color:on?"#C2355A":"#8A949B",fontWeight:on?700:500}}>{rz.l}</button>;
+                      })}
+                    </div>
+                  )}
+                </div>
+                {altri.length>0&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
+                    {altri.map(function(p){
+                      var r = getReaz(d,p.id); var rz = reazById(r.stato);
+                      return (
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{width:20,height:20,borderRadius:"50%",background:p.colore||"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,flexShrink:0}}>{p.nome?p.nome.slice(0,1).toUpperCase():"?"}</span>
+                          <span style={{fontSize:12,color:"#2C3338",fontWeight:600}}>{p.nome}</span>
+                          <span style={{fontSize:11,fontWeight:800,color:rz?rz.c:"#8A949B"}}>{rz?rz.l:""}</span>
+                          {r.nota&&<span style={{fontSize:11,color:"#8A949B",fontStyle:"italic",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>· {r.nota}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div style={{fontSize:11,color:"#8A949B",textAlign:"center",marginTop:4}}>Le tue risposte si salvano da sole.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VotoPartner(props) {
   var familyId = props.familyId; var giorno = props.giorno;
   var s_opz = useState([]); var opzioni = s_opz[0]; var setOpzioni = s_opz[1];
@@ -7671,6 +7856,8 @@ export default function App() {
   var votoPath = (typeof window !== "undefined" && window.location) ? window.location.pathname : "";
   var votoMatch = votoPath.match(/^\/voto\/([^\/]+)\/([^\/]+)/);
   if(votoMatch) return <VotoPartner familyId={votoMatch[1]} giorno={decodeURIComponent(votoMatch[2])}/>;
+  var famMatch = votoPath.match(/^\/famiglia\/([^\/]+)/);
+  if(famMatch) return <MenuCondiviso familyId={famMatch[1]}/>;
 
   if(pin.attivo && !pin.sbloccato) return (
     <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:390,margin:"0 auto",
@@ -7923,7 +8110,7 @@ export default function App() {
         {tab==="menu" && (
           <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
             profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
-            ospiti={ospiti} setOspiti={setOspitiLS}/>
+            ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId}/>
         )}
         {tab==="diario" && (
           <DiarioView menu={menu} builder={builderScelte} profili={profili}

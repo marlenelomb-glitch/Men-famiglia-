@@ -1,6 +1,7 @@
 {
   "rewrites": [
-    { "source": "/voto/:path*", "destination": "/" }
+    { "source": "/voto/:path*", "destination": "/" },
+    { "source": "/famiglia/:path*", "destination": "/" }
   ],
   "headers": [
     {
