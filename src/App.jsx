@@ -5426,6 +5426,18 @@ var REAZIONI = [
 function reazById(id){ return REAZIONI.find(function(r){ return r.id === id; }) || null; }
 function isoDay(dt){ return dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2)+"-"+("0"+dt.getDate()).slice(-2); }
 
+var GUEST_RESTR = [
+  {id:"glutine",      l:"Senza glutine"},
+  {id:"lattosio",     l:"Senza lattosio"},
+  {id:"vegetariano",  l:"Vegetariano"},
+  {id:"vegano",       l:"Vegano"},
+  {id:"frutta_secca", l:"No frutta secca"},
+  {id:"pesce",        l:"No pesce/crostacei"},
+  {id:"uova",         l:"No uova"},
+  {id:"diabete",      l:"Diabete"}
+];
+function restrLabel(id){ var r = GUEST_RESTR.find(function(x){ return x.id === id; }); return r ? r.l : id; }
+
 function MenuView(props) {
   var menu = props.menu || {};
   var builder = props.builder || {};
@@ -5433,6 +5445,8 @@ function MenuView(props) {
   var profili = props.profili || {};
   var feedback = props.feedback || {};
   var setFeedback = props.setFeedback || function(){};
+  var ospiti = props.ospiti || {};
+  var setOspiti = props.setOspiti || function(){};
   var vals = Object.values(profili);
 
   var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
@@ -5465,6 +5479,23 @@ function MenuView(props) {
     w[day] = dd;
     var nf = Object.assign({}, feedback); nf[weekKey] = w;
     setFeedback(nf);
+  }
+  function getOspRec(day) {
+    var w = ospiti[weekKey]; var r = w && w[day];
+    if(typeof r === "number") return {n:r, restr:[]};
+    return r || {n:0, restr:[]};
+  }
+  function salvaOsp(day, rec) {
+    var w = Object.assign({}, ospiti[weekKey] || {});
+    w[day] = rec;
+    var no = Object.assign({}, ospiti); no[weekKey] = w;
+    setOspiti(no);
+  }
+  function setOspN(day, n) { var rec = getOspRec(day); salvaOsp(day, {n:Math.max(0,n), restr:rec.restr}); }
+  function toggleRestr(day, id) {
+    var rec = getOspRec(day); var arr = rec.restr.slice();
+    var i = arr.indexOf(id); if(i>=0) arr.splice(i,1); else arr.push(id);
+    salvaOsp(day, {n:rec.n, restr:arr});
   }
 
   return (
@@ -5508,6 +5539,7 @@ function MenuView(props) {
         var mia = membro ? getReaz(d, mkey) : null;
         var miaStato = mia ? mia.stato : null;
         var altri = vals.filter(function(p){ var r = getReaz(d, p.id); return r && r.stato; });
+        var osp = getOspRec(d); var nOsp = osp.n;
         return (
           <div key={d} className="mf-card" style={{padding:"13px 15px"}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:vuoto?0:2}}>
@@ -5555,6 +5587,47 @@ function MenuView(props) {
                   style={{padding:"9px 14px",borderRadius:11,border:"none",background:"#2F6586",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>OK</button>
               </div>
             )}
+
+            <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <i className="ti ti-users" style={{fontSize:16,color:nOsp>0?"#2F6586":"#B4BEC4"}}/>
+                <span style={{flex:1,fontSize:12,fontWeight:600,color:nOsp>0?"#2F6586":"#8A949B"}}>
+                  {nOsp>0 ? ("Ho ospiti: "+nOsp+" in più a tavola") : "Ho ospiti?"}
+                </span>
+                <button onClick={function(){ setOspN(d, nOsp-1); }} disabled={nOsp<=0}
+                  style={{width:28,height:28,borderRadius:9,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:16,cursor:nOsp>0?"pointer":"default"}}>-</button>
+                <span style={{minWidth:18,textAlign:"center",fontSize:14,fontWeight:800,color:"#2C3338"}}>{nOsp}</span>
+                <button onClick={function(){ setOspN(d, nOsp+1); }}
+                  style={{width:28,height:28,borderRadius:9,border:"none",background:"#6BA6C9",color:"#fff",fontSize:16,cursor:"pointer"}}>+</button>
+              </div>
+              {nOsp>0&&(
+                <div style={{marginTop:8}}>
+                  <div style={{fontSize:11,color:"#8A949B",marginBottom:6}}>Qualche ospite ha patologie o intolleranze?</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {GUEST_RESTR.map(function(rz){
+                      var on = osp.restr.indexOf(rz.id) >= 0;
+                      return (
+                        <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }}
+                          style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",
+                            border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#FBE7EC":"#fff",
+                            color:on?"#C2355A":"#8A949B",fontWeight:on?700:500}}>
+                          {rz.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {osp.restr.length>0&&(
+                    <div style={{marginTop:8,background:"#FBEEE0",border:"1px solid #F0C89B",borderRadius:10,padding:"8px 10px",
+                      display:"flex",alignItems:"flex-start",gap:7}}>
+                      <i className="ti ti-alert-triangle" style={{fontSize:14,color:"#B9770E",marginTop:1}}/>
+                      <span style={{flex:1,fontSize:11,color:"#8A5A12",lineHeight:1.4}}>
+                        Prevedi un'alternativa: {osp.restr.map(restrLabel).join(", ")}. Tocca <b>Modifica</b> per adattare il pasto.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {altri.length>0&&(
               <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
@@ -5860,6 +5933,11 @@ function ListaSpesaView(props) {
   var setSpesa = props.setSpesa || function(){};
   var builder = props.builder || {};
   var menu = props.menu || {};
+  var ospiti = props.ospiti || {};
+  var ospSett = ospiti[isoDay(lunediSettimana())] || {};
+  var ospTot = Object.keys(ospSett).reduce(function(s,d){ var r = ospSett[d]; return s + (typeof r === "number" ? r : (r && r.n) || 0); }, 0);
+  var ospRestr = [];
+  Object.keys(ospSett).forEach(function(d){ var r = ospSett[d]; var arr = (r && r.restr) || []; arr.forEach(function(x){ if(ospRestr.indexOf(x)<0) ospRestr.push(x); }); });
   var s_nome = useState(""); var nome = s_nome[0]; var setNome = s_nome[1];
   var s_cat = useState("frutta_verdura"); var cat = s_cat[0]; var setCat = s_cat[1];
   var s_msg = useState(""); var msg = s_msg[0]; var setMsg = s_msg[1];
@@ -5978,6 +6056,16 @@ function ListaSpesaView(props) {
         <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Lista della spesa</div>
         <span style={{fontSize:13,color:"#8A949B"}}>{items.length} articoli</span>
       </div>
+
+      {ospTot>0&&(
+        <div className="mf-card" style={{background:"#FBEEE0",border:"1px solid #F0C89B",display:"flex",alignItems:"flex-start",gap:9,padding:"12px 14px"}}>
+          <i className="ti ti-users" style={{fontSize:18,color:"#B9770E",marginTop:1}}/>
+          <div style={{flex:1,fontSize:12,color:"#8A5A12",lineHeight:1.45}}>
+            <b>Questa settimana +{ospTot} ospiti a tavola.</b> Aumenta le quantità quando fai la spesa.
+            {ospRestr.length>0&&<div style={{marginTop:3}}>Attenzione a: {ospRestr.map(restrLabel).join(", ")}.</div>}
+          </div>
+        </div>
+      )}
 
       <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
         <input placeholder="Aggiungi un articolo (es. detersivo piatti)" value={nome}
@@ -7350,7 +7438,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -7453,6 +7541,7 @@ export default function App() {
   const [mealPrep, setMealPrep] = useState(loadLS("mealPrep", []));
   const [diarioLog, setDiarioLog] = useState(loadLS("diarioLog", {}));
   const [feedbackPasti, setFeedbackPasti] = useState(loadLS("feedbackPasti", {}));
+  const [ospiti, setOspiti] = useState(loadLS("ospiti", {}));
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -7563,6 +7652,7 @@ export default function App() {
   var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
   var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
   var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
+  var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -7832,7 +7922,8 @@ export default function App() {
         )}
         {tab==="menu" && (
           <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
-            profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}/>
+            profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
+            ospiti={ospiti} setOspiti={setOspitiLS}/>
         )}
         {tab==="diario" && (
           <DiarioView menu={menu} builder={builderScelte} profili={profili}
@@ -7846,7 +7937,7 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu}/>
+          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
