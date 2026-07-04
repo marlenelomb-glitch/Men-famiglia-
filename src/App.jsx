@@ -4206,8 +4206,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   function apriGiorno(i) { cambiaGiorno(i); setStepCorrente(1); setVista("giorno"); }
 
   var sPicker=useState(null); var picker=sPicker[0]; var setPicker=sPicker[1];
+  var sPickS=useState(""); var pickS=sPickS[0]; var setPickS=sPickS[1];
+  var sFGlut=useState(false); var fGlut=sFGlut[0]; var setFGlut=sFGlut[1];
+  var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
   var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
   var sceltaG = scelteAttive[keyG] || {};
+  function usoSettIng(id) {
+    var n=0;
+    GIORNI_B.forEach(function(g){ PASTI_B.forEach(function(pp){ var s=scelteAttive[g+"-"+pp]; if(s){ ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ if(s[f]===id) n++; }); } }); });
+    return n;
+  }
+  function inStagione(it) { var st=getStagione(); return !it.stagione || it.stagione==="tutto" || it.stagione.indexOf(st)>=0; }
+  function apriPicker(c) { setPicker(c); setPickS(""); }
   function campiPasto() {
     var t = PASTI_TIPO[pastoSel] || "pranzo";
     if(t==="colazione" || t==="spuntino") {
@@ -4437,7 +4447,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         var gv=grammiField(sceltaG, c.campo, it, c.def);
         return (
           <div key={c.campo} className="mf-card" style={{padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
-            <div onClick={function(){ setPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+            <div onClick={function(){ apriPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
               <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
                 background:id?"#E2EEF5":"transparent",border:id?"none":"1.5px dashed #C4D2DA",color:id?"#2F6586":"#8A949B"}}>
                 <i className={"ti "+(id?iconaGruppo(c.tipo,id):"ti-plus")}/>
@@ -4454,7 +4464,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 <button onClick={function(){ setGrammiG(c.campo, gv+10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>+</button>
               </div>
             ) : (
-              <i className="ti ti-chevron-right" onClick={function(){ setPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
+              <i className="ti ti-chevron-right" onClick={function(){ apriPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
             )}
           </div>
         );
@@ -4487,6 +4497,25 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               <div style={{fontSize:16,fontWeight:800}}>Scegli {picker.label.toLowerCase().replace(" · facoltativa","")}</div>
               <i className="ti ti-x" onClick={function(){ setPicker(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
             </div>
+            <div style={{padding:"10px 16px 0"}}>
+              <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:13,padding:"10px 12px"}}>
+                <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+                <input value={pickS} onChange={function(e){ setPickS(e.target.value); }} placeholder="Cerca un alimento..."
+                  style={{border:"none",outline:"none",background:"none",flex:1,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:600,color:"#2C3338"}}/>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                <button onClick={function(){ setFGlut(!fGlut); }}
+                  style={{border:"1.5px solid "+(fGlut?"#2F6586":"#E3EAEE"),background:fGlut?"#E2EEF5":"#fff",color:fGlut?"#2F6586":"#8A949B",
+                    fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <i className="ti ti-bread-off" style={{fontSize:14}}/>Senza glutine</button>
+                {(picker.tipo==="verdura"||picker.tipo==="frutta")&&(
+                  <button onClick={function(){ setFStag(!fStag); }}
+                    style={{border:"1.5px solid "+(fStag?"#2F6586":"#E3EAEE"),background:fStag?"#E2EEF5":"#fff",color:fStag?"#2F6586":"#8A949B",
+                      fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                    <i className="ti ti-clock" style={{fontSize:14}}/>Di stagione</button>
+                )}
+              </div>
+            </div>
             <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
               {sceltaG[picker.campo]&&(
                 <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
@@ -4494,28 +4523,42 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   <i className="ti ti-trash" style={{fontSize:18}}/>Togli {picker.label.toLowerCase().replace(" · facoltativa","")}
                 </div>
               )}
-              {picker.db.map(function(o){
-                var vt=ingredienteVietato(o, famVietati);
-                var sel=sceltaG[picker.campo]===o.id;
-                return (
-                  <div key={o.id} onClick={function(){ if(vt) return; setCampoG(picker.campo, o.id); setPicker(null); }}
-                    style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",
-                      cursor:vt?"default":"pointer",opacity:vt?.5:1}}>
-                    <div style={{width:36,height:36,borderRadius:11,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,
-                      background:vt?"#F0F2F4":"#E2EEF5",color:vt?"#B4BEC4":"#2F6586"}}>
-                      <i className={"ti "+(vt?"ti-ban":iconaGruppo(picker.tipo,o.id))}/>
+              {(function(){
+                var q=pickS.trim().toLowerCase();
+                var lista=picker.db.filter(function(o){
+                  if(q && o.nome.toLowerCase().indexOf(q)<0) return false;
+                  if(fGlut && ingredienteVietato(o, ["glutine"])) return false;
+                  if(fStag && (picker.tipo==="verdura"||picker.tipo==="frutta") && !inStagione(o)) return false;
+                  return true;
+                });
+                if(!lista.length) return <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun alimento trovato.</div>;
+                return lista.map(function(o){
+                  var vt=ingredienteVietato(o, famVietati);
+                  var sel=sceltaG[picker.campo]===o.id;
+                  var uso=usoSettIng(o.id);
+                  var stag=(picker.tipo==="verdura"||picker.tipo==="frutta")&&inStagione(o)&&o.stagione!=="tutto"&&o.stagione;
+                  return (
+                    <div key={o.id} onClick={function(){ if(vt) return; setCampoG(picker.campo, o.id); setPicker(null); }}
+                      style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",
+                        cursor:vt?"default":"pointer",opacity:vt?.5:1}}>
+                      <div style={{width:36,height:36,borderRadius:11,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,
+                        background:vt?"#F0F2F4":"#E2EEF5",color:vt?"#B4BEC4":"#2F6586"}}>
+                        <i className={"ti "+(vt?"ti-ban":iconaGruppo(picker.tipo,o.id))}/>
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:700}}>{o.nome}</div>
+                        {vt&&<div style={{fontSize:11,color:"#C0392B",fontWeight:600}}>Non adatto ({vt})</div>}
+                      </div>
+                      {!vt&&uso>=2&&<span style={{fontSize:10,fontWeight:700,background:"#F6ECD9",color:"#8A5A12",padding:"3px 8px",borderRadius:20}}>{uso}× settimana</span>}
+                      {!vt&&uso===0&&stag&&<span style={{fontSize:10,fontWeight:700,background:"#E8F3EC",color:"#2E9E5B",padding:"3px 8px",borderRadius:20}}>di stagione</span>}
+                      <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                        border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                        {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                      </span>
                     </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:14,fontWeight:700}}>{o.nome}</div>
-                      {vt&&<div style={{fontSize:11,color:"#C0392B",fontWeight:600}}>Non adatto ({vt})</div>}
-                    </div>
-                    <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
-                      border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
-                      {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
