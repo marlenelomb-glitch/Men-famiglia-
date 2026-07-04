@@ -3546,7 +3546,10 @@ function NutriPanel(props) {
   return (
     <div style={{background:"#F5F8FC",borderRadius:10,padding:"10px 12px",marginBottom:8,border:"1.5px solid #E3EAEE"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-        <div style={{fontSize:10,fontWeight:800,color:"#2F6586"}}>Valori stimati pasto</div>
+        <div>
+          <div style={{fontSize:10,fontWeight:800,color:"#2F6586"}}>Valori stimati pasto</div>
+          <div style={{fontSize:9,color:"#8A949B"}}>Stima su porzioni standard · il pallino mostra se è ok per ogni membro</div>
+        </div>
         <div style={{display:"flex",gap:10}}>
           <span style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>{totKcal} <span style={{fontSize:9,fontWeight:400}}>kcal</span></span>
           {totProt>0&&<span style={{fontSize:12,fontWeight:800,color:"#E07A5F"}}>{totProt}<span style={{fontSize:9,fontWeight:400}}>g prot</span></span>}
@@ -3734,6 +3737,10 @@ function CostruttorePasto(props) {
             <div>
               {!carbo&&!prot&&(
                 <div style={{marginBottom:12}}>
+                  <div style={{background:"#EBF3FA",borderRadius:12,padding:"10px 12px",marginBottom:10,fontSize:12,color:"#2F6586",fontWeight:600,lineHeight:1.4}}>
+                    <i className="ti ti-hand-finger" style={{fontSize:14,marginRight:5,verticalAlign:"-2px"}}/>
+                    Inizia scegliendo un <b>carboidrato</b> (es. pasta) e una <b>proteina</b> (es. pollo). Oppure tocca un'idea veloce:
+                  </div>
                   <div style={{fontSize:9,fontWeight:700,color:"#8A949B",marginBottom:6}}>Suggerimenti rapidi</div>
                   <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
                     {[
@@ -4257,7 +4264,17 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </span>
       </div>
 
-      <div style={{background:"#fff",padding:"10px",borderRadius:16,marginBottom:8,border:"1px solid #E3EAEE"}}>
+      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,padding:"9px 12px",
+        background:"#EBF3FA",borderRadius:12,fontSize:12,fontWeight:700,color:"#2F6586",flexWrap:"wrap"}}>
+        <span>① Giorno e pasto</span>
+        <i className="ti ti-arrow-right" style={{fontSize:13,color:"#8A949B"}}/>
+        <span>② Ingredienti</span>
+        <i className="ti ti-arrow-right" style={{fontSize:13,color:"#8A949B"}}/>
+        <span>③ Salva</span>
+      </div>
+
+      <div className="cap" style={{marginBottom:6}}>1 · Scegli giorno e pasto</div>
+      <div style={{background:"#fff",padding:"10px",borderRadius:16,marginBottom:12,border:"1px solid #E3EAEE"}}>
         <div style={{display:"flex",gap:4,marginBottom:8,overflowX:"auto"}}>
           {GIORNI_B.map(function(g,i){
             var hasAny=PASTI_B.some(function(p){return hasSaved(g,p);});
@@ -4296,6 +4313,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </div>
       </div>
 
+      <div className="cap" style={{marginBottom:6}}>2 · Cosa mangi (poi salvi)</div>
       <div className="mf-card" style={{padding:"14px 15px",marginBottom:10}}>
         {step2Done&&<div style={{background:"#2F6586",color:"#fff",padding:"9px",textAlign:"center",fontSize:12,fontWeight:800,borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-check"/>Pasto salvato</div>}
         <CostruttorePasto
