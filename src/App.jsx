@@ -4188,8 +4188,8 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
   function iconaGruppo(tipo, id) {
     var it = ingById(id);
-    if(tipo==="proteina") {
-      if(!it) return "ti-meat";
+    if(tipo==="proteina" || tipo==="latticino") {
+      if(!it) return tipo==="latticino"?"ti-cheese":"ti-meat";
       if(it.cat==="pesce") return "ti-fish";
       if(it.cat==="legumi") return "ti-plant-2";
       if(it.cat==="uova") return "ti-egg";
@@ -4197,10 +4197,50 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
       return "ti-meat";
     }
     if(tipo==="carbo") return "ti-baguette";
+    if(tipo==="frutta") return "ti-apple";
+    if(tipo==="salsa") return "ti-droplet";
     return "ti-salad";
   }
   function nomeGruppo(id) { var it = ingById(id); return it ? it.nome : ""; }
   function apriGiorno(i) { cambiaGiorno(i); setStepCorrente(1); setVista("giorno"); }
+
+  var sPicker=useState(null); var picker=sPicker[0]; var setPicker=sPicker[1];
+  var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
+  var sceltaG = scelteAttive[keyG] || {};
+  function campiPasto() {
+    var t = PASTI_TIPO[pastoSel] || "pranzo";
+    if(t==="colazione" || t==="spuntino") {
+      return [
+        {campo:"frutta",    label:"Frutta",         tipo:"frutta",    def:120, db:FRUTTA},
+        {campo:"latticino", label:"Latticini",      tipo:"latticino", def:100, db:PROTEINE.filter(function(p){return p.cat==="latticini";})},
+        {campo:"carbo",     label:"Cereali e pane", tipo:"carbo",     def:50,  db:CARBOIDRATI.filter(function(c){return c.cat==="colazione"||c.cat==="pane";})}
+      ];
+    }
+    return [
+      {campo:"proteina", label:"Proteina",           tipo:"proteina", def:150, db:PROTEINE},
+      {campo:"carbo",    label:"Carboidrato",        tipo:"carbo",    def:80,  db:CARBOIDRATI.filter(function(c){return ["pasta","riso","cereali","tuberi"].indexOf(c.cat)>=0;})},
+      {campo:"verdura",  label:"Verdura",            tipo:"verdura",  def:150, db:VERDURE},
+      {campo:"salsa",    label:"Salsa · facoltativa",tipo:"salsa",    def:20,  db:SALSE, opt:true}
+    ];
+  }
+  function salvaScelta(s) {
+    var n = Object.assign({}, scelteAttive); n[keyG]=s; setScelteAttive(n);
+    if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, s);
+  }
+  function setCampoG(campo, id) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    if(id===null) delete s[campo]; else s[campo]=id;
+    salvaScelta(s);
+  }
+  function setGrammiG(campo, val) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var g = Object.assign({}, s.grammi||{});
+    if(val==="" || val<=0) delete g[campo]; else g[campo]=val;
+    s.grammi = g;
+    salvaScelta(s);
+  }
+  var famVietati = [];
+  Object.keys(profili||{}).forEach(function(pid){ var fin=getParametriFinali(profili[pid]); (fin.vietati||[]).forEach(function(v){ if(famVietati.indexOf(v)<0) famVietati.push(v); }); });
 
   // Scelte attive in base alla settimana selezionata
   var scelteAttive = settB===0 ? scelte : scelteProssima;
@@ -4367,128 +4407,116 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         style={{display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",padding:"0 0 8px"}}>
         <i className="ti ti-chevron-left" style={{fontSize:18}}/>Settimana
       </button>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingTop:4}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingTop:2}}>
         <div>
-          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Builder</div>
-          <div style={{fontSize:13,color:"#8A949B"}}>{completati}/{totale} pasti completi</div>
+          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>{GIORNI_B[giornoSel]}</div>
+          <div style={{fontSize:13,color:"#8A949B"}}>{(function(){var d=new Date(lunediSettimana().getTime()); if(settB===1)d.setDate(d.getDate()+7); d.setDate(d.getDate()+giornoSel); return d.getDate()+" "+MESI_ABBR[d.getMonth()];})()} · rifinisci il pasto</div>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:"#2F6586",background:"#E2EEF5",borderRadius:20,padding:"7px 14px"}}>
-          {totale>0?Math.round(completati/totale*100):0}%
-        </span>
+        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2E9E5B":"#8A949B"}}>{campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length}/{campiPasto().filter(function(c){ return !c.opt; }).length}</span>
       </div>
 
-      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,padding:"9px 12px",
-        background:"#EBF3FA",borderRadius:12,fontSize:12,fontWeight:700,color:"#2F6586",flexWrap:"wrap"}}>
-        <span>① Giorno e pasto</span>
-        <i className="ti ti-arrow-right" style={{fontSize:13,color:"#8A949B"}}/>
-        <span>② Ingredienti</span>
-        <i className="ti ti-arrow-right" style={{fontSize:13,color:"#8A949B"}}/>
-        <span>③ Salva</span>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
+        {PASTI_B.map(function(p){
+          var comp=isCompleto(GIORNI_B[giornoSel],p); var sel=pastoSel===p;
+          return (
+            <button key={p} onClick={function(){cambiaPasto(p);}}
+              style={{fontSize:13,fontWeight:700,color:sel?"#fff":"#8A949B",background:sel?"#2F6586":"#fff",
+                border:"1.5px solid "+(sel?"#2F6586":"#E3EAEE"),borderRadius:20,padding:"8px 13px",cursor:"pointer",
+                display:"flex",alignItems:"center",gap:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              {comp&&!sel&&<i className="ti ti-check" style={{fontSize:15,color:"#6BA6C9"}}/>}{p}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="cap" style={{marginBottom:6}}>1 · Scegli giorno e pasto</div>
-      <div style={{background:"#fff",padding:"10px",borderRadius:16,marginBottom:12,border:"1px solid #E3EAEE"}}>
-        <div style={{display:"flex",gap:4,marginBottom:8,overflowX:"auto"}}>
-          {GIORNI_B.map(function(g,i){
-            var hasAny=PASTI_B.some(function(p){return hasSaved(g,p);});
-            var isSel=giornoSel===i;
-            return (
-              <button key={g} onClick={function(){cambiaGiorno(i);}}
-                style={{flex:1,minWidth:42,padding:"9px 0 7px",borderRadius:12,flexShrink:0,
-                  border:"1px solid "+(isSel?"#2F6586":"#E3EAEE"),
-                  background:isSel?"#2F6586":hasAny?"#E2EEF5":"#fff",
-                  color:isSel?"#fff":"#2F6586",
-                  fontSize:13,fontWeight:isSel?700:600,cursor:"pointer",textAlign:"center"}}>
-                {g.slice(0,3)}
-                <div style={{display:"flex",gap:3,justifyContent:"center",marginTop:3}}>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Pranzo")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.25)":"#E3EAEE")}}/>
-                  <div style={{width:5,height:5,borderRadius:"50%",background:isCompleto(g,"Cena")?(isSel?"rgba(255,255,255,.9)":"#2F6586"):(isSel?"rgba(255,255,255,.25)":"#E3EAEE")}}/>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        <div style={{display:"flex",gap:5}}>
-          {PASTI_B.map(function(p){
-            var g=GIORNI_B[giornoSel];
-            var comp=isCompleto(g,p); var saved=hasSaved(g,p); var sel=pastoSel===p;
-            return (
-              <button key={p} onClick={function(){cambiaPasto(p);}}
-                style={{flex:1,padding:"8px 2px",borderRadius:11,fontSize:11,cursor:"pointer",
-                  border:"1.5px solid "+(sel?"#2F6586":comp?"#BFE3CC":saved?"#BFD9EA":"#E3EAEE"),
-                  background:sel?"#2F6586":comp?"#E8F3EC":saved?"#EBF3FA":"#fff",
-                  color:sel?"#fff":comp?"#2E9E5B":saved?"#2F6586":"#8A949B",
-                  fontWeight:sel||comp?700:500,textAlign:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                {p.slice(0,3)}{comp?" ✓":""}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="cap" style={{marginBottom:6}}>2 · Cosa mangi (poi salvi)</div>
-      <div className="mf-card" style={{padding:"14px 15px",marginBottom:10}}>
-        {step2Done&&<div style={{background:"#2F6586",color:"#fff",padding:"9px",textAlign:"center",fontSize:12,fontWeight:800,borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-check"/>Pasto salvato</div>}
-        <CostruttorePasto
-          key={key}
-          giorno={GIORNI_B[giornoSel]}
-          pasto={pastoSel}
-          scelta={sceltaCorrente}
-          profili={profili}
-          onSalva={salva}
-          stepEst={stepCorrente}
-          setStepEst={setStepCorrente}
-          onLive={setLiveScelta}
-          customIng={customIng}
-          setCustomIng={setCustomIng}/>
-      </div>
-
-      <button onClick={function(){setVediPiatto(!vediPiatto);}}
-        style={{width:"100%",padding:"11px 14px",borderRadius:14,border:"1px solid #E3EAEE",background:"#fff",
-          display:"flex",alignItems:"center",gap:9,cursor:"pointer",marginBottom:10,
-          fontSize:13,fontWeight:700,color:"#2C3338",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-        <i className="ti ti-chart-pie" style={{fontSize:16,color:"#6BA6C9"}}/>
-        <span style={{flex:1,textAlign:"left"}}>Piatto e piramide</span>
-        <i className={"ti "+(vediPiatto?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16,color:"#8A949B"}}/>
-      </button>
-      {vediPiatto&&(
-        <div className="mf-card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
-          <div style={{width:96,flexShrink:0}}>
-            <PiattoVisivo
-              carbo={liveScelta.carbo||null}
-              prot={liveScelta.proteina||null}
-              verdura={liveScelta.verdura||null}
-              frutta={liveScelta.frutta||null}
-              lattic={liveScelta.latticino||null}
-              isPrinc={pastoSel==="Pranzo"||pastoSel==="Cena"}/>
+      <div className="cap" style={{marginBottom:8}}>Cosa mangi · tocca per scegliere</div>
+      {campiPasto().map(function(c){
+        var id=sceltaG[c.campo];
+        var it=ingById(id);
+        var gv=grammiField(sceltaG, c.campo, it, c.def);
+        return (
+          <div key={c.campo} className="mf-card" style={{padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
+            <div onClick={function(){ setPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
+                background:id?"#E2EEF5":"transparent",border:id?"none":"1.5px dashed #C4D2DA",color:id?"#2F6586":"#8A949B"}}>
+                <i className={"ti "+(id?iconaGruppo(c.tipo,id):"ti-plus")}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>{c.label}</div>
+                <div style={{fontSize:14,fontWeight:700,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{id?nomeGruppo(id):("Aggiungi "+c.label.toLowerCase().replace(" · facoltativa",""))}</div>
+              </div>
+            </div>
+            {id ? (
+              <div style={{display:"flex",alignItems:"center",gap:6,background:"#F2F6F8",borderRadius:20,padding:4}}>
+                <button onClick={function(){ setGrammiG(c.campo, gv-10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>−</button>
+                <span style={{fontSize:12,fontWeight:800,minWidth:40,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{gv} g</span>
+                <button onClick={function(){ setGrammiG(c.campo, gv+10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>+</button>
+              </div>
+            ) : (
+              <i className="ti ti-chevron-right" onClick={function(){ setPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
+            )}
           </div>
-          <div style={{flex:1,minWidth:0}}>
-            <PiramideLive scelte={scelteAttive}/>
-          </div>
-        </div>
-      )}
+        );
+      })}
 
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
-        <button onClick={function(){setVediSett(!vediSett);}}
-          style={{flex:1,padding:"11px 14px",borderRadius:14,border:"1px solid #E3EAEE",background:"#fff",
-            display:"flex",alignItems:"center",gap:9,cursor:"pointer",
-            fontSize:13,fontWeight:700,color:"#2C3338",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-          <i className="ti ti-calendar-week" style={{fontSize:16,color:"#6BA6C9"}}/>
-          <span style={{flex:1,textAlign:"left"}}>Settimana</span>
-          <i className={"ti "+(vediSett?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16,color:"#8A949B"}}/>
-        </button>
+      <div style={{marginTop:5}}>
+        <NutriPanel carbo={sceltaG.carbo} prot={sceltaG.proteina} verd={sceltaG.verdura} verd2={sceltaG.verdura2}
+          frutta={sceltaG.frutta} lattic={sceltaG.latticino} pasto={pastoSel} profili={profili}
+          grammi={sceltaG.grammi||{}} onGrammi={function(field,val){ setGrammiG(field, parseInt(val,10)||0); }}/>
+      </div>
+
+      <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={function(){setShowSpesa(true);}}
-          style={{background:"#C2355A",color:"#fff",border:"none",borderRadius:14,padding:"0 15px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-          <i className="ti ti-shopping-cart" style={{fontSize:14}}/>Spesa
+          style={{padding:"14px 16px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+          <i className="ti ti-shopping-cart" style={{fontSize:16}}/>Spesa
+        </button>
+        <button onClick={function(){ setVista("settimana"); }}
+          style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <i className="ti ti-check" style={{fontSize:18}}/>Salva giorno
         </button>
       </div>
-      {vediSett&&(
-        <div className="mf-card" style={{padding:"12px 14px",marginBottom:10}}>
-          <GrigliaSettimana
-            scelte={scelteAttive} GIORNI={GIORNI_B} PASTI={PASTI_B}
-            giornoSel={giornoSel} pastoSel={pastoSel}
-            cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto}
-            setPopup={setPopup}/>
+
+      {picker&&(
+        <div onClick={function(){ setPicker(null); }}
+          style={{position:"fixed",inset:0,background:"rgba(20,40,55,.4)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){ e.stopPropagation(); }}
+            style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"78vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 18px 10px",borderBottom:"1px solid #E3EAEE",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:16,fontWeight:800}}>Scegli {picker.label.toLowerCase().replace(" · facoltativa","")}</div>
+              <i className="ti ti-x" onClick={function(){ setPicker(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+            </div>
+            <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+              {sceltaG[picker.campo]&&(
+                <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#C0392B",fontWeight:700,fontSize:14}}>
+                  <i className="ti ti-trash" style={{fontSize:18}}/>Togli {picker.label.toLowerCase().replace(" · facoltativa","")}
+                </div>
+              )}
+              {picker.db.map(function(o){
+                var vt=ingredienteVietato(o, famVietati);
+                var sel=sceltaG[picker.campo]===o.id;
+                return (
+                  <div key={o.id} onClick={function(){ if(vt) return; setCampoG(picker.campo, o.id); setPicker(null); }}
+                    style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",
+                      cursor:vt?"default":"pointer",opacity:vt?.5:1}}>
+                    <div style={{width:36,height:36,borderRadius:11,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,
+                      background:vt?"#F0F2F4":"#E2EEF5",color:vt?"#B4BEC4":"#2F6586"}}>
+                      <i className={"ti "+(vt?"ti-ban":iconaGruppo(picker.tipo,o.id))}/>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700}}>{o.nome}</div>
+                      {vt&&<div style={{fontSize:11,color:"#C0392B",fontWeight:600}}>Non adatto ({vt})</div>}
+                    </div>
+                    <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                      border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                      {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
       </div>
