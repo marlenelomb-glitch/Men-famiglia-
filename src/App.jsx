@@ -4372,6 +4372,20 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     s.piattoUnico = pu;
     salvaScelta(s);
   }
+  function stimaFamiglia(kcalBase, protBase) {
+    var out = [];
+    Object.keys(profili||{}).forEach(function(pid){
+      var p = profili[pid];
+      var target = p.kcal_target || 1600;
+      var scale = target / 1600;
+      var k = Math.round((kcalBase || 0) * scale);
+      var pr = Math.round((protBase || 0) * scale);
+      var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
+      var over = limite !== null && !isNaN(limite) && pr > limite;
+      out.push({nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, limite: (over ? limite : null), over: over});
+    });
+    return out;
+  }
   function usaRicetta(ric) {
     var por = ric.porzioni && (ric.porzioni.adulto || ric.porzioni.adulta || {});
     var s = Object.assign({}, scelteAttive[keyG]||{});
@@ -4641,6 +4655,45 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 placeholder="es. 20" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
             </div>
           </div>
+
+          {(function(){
+            var kb = parseInt(sceltaG.piattoUnico.kcal, 10) || 0;
+            var pb = parseInt(sceltaG.piattoUnico.prot, 10) || 0;
+            var membri = Object.keys(profili||{}).length;
+            if((kb===0 && pb===0) || membri===0) return null;
+            var righe = stimaFamiglia(kb, pb);
+            var problemi = righe.filter(function(x){ return x.over; }).length;
+            return (
+              <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px"}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:9,display:"flex",alignItems:"center",gap:6}}>
+                  <i className="ti ti-users" style={{fontSize:14}}/>Per la famiglia ({membri}) · porzioni indicative
+                </div>
+                {righe.map(function(r,idx){
+                  return (
+                    <div key={idx} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",borderTop: idx===0?"none":"1px solid #F1F4F6"}}>
+                      <span style={{width:9,height:9,borderRadius:"50%",background:r.colore,flexShrink:0}}/>
+                      <span style={{fontSize:13,fontWeight:700,color:"#2C3338",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</span>
+                      <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                      {r.over ? (
+                        <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                          <i className="ti ti-alert-triangle" style={{fontSize:12}}/>{r.prot}g (max {r.limite})
+                        </span>
+                      ) : (
+                        <span style={{fontSize:12,fontWeight:700,color:"#2F6586",minWidth:44,textAlign:"right"}}>{r.prot}g prot</span>
+                      )}
+                    </div>
+                  );
+                })}
+                {problemi>0 && (
+                  <div style={{fontSize:11,color:"#8A5A12",marginTop:9,lineHeight:1.4,display:"flex",gap:6}}>
+                    <i className="ti ti-info-circle" style={{fontSize:14,flexShrink:0,marginTop:1}}/>
+                    <span>Per chi ha il limite proteico, servi una porzione ridotta o la variante senza la parte proteica.</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <button onClick={function(){ setPickRic(true); }}
             style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
               display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
