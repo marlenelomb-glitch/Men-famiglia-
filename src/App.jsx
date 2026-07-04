@@ -797,7 +797,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
     var it=allDB.find(function(x){return x.id===id;}); return it?it.emoji:"";
   }
   function hasPasto(g,p) {
-    var s=scelteVis[g+"-"+p]; return s&&(s.carbo||s.proteina||s.frutta||s.latticino);
+    var s=scelteVis[g+"-"+p]; return s&&(s.carbo||s.proteina||s.frutta||s.latticino||(s.piattoUnico&&s.piattoUnico.nome&&(""+s.piattoUnico.nome).trim()));
   }
 
   var completi=0;
@@ -860,6 +860,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
                       <span style={{fontSize:10,color:"#ddd"}}>—</span>
                     </div>
                   );
+                  var isCompl=s.piattoUnico&&s.piattoUnico.nome&&(""+s.piattoUnico.nome).trim();
                   var protItem =allDB.find(function(x){return x.id===s.proteina;});
                   var carboItem=allDB.find(function(x){return x.id===s.carbo;});
                   var fruttaItem=allDB.find(function(x){return x.id===s.frutta;});
@@ -874,11 +875,15 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
                         {pasto}
                       </span>
                       <div style={{flex:1}}>
-                        {principale&&<span style={{fontSize:11,fontWeight:600,color:"#2C3338"}}>
+                        {isCompl&&<span style={{fontSize:11,fontWeight:600,color:"#2C3338"}}>
+                          {(""+s.piattoUnico.nome).trim()}
+                        </span>}
+                        {isCompl&&<span style={{fontSize:9,color:"#8A949B",marginLeft:6,fontWeight:600}}>pasto completo</span>}
+                        {!isCompl&&principale&&<span style={{fontSize:11,fontWeight:600,color:"#2C3338"}}>
                           {principale.nome}
                         </span>}
-                        {secondo&&<span style={{fontSize:10,color:"#8A949B"}}> + {secondo.nome}</span>}
-                        {s.verdura&&<span style={{fontSize:10,color:"#8A949B"}}>
+                        {!isCompl&&secondo&&<span style={{fontSize:10,color:"#8A949B"}}> + {secondo.nome}</span>}
+                        {!isCompl&&s.verdura&&<span style={{fontSize:10,color:"#8A949B"}}>
                           {" ? "}{getNome(s.verdura)}
                         </span>}
                         {s.nota&&<div style={{fontSize:9,color:"#bbb",fontStyle:"italic",marginTop:2}}>{s.nota}</div>}
@@ -4406,6 +4411,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-meat" style={{color:"#2F6586",fontSize:15}}/>Proteina</span>
             <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-baguette" style={{color:"#2F6586",fontSize:15}}/>Carbo</span>
             <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-salad" style={{color:"#2F6586",fontSize:15}}/>Verdura</span>
+          </div>
+          <div style={{fontSize:11,color:"#8A949B",padding:"0 4px",marginTop:-6,marginBottom:12,display:"flex",alignItems:"center",gap:6}}>
+            <i className="ti ti-tools-kitchen-2" style={{color:"#2F6586",fontSize:14}}/>oppure un pasto completo (es. lasagne) &mdash; tocca un giorno
           </div>
 
           {GIORNI_B.map(function(g,i){
