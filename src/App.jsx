@@ -4233,7 +4233,6 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var sFGlut=useState(false); var fGlut=sFGlut[0]; var setFGlut=sFGlut[1];
   var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
   var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
-  var sceltaG = scelteAttive[keyG] || {};
   function usoSettIng(id) {
     var n=0;
     GIORNI_B.forEach(function(g){ PASTI_B.forEach(function(pp){ var s=scelteAttive[g+"-"+pp]; if(s){ ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ if(s[f]===id) n++; }); } }); });
@@ -4279,6 +4278,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   // Scelte attive in base alla settimana selezionata
   var scelteAttive = settB===0 ? scelte : scelteProssima;
   var setScelteAttive = settB===0 ? setScelte : setScelteProssima;
+  var sceltaG = scelteAttive[keyG] || {};
 
   var key=GIORNI_B[giornoSel]+"-"+pastoSel;
   var sceltaCorrente=scelteAttive[key]||null;
