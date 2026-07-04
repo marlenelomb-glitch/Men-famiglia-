@@ -5717,58 +5717,268 @@ function PiramideView() {
   );
 }
 
+var WHO_WFA_M = [
+  {a:0.5,  L:0.1257, M:7.9340,  S:0.11316},
+  {a:0.75, L:0.0959, M:8.9014,  S:0.11080},
+  {a:1.0,  L:0.0402, M:9.6479,  S:0.10958},
+  {a:1.5,  L:-0.0526,M:10.9385, S:0.10897},
+  {a:2.0,  L:-0.0997,M:12.1515, S:0.10877},
+  {a:3.0,  L:-0.1358,M:14.3429, S:0.11274},
+  {a:4.0,  L:-0.1710,M:16.3489, S:0.11832},
+  {a:5.0,  L:-0.2049,M:18.3366, S:0.12988},
+  {a:6.0,  L:-0.6288,M:20.2734, S:0.14859},
+  {a:7.0,  L:-0.9268,M:22.4638, S:0.15870},
+  {a:8.0,  L:-1.1602,M:25.0170, S:0.16702},
+  {a:9.0,  L:-1.3172,M:28.1216, S:0.17362},
+  {a:10.0, L:-1.3901,M:31.4327, S:0.17766}
+];
+var WHO_WFA_F = [
+  {a:0.5,  L:0.1002, M:7.2970,  S:0.12204},
+  {a:0.75, L:0.0965, M:8.2254,  S:0.11876},
+  {a:1.0,  L:0.0965, M:8.9481,  S:0.11712},
+  {a:1.5,  L:0.0446, M:10.2315, S:0.11570},
+  {a:2.0,  L:-0.0263,M:11.4775, S:0.11498},
+  {a:3.0,  L:-0.0630,M:13.8600, S:0.12100},
+  {a:4.0,  L:-0.1051,M:16.0700, S:0.12700},
+  {a:5.0,  L:-0.1400,M:18.2000, S:0.13500},
+  {a:6.0,  L:-0.8886,M:19.6363, S:0.16942},
+  {a:7.0,  L:-1.0577,M:21.8446, S:0.17505},
+  {a:8.0,  L:-1.1726,M:24.8420, S:0.17999},
+  {a:9.0,  L:-1.2342,M:28.4593, S:0.18272},
+  {a:10.0, L:-1.2549,M:32.1670, S:0.18327}
+];
+
+function normalCDF(z) {
+  var t = 1 / (1 + 0.2316419 * Math.abs(z));
+  var d = 0.3989423 * Math.exp(-z * z / 2);
+  var p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+  return z > 0 ? 1 - p : p;
+}
+
+function lmsInterp(tab, a) {
+  if(a <= tab[0].a) return tab[0];
+  if(a >= tab[tab.length-1].a) return tab[tab.length-1];
+  var i;
+  for(i = 0; i < tab.length - 1; i++) {
+    if(a >= tab[i].a && a <= tab[i+1].a) {
+      var lo = tab[i]; var hi = tab[i+1];
+      var f = (a - lo.a) / (hi.a - lo.a);
+      return {L: lo.L + (hi.L - lo.L) * f, M: lo.M + (hi.M - lo.M) * f, S: lo.S + (hi.S - lo.S) * f};
+    }
+  }
+  return tab[tab.length-1];
+}
+
+function percentilePeso(sesso, etaAnni, pesoKg) {
+  if(!pesoKg || !(pesoKg > 0)) return null;
+  if(etaAnni == null || etaAnni < 0.4 || etaAnni > 10.5) return null;
+  var tab = (sesso === "maschio" || sesso === "M" || sesso === "m") ? WHO_WFA_M : WHO_WFA_F;
+  var l = lmsInterp(tab, etaAnni);
+  var z = l.L !== 0 ? (Math.pow(pesoKg / l.M, l.L) - 1) / (l.L * l.S) : Math.log(pesoKg / l.M) / l.S;
+  var perc = normalCDF(z) * 100;
+  if(perc < 0.1) perc = 0.1;
+  if(perc > 99.9) perc = 99.9;
+  var banda; var colore;
+  if(perc < 3) { banda = "sotto la media"; colore = "#8A5A12"; }
+  else if(perc < 15) { banda = "norma bassa"; colore = "#2F6586"; }
+  else if(perc <= 85) { banda = "nella media"; colore = "#2E9E5B"; }
+  else if(perc <= 97) { banda = "sopra la media"; colore = "#2F6586"; }
+  else { banda = "sopra la media alta"; colore = "#8A5A12"; }
+  return {perc: perc, banda: banda, colore: colore, z: z};
+}
+
+function GraficoPeso(props) {
+  var dati = props.dati || [];
+  if(dati.length < 2) return null;
+  var ultimi = dati.slice(-12);
+  var valori = ultimi.map(function(d){ return d.valore; });
+  var minV = Math.min.apply(null, valori) - 0.4;
+  var maxV = Math.max.apply(null, valori) + 0.4;
+  var W = 280; var H = 78; var PAD = 6;
+  function xPx(i){ return PAD + (i / (ultimi.length - 1)) * (W - PAD * 2); }
+  function yPx(v){ return PAD + (1 - (v - minV) / (maxV - minV || 1)) * (H - PAD * 2); }
+  var punti = ultimi.map(function(d,i){ return xPx(i) + "," + yPx(d.valore); }).join(" ");
+  var col = props.colore || "#2F6586";
+  return (
+    <svg width="100%" viewBox={"0 0 " + W + " " + H} style={{display:"block",overflow:"visible"}}>
+      <polyline points={punti} fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      {ultimi.map(function(d,i){
+        return <circle key={i} cx={xPx(i)} cy={yPx(d.valore)} r="3" fill="#fff" stroke={col} strokeWidth="2"/>;
+      })}
+    </svg>
+  );
+}
+
 function SaluteView(props) {
   var profili = props.profili || {};
   var setTab = props.setTab || function(){};
+  var pesoLog = props.pesoLog || {};
+  var setPesoLog = props.setPesoLog || function(){};
+  var onSavePeso = props.onSavePeso || function(){};
+  var setProfili = props.setProfili || function(){};
   var vals = Object.values(profili);
-  var tags = [];
-  vals.forEach(function(p){
-    var fin = getParametriFinali(p);
-    (fin.patologie || []).forEach(function(pid){
-      var pat = PATOLOGIE_LIST.find(function(x){ return x.id === pid; });
-      if(pat && pat.id !== "nessuna" && tags.indexOf(pat.label) < 0) tags.push(pat.label);
-    });
-  });
+
+  var sSel = useState(vals.length ? (vals[0].nome || "") : "");
+  var selNome = sSel[0]; var setSelNome = sSel[1];
+  var sInp = useState(""); var inp = sInp[0]; var setInp = sInp[1];
+
+  var selProf = null;
+  vals.forEach(function(p){ if((p.nome || "") === selNome) selProf = p; });
+  if(!selProf && vals.length) selProf = vals[0];
+
+  var log = selProf ? (pesoLog[selProf.nome] || []).slice() : [];
+  log.sort(function(a,b){ return (a.data || "") < (b.data || "") ? -1 : 1; });
+
+  var etaAnni = null;
+  if(selProf) {
+    if(selProf.dataNascita) etaAnni = calcolaEta(selProf.dataNascita).mesi / 12;
+    else if(selProf.eta) etaAnni = selProf.eta;
+  }
+  var pesoAttuale = log.length ? log[log.length-1].valore : (selProf ? selProf.peso : 0);
+  var pctl = selProf ? percentilePeso(selProf.sesso, etaAnni, pesoAttuale) : null;
+
+  var iniziale = log.length ? log[0].valore : 0;
+  var variazione = log.length >= 2 ? (pesoAttuale - iniziale) : 0;
+  var minV = log.length ? Math.min.apply(null, log.map(function(d){ return d.valore; })) : 0;
+  var maxV = log.length ? Math.max.apply(null, log.map(function(d){ return d.valore; })) : 0;
+
+  function aggiungiPeso() {
+    if(!selProf) return;
+    var val = parseFloat(("" + inp).replace(",", "."));
+    if(!val || !(val > 0)) return;
+    var oggi = new Date().toISOString().slice(0, 10);
+    var arr = (pesoLog[selProf.nome] || []).slice();
+    var trovato = false;
+    arr = arr.map(function(d){ if(d.data === oggi){ trovato = true; return {data: oggi, valore: val}; } return d; });
+    if(!trovato) arr.push({data: oggi, valore: val});
+    var newLog = Object.assign({}, pesoLog);
+    newLog[selProf.nome] = arr;
+    setPesoLog(newLog);
+    var newP = Object.assign({}, profili);
+    newP[selProf.id] = Object.assign({}, profili[selProf.id], {peso: val});
+    setProfili(newP);
+    onSavePeso(selProf.nome, oggi, val);
+    setInp("");
+  }
+
+  function fmtData(s) {
+    if(!s) return "";
+    var p = ("" + s).split("-");
+    if(p.length < 3) return s;
+    return p[2] + "/" + p[1];
+  }
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Salute</div>
 
-      <div className="mf-card flush">
-        {vals.map(function(p){
-          var fin = getParametriFinali(p);
-          var eta = p.dataNascita ? calcolaEta(p.dataNascita).anni : (p.eta || "");
-          var sub = (eta ? (eta + " anni - ") : "") + fin.kcal + " kcal";
-          return (
-            <div key={p.id} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ setTab("impostazioni"); }}>
-              <div style={{width:38,height:38,borderRadius:"50%",background:p.colore||"#E2EEF5",color:"#fff",
-                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13}}>
-                {p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:14,fontWeight:500}}>{p.nome}</div>
-                <div style={{fontSize:11,color:"#8A949B"}}>{sub}</div>
-              </div>
-              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+      {vals.length > 0 && (
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+          {vals.map(function(p){
+            var on = (p.nome || "") === selNome || (selProf && p.nome === selProf.nome);
+            return (
+              <button key={p.id} onClick={function(){ setSelNome(p.nome || ""); setInp(""); }}
+                style={{flexShrink:0,display:"flex",alignItems:"center",gap:7,border:"1.5px solid " + (on ? (p.colore || "#2F6586") : "#E3EAEE"),
+                  background: on ? (p.colore || "#2F6586") : "#fff", color: on ? "#fff" : "#2C3338",
+                  borderRadius:20,padding:"7px 13px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                {p.nome || "?"}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {selProf && (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:11}}>
+            <div style={{width:40,height:40,borderRadius:"50%",background:selProf.colore || "#E2EEF5",color:"#fff",
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:15}}>
+              {selProf.nome ? selProf.nome.slice(0,1).toUpperCase() : "?"}
             </div>
-          );
-        })}
-        {vals.length===0&&(
-          <div className="mf-row"><div style={{flex:1,fontSize:14,color:"#8A949B"}}>Nessun profilo</div></div>
-        )}
-      </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:15,fontWeight:700}}>{selProf.nome}</div>
+              <div style={{fontSize:11,color:"#8A949B"}}>
+                {etaAnni != null ? (etaAnni < 2 ? (Math.round(etaAnni * 12) + " mesi") : (Math.floor(etaAnni) + " anni")) : "eta n.d."}
+              </div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:22,fontWeight:800,color:"#2C3338"}}>{pesoAttuale ? pesoAttuale : "—"}</div>
+              <div style={{fontSize:10,color:"#8A949B",fontWeight:700}}>kg attuali</div>
+            </div>
+          </div>
 
-      <div className="mf-card">
-        <div className="cap" style={{marginBottom:11}}>Patologie e restrizioni in famiglia</div>
-        {tags.length>0
-          ? <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{tags.map(function(t,i){ return <span key={i} className="pill low">{t}</span>; })}</div>
-          : <div style={{fontSize:13,color:"#8A949B"}}>Nessuna restrizione impostata</div>}
-      </div>
+          <div style={{display:"flex",gap:8}}>
+            <input inputMode="decimal" placeholder="Peso di oggi (kg)" value={inp}
+              onChange={function(e){ setInp(e.target.value.replace(/[^0-9.,]/g, "")); }}
+              onKeyDown={function(e){ if(e.key === "Enter") aggiungiPeso(); }}
+              style={{flex:1,padding:"11px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,
+                fontFamily:"'Nunito',system-ui,sans-serif",boxSizing:"border-box"}}/>
+            <button onClick={aggiungiPeso}
+              style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"0 18px",fontSize:14,fontWeight:700,
+                cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Salva</button>
+          </div>
 
-      <div className="mf-card acc" style={{display:"flex",alignItems:"center",gap:11}}>
-        <i className="ti ti-heart" style={{fontSize:19}}/>
-        <div style={{flex:1,fontSize:13}}>Profili nutrizionali attivi per tutta la famiglia</div>
-      </div>
+          {log.length >= 2 && (
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                <span style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Andamento (ultimi {Math.min(log.length,12)})</span>
+                <span style={{fontSize:12,fontWeight:800,color: variazione < 0 ? "#2F6586" : variazione > 0 ? "#C0392B" : "#8A949B"}}>
+                  {variazione > 0 ? "+" : ""}{variazione.toFixed(1)} kg
+                </span>
+              </div>
+              <GraficoPeso dati={log} colore={selProf.colore || "#2F6586"}/>
+            </div>
+          )}
+
+          {log.length > 0 ? (
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1,background:"#F2F6F8",borderRadius:12,padding:"9px 10px",textAlign:"center"}}>
+                <div style={{fontSize:16,fontWeight:800}}>{iniziale}</div>
+                <div style={{fontSize:9,color:"#8A949B",fontWeight:700}}>INIZIALE</div>
+              </div>
+              <div style={{flex:1,background:"#F2F6F8",borderRadius:12,padding:"9px 10px",textAlign:"center"}}>
+                <div style={{fontSize:16,fontWeight:800}}>{minV}–{maxV}</div>
+                <div style={{fontSize:9,color:"#8A949B",fontWeight:700}}>MIN–MAX</div>
+              </div>
+              <div style={{flex:1,background:"#F2F6F8",borderRadius:12,padding:"9px 10px",textAlign:"center"}}>
+                <div style={{fontSize:16,fontWeight:800}}>{log.length}</div>
+                <div style={{fontSize:9,color:"#8A949B",fontWeight:700}}>MISURE</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{fontSize:12,color:"#8A949B",textAlign:"center",padding:"6px 0"}}>Nessun peso registrato. Aggiungi il primo qui sopra.</div>
+          )}
+
+          {pctl && (
+            <div style={{background:"#E2EEF5",borderRadius:14,padding:"12px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <i className="ti ti-chart-histogram" style={{color:"#2F6586",fontSize:17}}/>
+                <span style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>Peso per età (OMS)</span>
+              </div>
+              <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:8}}>
+                <span style={{fontSize:26,fontWeight:800,color:pctl.colore}}>{Math.round(pctl.perc)}°</span>
+                <span style={{fontSize:13,fontWeight:700,color:pctl.colore}}>percentile · {pctl.banda}</span>
+              </div>
+              <div style={{position:"relative",height:8,borderRadius:6,background:"linear-gradient(90deg,#F6ECD9,#CDE3D5,#CDE3D5,#F6ECD9)",marginBottom:8}}>
+                <div style={{position:"absolute",top:-3,left:("" + Math.max(0,Math.min(100,pctl.perc))) + "%",transform:"translateX(-50%)",
+                  width:14,height:14,borderRadius:"50%",background:"#fff",border:"3px solid " + pctl.colore}}/>
+              </div>
+              <div style={{fontSize:10,color:"#5B6B77",lineHeight:1.4}}>
+                Stima indicativa su standard di crescita OMS. Non è una valutazione medica: per dubbi senti il pediatra.
+              </div>
+            </div>
+          )}
+
+          <div onClick={function(){ setTab("impostazioni"); }}
+            style={{display:"flex",alignItems:"center",gap:7,fontSize:12,fontWeight:700,color:"#2F6586",cursor:"pointer"}}>
+            <i className="ti ti-settings" style={{fontSize:15}}/>Modifica profilo, altezza, patologie
+          </div>
+        </div>
+      )}
+
+      {vals.length === 0 && (
+        <div className="mf-card"><div style={{fontSize:14,color:"#8A949B"}}>Nessun profilo. Configura la famiglia in Impostazioni.</div></div>
+      )}
     </div>
   );
 }
@@ -8004,7 +8214,7 @@ export default function App() {
             diario={diarioLog} setDiario={setDiarioLogLS}/>
         )}
         {tab==="salute" && (
-          <SaluteView profili={profili} setTab={handleSetTab}/>
+          <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase}/>
         )}
         {tab==="dispensa" && (
           <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
