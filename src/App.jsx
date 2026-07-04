@@ -406,6 +406,9 @@ function ingredienteVietato(ing, vietati) {
   return null;
 }
 
+var VIETATO_SHORT = {glutine:"glutine", latticini:"lattosio", carne:"carne", carne_rossa:"carne rossa", pesce:"pesce", crostacei:"crostacei", uova:"uova", legumi:"legumi", frutta_secca:"fr. secca", miele:"miele", alcol:"alcol"};
+function vietatoShort(tag) { return VIETATO_SHORT[tag] || tag; }
+
 const DB_PASTI = {
   c1:{nome:"Yogurt + frutta + cereali",emoji:"?",tipo:"Colazione",
     adulta:{kcal:220,prot:14,piatto:"Yogurt greco 150g + frutta + 30g avena"},
@@ -4380,8 +4383,17 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   }
   function dishBase(pu, pid) {
     var i = dishIndexOf(pu, pid);
-    if(i >= 0) { var d = pu.altri[i]; return {nome:d.nome, kcal:parseInt(d.kcal,10)||0, prot:parseInt(d.prot,10)||0}; }
-    return {nome:pu.nome, kcal:parseInt(pu.kcal,10)||0, prot:parseInt(pu.prot,10)||0};
+    if(i >= 0) { var d = pu.altri[i]; return {nome:d.nome, kcal:parseInt(d.kcal,10)||0, prot:parseInt(d.prot,10)||0, ricon:d.riconosciuti||[]}; }
+    return {nome:pu.nome, kcal:parseInt(pu.kcal,10)||0, prot:parseInt(pu.prot,10)||0, ricon:(pu.riconosciuti||[])};
+  }
+  function vietatiDelPiatto(ricon, fin) {
+    var out = [];
+    (ricon||[]).forEach(function(r){
+      var ing = ingById(r.id);
+      var v = ingredienteVietato(ing, (fin && fin.vietati) || []);
+      if(v && out.indexOf(v) < 0) out.push(v);
+    });
+    return out;
   }
   function stimaFamiglia(pu) {
     var out = [];
@@ -4394,13 +4406,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", fuori: true, kcal: fk, prot: fp, contato: (fk > 0 || fp > 0)});
         return;
       }
+      var fin = getParametriFinali(p);
       var base = dishBase(pu, pid);
       var scale = (p.kcal_target || 1600) / 1600;
       var k = Math.round((base.kcal || 0) * scale);
       var pr = Math.round((base.prot || 0) * scale);
       var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
       var over = limite !== null && !isNaN(limite) && pr > limite;
-      out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, dish: base.nome, altro: dishIndexOf(pu, pid) >= 0, limite: (over ? limite : null), over: over});
+      var vietati = vietatiDelPiatto(base.ricon, fin);
+      var motivi = [];
+      vietati.forEach(function(v){ motivi.push(vietatoShort(v)); });
+      if(over) motivi.push("proteine");
+      out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, dish: base.nome, altro: dishIndexOf(pu, pid) >= 0, limite: (over ? limite : null), over: over, vietati: vietati, motivi: motivi, problema: (over || vietati.length > 0)});
     });
     return out;
   }
@@ -4457,16 +4474,38 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
       pu.fuoriVal = fv;
     });
   }
+  function varianteNome(pu, pid) {
+    var p = profili[pid]; var fin = getParametriFinali(p);
+    var base = dishBase(pu, pid);
+    var scale = (p.kcal_target || 1600) / 1600;
+    var pr = Math.round((base.prot || 0) * scale);
+    var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
+    var overProt = limite !== null && !isNaN(limite) && pr > limite;
+    var keep = (base.ricon || []).filter(function(r){
+      if(ingredienteVietato(ingById(r.id), fin.vietati)) return false;
+      if(overProt && r.tipo === "proteina") return false;
+      return true;
+    });
+    return keep.length ? keep.map(function(r){ return r.nome; }).join(" e ") : "Porzione ridotta";
+  }
   function creaVariante() {
     var pu0 = (scelteAttive[keyG]||{}).piattoUnico || {};
     var righe = stimaFamiglia(pu0);
-    var flagged = righe.filter(function(r){ return r.over && !r.altro; }).map(function(r){ return r.pid; });
-    if(!flagged.length) return;
-    var ricon = pu0.riconosciuti || [];
-    var senza = ricon.filter(function(x){ return x.tipo !== "proteina"; });
-    var nome = senza.length ? senza.map(function(x){ return x.nome; }).join(" e ") : "Porzione ridotta";
-    var r = riconosciPasto(nome);
-    mutaPU(function(pu){ pu.altri.push({nome:nome, kcal:String(r.kcal||0), prot:String(r.prot||0), riconosciuti:r.items||[], autofill:true, membri:flagged}); });
+    var gruppi = {};
+    righe.forEach(function(r){
+      if(r.fuori || r.altro || !r.problema) return;
+      var nome = varianteNome(pu0, r.pid);
+      if(!gruppi[nome]) gruppi[nome] = [];
+      gruppi[nome].push(r.pid);
+    });
+    var nomi = Object.keys(gruppi);
+    if(!nomi.length) return;
+    mutaPU(function(pu){
+      nomi.forEach(function(nome){
+        var r = riconosciPasto(nome);
+        pu.altri.push({nome:nome, kcal:String(r.kcal||0), prot:String(r.prot||0), riconosciuti:r.items||[], autofill:true, membri:gruppi[nome]});
+      });
+    });
   }
   function usaRicetta(ric) {
     var por = ric.porzioni && (ric.porzioni.adulto || ric.porzioni.adulta || {});
@@ -4745,7 +4784,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             var membri = Object.keys(profili||{}).length;
             if((kb===0 && pb===0) || membri===0) return null;
             var righe = stimaFamiglia(pu);
-            var problemi = righe.filter(function(x){ return x.over; }).length;
+            var problemi = righe.filter(function(x){ return x.problema; }).length;
             return (
               <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px"}}>
                 <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:9,display:"flex",alignItems:"center",gap:6}}>
@@ -4770,10 +4809,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                             <i className="ti ti-door-exit" style={{fontSize:12}}/>A mensa / fuori
                           </span>
                         )
-                      ) : r.over ? (
+                      ) : r.problema ? (
                         <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
                         <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
-                          <i className="ti ti-alert-triangle" style={{fontSize:12}}/>{r.prot}g (max {r.limite})
+                          <i className="ti ti-alert-triangle" style={{fontSize:12}}/>{r.over ? (r.prot+"g (max "+r.limite+")") : r.motivi.join(" · ")}
                         </span></>
                       ) : (
                         <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
@@ -4785,7 +4824,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 {problemi>0 && (
                   <div style={{fontSize:11,color:"#8A5A12",marginTop:9,lineHeight:1.4,display:"flex",gap:6}}>
                     <i className="ti ti-info-circle" style={{fontSize:14,flexShrink:0,marginTop:1}}/>
-                    <span>Assegna a chi ha il limite un piatto diverso qui sotto (o crea la variante).</span>
+                    <span>Ognuno viene controllato sulle sue esigenze (proteine, lattosio, glutine…). Crea le varianti adatte o assegna un piatto diverso qui sotto.</span>
                   </div>
                 )}
               </div>
@@ -4797,7 +4836,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             var profIds = Object.keys(profili||{});
             if(profIds.length===0) return null;
             var righe = stimaFamiglia(pu);
-            var flaggedPrimary = righe.some(function(r){ return r.over && !r.altro; });
+            var flaggedPrimary = righe.some(function(r){ return r.problema && !r.altro && !r.fuori; });
             var altri = pu.altri || [];
             return (
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -4805,7 +4844,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   <button onClick={function(){ creaVariante(); }}
                     style={{padding:"11px",borderRadius:13,border:"1.5px solid #E0C48A",background:"#F6ECD9",color:"#8A5A12",fontSize:13,fontWeight:800,cursor:"pointer",
                       display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-                    <i className="ti ti-wand" style={{fontSize:16}}/>Crea variante senza proteina
+                    <i className="ti ti-wand" style={{fontSize:16}}/>Crea le varianti adatte
                   </button>
                 )}
 
