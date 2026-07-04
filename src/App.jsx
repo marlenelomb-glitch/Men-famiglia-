@@ -69,14 +69,20 @@ function createSupabaseClient() {
           var url = rest(table) + "?select=" + (cols||"*");
           var filters = [];
           var order_str = "";
+          var limit_str = "";
           var obj = {
             eq: function(col, val) { filters.push(col+"=eq."+val); return obj; },
+            neq: function(col, val) { filters.push(col+"=neq."+val); return obj; },
+            ilike: function(col, val) { filters.push(col+"=ilike."+encodeURIComponent(val)); return obj; },
+            or: function(str) { filters.push("or=("+str+")"); return obj; },
+            in: function(col, arr) { filters.push(col+"=in.("+arr.join(",")+")"); return obj; },
+            limit: function(n) { limit_str = "&limit="+n; return obj; },
             order: function(col, opts) {
               order_str = "&order="+col+(opts&&opts.ascending===false?".desc":".asc");
               return obj;
             },
             then: function(resolve, reject) {
-              var full = url + (filters.length?"&"+filters.join("&"):"") + order_str;
+              var full = url + (filters.length?"&"+filters.join("&"):"") + order_str + limit_str;
               return fetch(full, {headers:headers()})
                 .then(function(r){return r.json();})
                 .then(resolve, reject);
@@ -6420,6 +6426,226 @@ function PianiView(props) {
   );
 }
 
+function avatarU(u, size) {
+  var s = size || 38;
+  var n = (u && (u.nome || u.username)) || "?";
+  return (
+    <div style={{width:s,height:s,borderRadius:"50%",background:"#6BA6C9",color:"#fff",flexShrink:0,
+      display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:Math.round(s*0.4)}}>
+      {n.slice(0,1).toUpperCase()}
+    </div>
+  );
+}
+function AmiciView(props) {
+  var userId = props.userId;
+  var familyId = props.familyId;
+
+  var sMe = useState(null); var me = sMe[0]; var setMe = sMe[1];
+  var sLoad = useState(false); var caricato = sLoad[0]; var setCaricato = sLoad[1];
+  var sUname = useState(""); var uname = sUname[0]; var setUname = sUname[1];
+  var sNome = useState(""); var nomeInp = sNome[0]; var setNomeInp = sNome[1];
+  var sMsg = useState(""); var msg = sMsg[0]; var setMsg = sMsg[1];
+  var sQ = useState(""); var q = sQ[0]; var setQ = sQ[1];
+  var sRis = useState([]); var risultati = sRis[0]; var setRisultati = sRis[1];
+  var sAmici = useState([]); var amici = sAmici[0]; var setAmici = sAmici[1];
+  var sRic = useState([]); var ricevute = sRic[0]; var setRicevute = sRic[1];
+  var sInv = useState([]); var inviate = sInv[0]; var setInviate = sInv[1];
+
+  function flash(t){ setMsg(t); setTimeout(function(){ setMsg(""); }, 2600); }
+
+  function caricaMe() {
+    if(!userId) { setCaricato(true); return; }
+    supabase.from("utenti").select("*").eq("user_id", userId).then(function(rows){
+      var r = (rows && rows.length) ? rows[0] : null;
+      setMe(r); if(r){ setUname(r.username||""); setNomeInp(r.nome||""); }
+      setCaricato(true);
+    }, function(){ setCaricato(true); });
+  }
+  function caricaAmicizie() {
+    if(!userId) return;
+    supabase.from("amicizie").select("*").or("richiedente.eq."+userId+",destinatario.eq."+userId).then(function(rows){
+      rows = rows || [];
+      var altri = [];
+      rows.forEach(function(a){ var o = a.richiedente===userId ? a.destinatario : a.richiedente; if(altri.indexOf(o)<0) altri.push(o); });
+      if(!altri.length){ setAmici([]); setRicevute([]); setInviate([]); return; }
+      supabase.from("utenti").select("*").in("user_id", altri).then(function(us){
+        var mapU = {}; (us||[]).forEach(function(u){ mapU[u.user_id]=u; });
+        var am=[], ric=[], inv=[];
+        rows.forEach(function(a){
+          var o = a.richiedente===userId ? a.destinatario : a.richiedente;
+          var info = Object.assign({}, a, {utente: mapU[o] || {username:"?", user_id:o}});
+          if(a.stato==="accettata") am.push(info);
+          else if(a.destinatario===userId) ric.push(info);
+          else inv.push(info);
+        });
+        setAmici(am); setRicevute(ric); setInviate(inv);
+      });
+    });
+  }
+  useEffect(function(){ caricaMe(); caricaAmicizie(); }, [userId]);
+
+  function salvaUsername() {
+    var u = (""+uname).toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if(u.length < 3) { flash("Il nome utente deve avere almeno 3 caratteri (lettere, numeri, _)."); return; }
+    supabase.from("utenti").select("user_id").eq("username", u).then(function(rows){
+      if(rows && rows.length && rows[0].user_id !== userId) { flash("Nome utente già preso, scegline un altro."); return; }
+      supabase.from("utenti").upsert({user_id:userId, username:u, nome:(nomeInp||"").trim(), family_id:familyId}, {onConflict:"user_id"}).then(function(res){
+        if(res && res.length){ setMe(res[0]); flash("Fatto! Ora ti trovano come @"+u); }
+        else { caricaMe(); flash("Salvato."); }
+      }, function(){ flash("Errore nel salvataggio. Riprova."); });
+    });
+  }
+
+  function cerca(val) {
+    setQ(val);
+    var u = (""+val).toLowerCase().trim();
+    if(u.length < 2) { setRisultati([]); return; }
+    supabase.from("utenti").select("*").ilike("username", "%"+u+"%").neq("user_id", userId).limit(15).then(function(rows){
+      setRisultati(rows || []);
+    });
+  }
+  function statoCon(uid) {
+    var r = null;
+    amici.forEach(function(a){ if(a.utente.user_id===uid) r = "amico"; });
+    inviate.forEach(function(a){ if(a.destinatario===uid) r = "inviata"; });
+    ricevute.forEach(function(a){ if(a.richiedente===uid) r = "ricevuta"; });
+    return r;
+  }
+  function aggiungi(uid) {
+    supabase.from("amicizie").insert({richiedente:userId, destinatario:uid, stato:"in_attesa"}).then(function(){ flash("Richiesta inviata."); caricaAmicizie(); }, function(){ flash("Non è stato possibile inviare la richiesta."); });
+  }
+  function accetta(a) { supabase.from("amicizie").update({stato:"accettata"}).eq("id", a.id).then(function(){ flash("Ora siete amici!"); caricaAmicizie(); }); }
+  function elimina(a) { supabase.from("amicizie").delete().eq("id", a.id).then(function(){ caricaAmicizie(); }); }
+
+  if(!userId) {
+    return (
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Amici</div>
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Accedi con il tuo account per aggiungere amici.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Amici</div>
+        <div style={{fontSize:13,color:"#8A949B"}}>Trovati per nome utente e organizzate una cena insieme.</div>
+      </div>
+
+      {!caricato ? (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Carico…</div>
+      ) : !me ? (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
+          <div className="cap">Scegli il tuo nome utente</div>
+          <div style={{fontSize:12,color:"#8A949B"}}>È il nome con cui i tuoi amici ti trovano. Solo lettere, numeri e _.</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,border:"1.5px solid #E3EAEE",borderRadius:12,padding:"0 12px"}}>
+            <span style={{color:"#8A949B",fontWeight:800}}>@</span>
+            <input value={uname} onChange={function(e){ setUname(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,"")); }}
+              placeholder="es. marlene" style={{flex:1,border:"none",outline:"none",padding:"11px 0",fontSize:15,fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif",background:"transparent"}}/>
+          </div>
+          <input value={nomeInp} onChange={function(e){ setNomeInp(e.target.value); }}
+            placeholder="Nome visibile (facoltativo)" style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <button onClick={salvaUsername} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Salva nome utente</button>
+          {msg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600}}>{msg}</div>}
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div className="mf-card" style={{display:"flex",alignItems:"center",gap:11}}>
+            {avatarU(me, 40)}
+            <div style={{flex:1}}>
+              <div style={{fontSize:15,fontWeight:800}}>@{me.username}</div>
+              <div style={{fontSize:11,color:"#8A949B"}}>{me.nome || "Il tuo nome utente"}</div>
+            </div>
+          </div>
+
+          <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div className="cap">Cerca un amico</div>
+            <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:12,padding:"10px 12px"}}>
+              <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+              <input value={q} onChange={function(e){ cerca(e.target.value); }} placeholder="Nome utente…"
+                style={{flex:1,border:"none",outline:"none",background:"transparent",fontSize:14,fontWeight:600,fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+            {risultati.map(function(u){
+              var st = statoCon(u.user_id);
+              return (
+                <div key={u.user_id} style={{display:"flex",alignItems:"center",gap:10,paddingTop:2}}>
+                  {avatarU(u, 34)}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:14,fontWeight:700}}>@{u.username}</div>
+                    {u.nome && <div style={{fontSize:11,color:"#8A949B"}}>{u.nome}</div>}
+                  </div>
+                  {st==="amico" ? <span style={{fontSize:12,fontWeight:700,color:"#2E9E5B",display:"flex",alignItems:"center",gap:4}}><i className="ti ti-check"/>Amici</span>
+                    : st==="inviata" ? <span style={{fontSize:12,fontWeight:700,color:"#8A949B"}}>In attesa</span>
+                    : st==="ricevuta" ? <span style={{fontSize:12,fontWeight:700,color:"#2F6586"}}>Ti ha aggiunto</span>
+                    : <button onClick={function(){ aggiungi(u.user_id); }} style={{border:"1.5px solid #2F6586",background:"#2F6586",color:"#fff",borderRadius:20,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Aggiungi</button>}
+                </div>
+              );
+            })}
+            {q.length>=2 && risultati.length===0 && <div style={{fontSize:12,color:"#8A949B"}}>Nessun utente trovato.</div>}
+          </div>
+
+          {ricevute.length>0 && (
+            <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div className="cap">Richieste ricevute</div>
+              {ricevute.map(function(a){
+                return (
+                  <div key={a.id} style={{display:"flex",alignItems:"center",gap:10}}>
+                    {avatarU(a.utente, 34)}
+                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:700}}>@{a.utente.username}</div></div>
+                    <button onClick={function(){ accetta(a); }} style={{border:"none",background:"#2E9E5B",color:"#fff",borderRadius:20,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Accetta</button>
+                    <i className="ti ti-x" onClick={function(){ elimina(a); }} style={{fontSize:18,color:"#B4BEC4",cursor:"pointer"}}/>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div className="cap">I tuoi amici ({amici.length})</div>
+            {amici.length===0 ? <div style={{fontSize:12,color:"#8A949B"}}>Ancora nessun amico. Cercalo qui sopra.</div>
+              : amici.map(function(a){
+                return (
+                  <div key={a.id} style={{display:"flex",alignItems:"center",gap:10}}>
+                    {avatarU(a.utente, 34)}
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700}}>@{a.utente.username}</div>
+                      {a.utente.nome && <div style={{fontSize:11,color:"#8A949B"}}>{a.utente.nome}</div>}
+                    </div>
+                    <i className="ti ti-trash" onClick={function(){ if(window.confirm("Rimuovere questo amico?")) elimina(a); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                  </div>
+                );
+              })}
+          </div>
+
+          {inviate.length>0 && (
+            <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div className="cap">Richieste inviate</div>
+              {inviate.map(function(a){
+                return (
+                  <div key={a.id} style={{display:"flex",alignItems:"center",gap:10}}>
+                    {avatarU(a.utente, 34)}
+                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:700}}>@{a.utente.username}</div></div>
+                    <span style={{fontSize:12,color:"#8A949B",fontWeight:700}}>In attesa</span>
+                    <i className="ti ti-x" onClick={function(){ elimina(a); }} style={{fontSize:18,color:"#B4BEC4",cursor:"pointer"}}/>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mf-card acc" style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:12}}>
+            <i className="ti ti-tools-kitchen-2" style={{fontSize:18,flexShrink:0,marginTop:1}}/>
+            <div>Prossimo passo: "Cena insieme" — inviti gli amici e l'app unisce le allergie/intolleranze di tutte le famiglie.</div>
+          </div>
+
+          {msg && <div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{msg}</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SaluteView(props) {
   var profili = props.profili || {};
   var setTab = props.setTab || function(){};
@@ -8278,6 +8504,8 @@ export default function App() {
   var utente    = s_user[0]; var setUtente = s_user[1];
   var s_fid     = useState(loadLS("family_id",null));
   var familyId  = s_fid[0]; var setFamilyId = s_fid[1];
+  var s_uid     = useState(sbSession && sbSession.user ? sbSession.user.id : null);
+  var userId    = s_uid[0]; var setUserId = s_uid[1];
   var s_loading = useState(!!sbSession);
   var loading   = s_loading[0]; var setLoading = s_loading[1];
   var s_authErr = useState("");
@@ -8304,6 +8532,7 @@ export default function App() {
   const [autoGeneraMenu, setAutoGeneraMenu] = useState(false);
 
   function initFamily(userId) {
+    setUserId(userId);
     setTimeout(function(){ setLoading(false); }, 8000);
     supabase.from("families").select("id").eq("owner_id", userId)
     .then(function(rows) {
@@ -8491,6 +8720,7 @@ export default function App() {
     {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
     {id:"salute",      l:"Salute",        ic:"ti-heart-rate-monitor", s:"Profili e obiettivi"},
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
+    {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
     {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
@@ -8830,6 +9060,9 @@ export default function App() {
         )}
         {tab==="mensa" && (
           <PianiView piani={piani} setPiani={setPianiLS} profili={profili}/>
+        )}
+        {tab==="amici" && (
+          <AmiciView userId={userId} familyId={familyId}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase}/>
