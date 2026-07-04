@@ -6222,115 +6222,199 @@ function GraficoPeso(props) {
   );
 }
 
-var GIORNI_MENSA = ["Lun","Mar","Mer","Gio","Ven"];
-function MensaView(props) {
-  var mensa = props.mensa || {};
-  var setMensa = props.setMensa || function(){};
-  var sSel = useState(1); var sett = sSel[0]; var setSett = sSel[1];
-  var settimane = mensa.settimane || {};
-  var wk = settimane[sett] || {foto:"", giorni:{}};
-  var oggiNum = settimanaMensaNum(mensa, new Date());
-  var oggiIdx = (new Date().getDay()+6)%7;
-  var oggiNome = oggiIdx < 5 ? GIORNI_MENSA[oggiIdx] : null;
-  var oggiPiatto = (oggiNum && oggiNome && settimane[oggiNum] && settimane[oggiNum].giorni) ? settimane[oggiNum].giorni[oggiNome] : "";
+var GIORNI7 = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+var PASTI_PIANO = {
+  mensa: [{id:"pranzo", l:"Pranzo"}],
+  membro: [{id:"colazione", l:"Colazione"}, {id:"pranzo", l:"Pranzo"}, {id:"spuntino", l:"Spuntino"}, {id:"cena", l:"Cena"}]
+};
+function pianoSettimane(cadenza) { return cadenza === "mensile" ? [1,2,3,4] : [1]; }
+function pianoGiorni(tipo) { return tipo === "mensa" ? GIORNI7.slice(0,5) : GIORNI7; }
+function settimanaPianoNum(pl, dataRef) {
+  if(pl.cadenza !== "mensile" || !pl.correnteMonday || !pl.correnteNum) return 1;
+  var base = lunediDi(new Date(pl.correnteMonday + "T00:00:00"));
+  var cur = lunediDi(dataRef || new Date());
+  var weeks = Math.round((cur.getTime() - base.getTime()) / (7*24*3600*1000));
+  return (((pl.correnteNum - 1 + weeks) % 4) + 4) % 4 + 1;
+}
+function PianiView(props) {
+  var piani = (props.piani && props.piani.lista) ? props.piani.lista : [];
+  var setPiani = props.setPiani || function(){};
+  var profili = props.profili || {};
+  var sSel = useState(null); var selId = sSel[0]; var setSelId = sSel[1];
+  var sW = useState(1); var sett = sW[0]; var setSett = sW[1];
+  var sG = useState("Lun"); var giorno = sG[0]; var setGiorno = sG[1];
+  var sAdd = useState(false); var adding = sAdd[0]; var setAdding = sAdd[1];
 
-  function updateWk(fn) {
-    var m = Object.assign({}, mensa);
-    var sw = Object.assign({}, m.settimane || {});
-    var w = Object.assign({foto:"", giorni:{}}, sw[sett] || {});
-    w.giorni = Object.assign({}, w.giorni || {});
-    fn(w);
-    sw[sett] = w; m.settimane = sw; setMensa(m);
+  function salva(lista) { setPiani({lista: lista}); }
+  function updatePiano(id, fn) {
+    salva(piani.map(function(pl){ if(pl.id !== id) return pl; var np = Object.assign({}, pl); fn(np); return np; }));
   }
-  function setGiorno(g, val) { updateWk(function(w){ w.giorni[g] = val; }); }
-  function onFile(e) { var f = e.target.files && e.target.files[0]; if(f) comprimiFoto(f, function(d){ updateWk(function(w){ w.foto = d; }); }); e.target.value = ""; }
-  function rimuoviFoto() { updateWk(function(w){ w.foto = ""; }); }
-  function setCorrente(n) { var m = Object.assign({}, mensa); m.correnteNum = n; m.correnteMonday = isoDay(lunediDi(new Date())); setMensa(m); }
+  function aggiungiPiano(tipo, membroId) {
+    var id = "pl_" + piani.length + "_" + Date.now();
+    var titolo = tipo === "mensa" ? "Mensa" : ((profili[membroId] && profili[membroId].nome) || "Membro");
+    var pl = {id:id, tipo:tipo, membroId:(membroId||null), titolo:titolo, cadenza:"settimanale", correnteNum:1, correnteMonday:isoDay(lunediDi(new Date())), settimane:{}};
+    salva(piani.concat([pl]));
+    setAdding(false); setSelId(id); setSett(1); setGiorno("Lun");
+  }
+  function rimuoviPiano(id) { salva(piani.filter(function(p){ return p.id !== id; })); setSelId(null); }
+  function setCadenza(pl, cad) { updatePiano(pl.id, function(np){ np.cadenza = cad; if(cad === "mensile" && !np.correnteMonday){ np.correnteMonday = isoDay(lunediDi(new Date())); np.correnteNum = 1; } }); setSett(1); }
+  function setCorrente(pl, n) { updatePiano(pl.id, function(np){ np.correnteNum = n; np.correnteMonday = isoDay(lunediDi(new Date())); }); }
+  function setPasto(pl, wk, g, pastoId, val) {
+    updatePiano(pl.id, function(np){
+      var sw = Object.assign({}, np.settimane || {});
+      var w = Object.assign({giorni:{}}, sw[wk] || {}); w.giorni = Object.assign({}, w.giorni || {});
+      var d = Object.assign({}, w.giorni[g] || {}); d[pastoId] = val; w.giorni[g] = d;
+      sw[wk] = w; np.settimane = sw;
+    });
+  }
+  function tipoIcona(pl) { return pl.tipo === "mensa" ? "ti-school" : "ti-salad"; }
+  function tipoColore(pl) { return pl.tipo === "mensa" ? "#6BA6C9" : ((pl.membroId && profili[pl.membroId] && profili[pl.membroId].colore) || "#2F6586"); }
+
+  var sel = null;
+  piani.forEach(function(pl){ if(pl.id === selId) sel = pl; });
+
+  if(sel) {
+    var pasti = PASTI_PIANO[sel.tipo] || PASTI_PIANO.membro;
+    var giorni = pianoGiorni(sel.tipo);
+    var settimane = pianoSettimane(sel.cadenza);
+    var wkData = (sel.settimane || {})[sett] || {giorni:{}};
+    var dayData = (wkData.giorni || {})[giorno] || {};
+    var oggiNum = settimanaPianoNum(sel, new Date());
+    return (
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div onClick={function(){ setSelId(null); }} style={{display:"flex",alignItems:"center",gap:6,color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",paddingTop:4}}>
+          <i className="ti ti-chevron-left" style={{fontSize:18}}/>Menu e diete
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:11}}>
+          <div style={{width:40,height:40,borderRadius:12,background:tipoColore(sel),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}><i className={"ti "+tipoIcona(sel)}/></div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:19,fontWeight:800}}>{sel.titolo}</div>
+            <div style={{fontSize:12,color:"#8A949B"}}>{sel.tipo === "mensa" ? "Menu mensa" : "Dieta del membro"}</div>
+          </div>
+        </div>
+
+        <div style={{display:"flex",background:"#E2EEF5",borderRadius:12,padding:4}}>
+          {[{id:"settimanale",l:"Settimanale"},{id:"mensile",l:"Mensile (4 sett.)"}].map(function(c){
+            var on = sel.cadenza === c.id;
+            return <button key={c.id} onClick={function(){ setCadenza(sel, c.id); }}
+              style={{flex:1,border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",fontFamily:"'Nunito',system-ui,sans-serif",
+                fontSize:13,fontWeight:700,padding:"8px 0",borderRadius:9,cursor:"pointer",boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>{c.l}</button>;
+          })}
+        </div>
+
+        {sel.cadenza === "mensile" && (
+          <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div className="cap">Questa settimana è la numero</div>
+            <div style={{display:"flex",gap:8}}>
+              {[1,2,3,4].map(function(n){
+                var on = oggiNum === n;
+                return <button key={n} onClick={function(){ setCorrente(sel, n); }}
+                  style={{flex:1,border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2C3338",
+                    borderRadius:12,padding:"10px 0",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{n}</button>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {sel.cadenza === "mensile" && (
+          <div style={{display:"flex",gap:8}}>
+            {settimane.map(function(n){
+              var on = sett === n;
+              return <button key={n} onClick={function(){ setSett(n); }}
+                style={{flex:1,border:"1.5px solid "+(on?"#6BA6C9":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",
+                  borderRadius:12,padding:"9px 0",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Sett. {n}</button>;
+            })}
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+          {giorni.map(function(g){
+            var on = giorno === g;
+            return <button key={g} onClick={function(){ setGiorno(g); }}
+              style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#8A949B",
+                borderRadius:20,padding:"7px 13px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g}</button>;
+          })}
+        </div>
+
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
+          <div className="cap">{giorno}{sel.cadenza === "mensile" ? (" · Settimana " + sett) : ""}</div>
+          {pasti.map(function(pt){
+            return (
+              <div key={pt.id}>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>{pt.l}</div>
+                <input value={dayData[pt.id] || ""} onChange={function(e){ setPasto(sel, sett, giorno, pt.id, e.target.value); }}
+                  placeholder={sel.tipo === "mensa" ? "Es. Pasta al pomodoro + pollo" : "Es. Yogurt greco + avena + frutta"}
+                  style={{width:"100%",boxSizing:"border-box",padding:"10px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              </div>
+            );
+          })}
+        </div>
+
+        <button onClick={function(){ if(window.confirm("Eliminare questo piano?")) rimuoviPiano(sel.id); }}
+          style={{border:"none",background:"transparent",color:"#C2355A",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"4px 0"}}>
+          <i className="ti ti-trash" style={{fontSize:15}}/>Elimina piano
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div>
-        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Menu mensa</div>
-        <div style={{fontSize:13,color:"#8A949B"}}>Le 4 settimane a rotazione. Allega la foto e compila i giorni.</div>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Menu e diete</div>
+        <div style={{fontSize:13,color:"#8A949B"}}>Menu fissi: mensa o la dieta di un membro. Settimanale o mensile.</div>
       </div>
 
-      {oggiNum && oggiPiatto ? (
-        <div className="mf-card acc" style={{display:"flex",alignItems:"center",gap:11}}>
-          <i className="ti ti-tools-kitchen-2" style={{fontSize:19}}/>
-          <div style={{flex:1}}>
-            <div style={{fontSize:11,fontWeight:700,opacity:.85}}>Oggi a mensa · Settimana {oggiNum}</div>
-            <div style={{fontSize:14,fontWeight:700}}>{oggiPiatto}</div>
-          </div>
-        </div>
-      ) : null}
+      {piani.length === 0 && !adding && (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Nessun piano ancora. Aggiungine uno qui sotto.</div>
+      )}
 
-      <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
-        <div className="cap">Questa settimana è la numero</div>
-        <div style={{display:"flex",gap:8}}>
-          {[1,2,3,4].map(function(n){
-            var on = oggiNum === n;
+      {piani.map(function(pl){
+        var gg = pianoGiorni(pl.tipo);
+        var quanti = 0;
+        pianoSettimane(pl.cadenza).forEach(function(n){ var w = (pl.settimane||{})[n]; if(w && w.giorni){ gg.forEach(function(g){ var d = w.giorni[g]; if(d && Object.keys(d).some(function(k){ return d[k]; })) quanti++; }); } });
+        return (
+          <div key={pl.id} className="mf-card" onClick={function(){ setSelId(pl.id); setSett(1); setGiorno("Lun"); }} style={{display:"flex",alignItems:"center",gap:11,cursor:"pointer"}}>
+            <div style={{width:38,height:38,borderRadius:11,background:tipoColore(pl),color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}><i className={"ti "+tipoIcona(pl)}/></div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:15,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pl.titolo}</div>
+              <div style={{fontSize:11,color:"#8A949B"}}>{(pl.tipo === "mensa" ? "Mensa" : "Dieta")} · {pl.cadenza === "mensile" ? "mensile" : "settimanale"} · {quanti} giorni</div>
+            </div>
+            <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+          </div>
+        );
+      })}
+
+      {adding ? (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
+          <div className="cap">Cosa vuoi aggiungere</div>
+          <button onClick={function(){ aggiungiPiano("mensa", null); }}
+            style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #E3EAEE",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-school"/></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>Menu mensa</div><div style={{fontSize:11,color:"#8A949B"}}>Pranzo, Lun–Ven</div></div>
+          </button>
+          {Object.keys(profili).map(function(pid){
+            var p = profili[pid];
             return (
-              <button key={n} onClick={function(){ setCorrente(n); }}
-                style={{flex:1,border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2C3338",
-                  borderRadius:12,padding:"10px 0",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                {n}
+              <button key={pid} onClick={function(){ aggiungiPiano("membro", pid); }}
+                style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #E3EAEE",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+                <div style={{width:34,height:34,borderRadius:10,background:p.colore||"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800}}>{p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}</div>
+                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>Dieta di {p.nome}</div><div style={{fontSize:11,color:"#8A949B"}}>Colazione, pranzo, spuntino, cena</div></div>
               </button>
             );
           })}
+          <button onClick={function(){ setAdding(false); }} style={{border:"none",background:"transparent",color:"#8A949B",fontSize:13,fontWeight:700,cursor:"pointer",padding:"4px 0"}}>Annulla</button>
         </div>
-        <div style={{fontSize:11,color:"#8A949B"}}>Serve una volta sola: da qui l'app calcola da sé la settimana giusta ogni volta.</div>
-      </div>
+      ) : (
+        <button onClick={function(){ setAdding(true); }}
+          style={{padding:"12px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+          <i className="ti ti-plus" style={{fontSize:17}}/>Aggiungi un menu o una dieta
+        </button>
+      )}
 
-      <div style={{display:"flex",gap:8}}>
-        {[1,2,3,4].map(function(n){
-          var on = sett === n;
-          var compilata = settimane[n] && ((settimane[n].foto) || (settimane[n].giorni && Object.keys(settimane[n].giorni).some(function(k){ return settimane[n].giorni[k]; })));
-          return (
-            <button key={n} onClick={function(){ setSett(n); }}
-              style={{flex:1,border:"1.5px solid "+(on?"#6BA6C9":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",
-                borderRadius:12,padding:"9px 0",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              Sett. {n}{compilata && <i className="ti ti-point-filled" style={{fontSize:13,color:"#2E9E5B"}}/>}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
-        {wk.foto ? (
-          <div style={{position:"relative"}}>
-            <img src={wk.foto} alt="Menu mensa" style={{width:"100%",borderRadius:13,display:"block",border:"1px solid #E3EAEE"}}/>
-            <button onClick={rimuoviFoto} style={{position:"absolute",top:8,right:8,border:"none",background:"rgba(20,40,55,.6)",color:"#fff",borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-              <i className="ti ti-trash" style={{fontSize:14}}/>Rimuovi
-            </button>
-          </div>
-        ) : (
-          <label style={{border:"1.5px dashed #6BA6C9",borderRadius:13,padding:"18px 12px",display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer",color:"#2F6586"}}>
-            <i className="ti ti-camera" style={{fontSize:26}}/>
-            <span style={{fontSize:13,fontWeight:700}}>Allega la foto del menu (Settimana {sett})</span>
-            <span style={{fontSize:11,color:"#8A949B"}}>Resta come riferimento. La lettura automatica arriva col Passo 2.</span>
-            <input type="file" accept="image/*" onChange={onFile} style={{display:"none"}}/>
-          </label>
-        )}
-      </div>
-
-      <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
-        <div className="cap">Piatti · Settimana {sett}</div>
-        {GIORNI_MENSA.map(function(g){
-          return (
-            <div key={g} style={{display:"flex",alignItems:"center",gap:10}}>
-              <span style={{width:34,fontSize:12,fontWeight:800,color:"#2F6586",flexShrink:0}}>{g}</span>
-              <input value={(wk.giorni||{})[g] || ""} onChange={function(e){ setGiorno(g, e.target.value); }}
-                placeholder="Es. Pasta al pomodoro + pollo"
-                style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mf-card warn" style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:12}}>
-        <i className="ti ti-camera-plus" style={{fontSize:18,flexShrink:0,marginTop:1}}/>
-        <div>Passo 2 (in arrivo): scatti la foto e i giorni si compilano da soli. Serve un servizio di lettura AI, te lo preparo quando vuoi.</div>
+      <div className="mf-card acc" style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:12}}>
+        <i className="ti ti-pencil" style={{fontSize:18,flexShrink:0,marginTop:1}}/>
+        <div>Si compila a mano. Se hai la foto del menu o della dieta, la tieni sul telefono e ricopi i giorni qui.</div>
       </div>
     </div>
   );
@@ -7832,7 +7916,7 @@ function MenuCondiviso(props) {
         if(r.chiave==="menuOverride" && r.dati) setMenuOverride(r.dati);
         if(r.chiave==="feedbackPasti" && r.dati) setFeedback(r.dati);
         if(r.chiave==="ospiti" && r.dati) setOspiti(r.dati);
-        if(r.chiave==="mensa" && r.dati) setMensa(r.dati);
+        if(r.chiave==="piani" && r.dati) setPiani(r.dati);
       });
       setLoading(false);
     }, function(){ setLoading(false); });
@@ -8255,7 +8339,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, mensa:setMensa};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -8359,7 +8443,7 @@ export default function App() {
   const [diarioLog, setDiarioLog] = useState(loadLS("diarioLog", {}));
   const [feedbackPasti, setFeedbackPasti] = useState(loadLS("feedbackPasti", {}));
   const [ospiti, setOspiti] = useState(loadLS("ospiti", {}));
-  const [mensa, setMensa] = useState(loadLS("mensa", {}));
+  const [piani, setPiani] = useState(loadLS("piani", {}));
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -8406,7 +8490,7 @@ export default function App() {
     {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
     {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
     {id:"salute",      l:"Salute",        ic:"ti-heart-rate-monitor", s:"Profili e obiettivi"},
-    {id:"mensa",       l:"Menu mensa",    ic:"ti-school",             s:"Le 4 settimane, anche da foto"},
+    {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
     {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
@@ -8472,7 +8556,7 @@ export default function App() {
   var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
   var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
   var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
-  var setMensaLS              = mkSetterSync("mensa", setMensa);
+  var setPianiLS              = mkSetterSync("piani", setPiani);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -8745,7 +8829,7 @@ export default function App() {
             diario={diarioLog} setDiario={setDiarioLogLS}/>
         )}
         {tab==="mensa" && (
-          <MensaView mensa={mensa} setMensa={setMensaLS} setTab={handleSetTab}/>
+          <PianiView piani={piani} setPiani={setPianiLS} profili={profili}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase}/>
