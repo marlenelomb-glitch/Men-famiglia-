@@ -4609,14 +4609,14 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
 
           {sceltaG.piattoUnico.riconosciuti && sceltaG.piattoUnico.riconosciuti.length>0 && (
-            <div style={{background:"#EAF4EC",borderRadius:12,padding:"10px 12px"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#2E9E5B",marginBottom:7,display:"flex",alignItems:"center",gap:6}}>
+            <div style={{background:"#E2EEF5",borderRadius:12,padding:"10px 12px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:7,display:"flex",alignItems:"center",gap:6}}>
                 <i className="ti ti-sparkles" style={{fontSize:14}}/>Riconosciuti (proteine stimate in automatico)
               </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {sceltaG.piattoUnico.riconosciuti.map(function(r){
-                  return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#fff",border:"1px solid #CDE3D5",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
-                    <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2E9E5B"}}/>{r.nome}
+                  return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#fff",border:"1px solid #CADCE8",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                    <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2F6586"}}/>{r.nome}
                   </span>;
                 })}
               </div>
