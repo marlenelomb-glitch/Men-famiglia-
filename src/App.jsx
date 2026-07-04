@@ -4385,8 +4385,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   }
   function stimaFamiglia(pu) {
     var out = [];
+    var fuoriList = (pu && pu.fuori) ? pu.fuori : [];
     Object.keys(profili||{}).forEach(function(pid){
       var p = profili[pid];
+      if(fuoriList.indexOf(pid) >= 0) { out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", fuori: true}); return; }
       var base = dishBase(pu, pid);
       var scale = (p.kcal_target || 1600) / 1600;
       var k = Math.round((base.kcal || 0) * scale);
@@ -4427,6 +4429,19 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         else if(idx >= 0) m.splice(idx,1);
         return Object.assign({}, d, {membri:m});
       });
+      var f = (pu.fuori||[]).slice(); var fi = f.indexOf(pid); if(fi >= 0) { f.splice(fi,1); pu.fuori = f; }
+    });
+  }
+  function toggleFuoriMembro(pid) {
+    mutaPU(function(pu){
+      var f = (pu.fuori||[]).slice();
+      var idx = f.indexOf(pid);
+      if(idx >= 0) { f.splice(idx,1); }
+      else {
+        f.push(pid);
+        pu.altri = pu.altri.map(function(d){ var m = (d.membri||[]).slice(); var mi = m.indexOf(pid); if(mi >= 0) m.splice(mi,1); return Object.assign({}, d, {membri:m}); });
+      }
+      pu.fuori = f;
     });
   }
   function creaVariante() {
@@ -4731,13 +4746,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</div>
                         {r.altro && r.dish && <div style={{fontSize:10,color:"#2F6586",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.dish}</div>}
                       </div>
-                      <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
-                      {r.over ? (
+                      {r.fuori ? (
+                        <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                          <i className="ti ti-door-exit" style={{fontSize:12}}/>A mensa / fuori
+                        </span>
+                      ) : r.over ? (
+                        <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
                         <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
                           <i className="ti ti-alert-triangle" style={{fontSize:12}}/>{r.prot}g (max {r.limite})
-                        </span>
+                        </span></>
                       ) : (
-                        <span style={{fontSize:12,fontWeight:700,color:"#2F6586",minWidth:44,textAlign:"right"}}>{r.prot}g prot</span>
+                        <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                        <span style={{fontSize:12,fontWeight:700,color:"#2F6586",minWidth:44,textAlign:"right"}}>{r.prot}g prot</span></>
                       )}
                     </div>
                   );
@@ -4798,6 +4818,24 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     </div>
                   );
                 })}
+
+                <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px",display:"flex",flexDirection:"column",gap:9}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#C2355A",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-door-exit" style={{fontSize:14}}/>A mensa / fuori casa</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {profIds.map(function(pid){
+                      var p = profili[pid];
+                      var on = (pu.fuori||[]).indexOf(pid) >= 0;
+                      return (
+                        <button key={pid} onClick={function(){ toggleFuoriMembro(pid); }}
+                          style={{border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#C2355A":"#fff",color:on?"#fff":"#2C3338",
+                            borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                          {p.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{fontSize:10,color:"#8A949B"}}>Chi è a mensa o fuori non entra nel cucinato né nella spesa.</div>
+                </div>
 
                 <button onClick={function(){ addPiatto(); }}
                   style={{padding:"11px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
