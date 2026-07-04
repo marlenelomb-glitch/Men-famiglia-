@@ -4372,19 +4372,73 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     s.piattoUnico = pu;
     salvaScelta(s);
   }
-  function stimaFamiglia(kcalBase, protBase) {
+  function altriPiatti(pu) { return pu && pu.altri ? pu.altri : []; }
+  function dishIndexOf(pu, pid) {
+    var a = altriPiatti(pu);
+    for(var i=0;i<a.length;i++){ if((a[i].membri||[]).indexOf(pid) >= 0) return i; }
+    return -1;
+  }
+  function dishBase(pu, pid) {
+    var i = dishIndexOf(pu, pid);
+    if(i >= 0) { var d = pu.altri[i]; return {nome:d.nome, kcal:parseInt(d.kcal,10)||0, prot:parseInt(d.prot,10)||0}; }
+    return {nome:pu.nome, kcal:parseInt(pu.kcal,10)||0, prot:parseInt(pu.prot,10)||0};
+  }
+  function stimaFamiglia(pu) {
     var out = [];
     Object.keys(profili||{}).forEach(function(pid){
       var p = profili[pid];
-      var target = p.kcal_target || 1600;
-      var scale = target / 1600;
-      var k = Math.round((kcalBase || 0) * scale);
-      var pr = Math.round((protBase || 0) * scale);
+      var base = dishBase(pu, pid);
+      var scale = (p.kcal_target || 1600) / 1600;
+      var k = Math.round((base.kcal || 0) * scale);
+      var pr = Math.round((base.prot || 0) * scale);
       var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
       var over = limite !== null && !isNaN(limite) && pr > limite;
-      out.push({nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, limite: (over ? limite : null), over: over});
+      out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, dish: base.nome, altro: dishIndexOf(pu, pid) >= 0, limite: (over ? limite : null), over: over});
     });
     return out;
+  }
+  function mutaPU(fn) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    pu.altri = (pu.altri||[]).slice();
+    fn(pu);
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function addPiatto() { mutaPU(function(pu){ pu.altri.push({nome:"", kcal:"", prot:"", membri:[]}); }); }
+  function removeAltro(i) { mutaPU(function(pu){ pu.altri.splice(i,1); }); }
+  function setAltroField(i, field, val) { mutaPU(function(pu){ if(!pu.altri[i]) return; pu.altri[i] = Object.assign({}, pu.altri[i]); pu.altri[i][field] = val; }); }
+  function riconosciAltro(i) {
+    mutaPU(function(pu){
+      if(!pu.altri[i]) return;
+      var d = Object.assign({}, pu.altri[i]);
+      var r = riconosciPasto(d.nome);
+      if(r.items.length){ d.kcal = String(r.kcal); d.prot = String(r.prot); d.riconosciuti = r.items; d.autofill = true; }
+      else { d.riconosciuti = []; }
+      pu.altri[i] = d;
+    });
+  }
+  function toggleAltroMembro(i, pid) {
+    mutaPU(function(pu){
+      pu.altri = pu.altri.map(function(d, j){
+        var m = (d.membri||[]).slice();
+        var idx = m.indexOf(pid);
+        if(j === i) { if(idx >= 0) m.splice(idx,1); else m.push(pid); }
+        else if(idx >= 0) m.splice(idx,1);
+        return Object.assign({}, d, {membri:m});
+      });
+    });
+  }
+  function creaVariante() {
+    var pu0 = (scelteAttive[keyG]||{}).piattoUnico || {};
+    var righe = stimaFamiglia(pu0);
+    var flagged = righe.filter(function(r){ return r.over && !r.altro; }).map(function(r){ return r.pid; });
+    if(!flagged.length) return;
+    var ricon = pu0.riconosciuti || [];
+    var senza = ricon.filter(function(x){ return x.tipo !== "proteina"; });
+    var nome = senza.length ? senza.map(function(x){ return x.nome; }).join(" e ") : "Porzione ridotta";
+    var r = riconosciPasto(nome);
+    mutaPU(function(pu){ pu.altri.push({nome:nome, kcal:String(r.kcal||0), prot:String(r.prot||0), riconosciuti:r.items||[], autofill:true, membri:flagged}); });
   }
   function usaRicetta(ric) {
     var por = ric.porzioni && (ric.porzioni.adulto || ric.porzioni.adulta || {});
@@ -4657,11 +4711,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           </div>
 
           {(function(){
-            var kb = parseInt(sceltaG.piattoUnico.kcal, 10) || 0;
-            var pb = parseInt(sceltaG.piattoUnico.prot, 10) || 0;
+            var pu = sceltaG.piattoUnico;
+            var kb = parseInt(pu.kcal, 10) || 0;
+            var pb = parseInt(pu.prot, 10) || 0;
             var membri = Object.keys(profili||{}).length;
             if((kb===0 && pb===0) || membri===0) return null;
-            var righe = stimaFamiglia(kb, pb);
+            var righe = stimaFamiglia(pu);
             var problemi = righe.filter(function(x){ return x.over; }).length;
             return (
               <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px"}}>
@@ -4672,7 +4727,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   return (
                     <div key={idx} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",borderTop: idx===0?"none":"1px solid #F1F4F6"}}>
                       <span style={{width:9,height:9,borderRadius:"50%",background:r.colore,flexShrink:0}}/>
-                      <span style={{fontSize:13,fontWeight:700,color:"#2C3338",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</div>
+                        {r.altro && r.dish && <div style={{fontSize:10,color:"#2F6586",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.dish}</div>}
+                      </div>
                       <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
                       {r.over ? (
                         <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
@@ -4687,9 +4745,65 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 {problemi>0 && (
                   <div style={{fontSize:11,color:"#8A5A12",marginTop:9,lineHeight:1.4,display:"flex",gap:6}}>
                     <i className="ti ti-info-circle" style={{fontSize:14,flexShrink:0,marginTop:1}}/>
-                    <span>Per chi ha il limite proteico, servi una porzione ridotta o la variante senza la parte proteica.</span>
+                    <span>Assegna a chi ha il limite un piatto diverso qui sotto (o crea la variante).</span>
                   </div>
                 )}
+              </div>
+            );
+          })()}
+
+          {(function(){
+            var pu = sceltaG.piattoUnico;
+            var profIds = Object.keys(profili||{});
+            if(profIds.length===0) return null;
+            var righe = stimaFamiglia(pu);
+            var flaggedPrimary = righe.some(function(r){ return r.over && !r.altro; });
+            var altri = pu.altri || [];
+            return (
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {flaggedPrimary && (
+                  <button onClick={function(){ creaVariante(); }}
+                    style={{padding:"11px",borderRadius:13,border:"1.5px solid #E0C48A",background:"#F6ECD9",color:"#8A5A12",fontSize:13,fontWeight:800,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+                    <i className="ti ti-wand" style={{fontSize:16}}/>Crea variante senza proteina
+                  </button>
+                )}
+
+                {altri.map(function(d,i){
+                  return (
+                    <div key={i} style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px",display:"flex",flexDirection:"column",gap:9}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:11,fontWeight:800,color:"#2F6586",flex:1,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-tools-kitchen-2" style={{fontSize:14}}/>Piatto in più {i+2}</span>
+                        <i className="ti ti-trash" onClick={function(){ removeAltro(i); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                      </div>
+                      <input value={d.nome||""} onChange={function(e){ setAltroField(i, "nome", e.target.value); }}
+                        onBlur={function(){ riconosciAltro(i); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                        placeholder="Es. Pasta al pomodoro, Pappa..."
+                        style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                      {d.kcal && (parseInt(d.kcal,10)>0) ? <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>~{d.kcal} kcal · {d.prot||0}g proteine (per porzione adulto)</div> : null}
+                      <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Chi lo mangia</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {profIds.map(function(pid){
+                          var p = profili[pid];
+                          var on = (d.membri||[]).indexOf(pid) >= 0;
+                          return (
+                            <button key={pid} onClick={function(){ toggleAltroMembro(i, pid); }}
+                              style={{border:"1.5px solid "+(on?(p.colore||"#2F6586"):"#E3EAEE"),background:on?(p.colore||"#2F6586"):"#fff",color:on?"#fff":"#2C3338",
+                                borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              {p.nome}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <button onClick={function(){ addPiatto(); }}
+                  style={{padding:"11px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+                  <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi un altro piatto
+                </button>
               </div>
             );
           })()}
