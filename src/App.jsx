@@ -3441,6 +3441,7 @@ function coloreSemaforo(stato) {
   return "#27AE60";
 }
 function NutriPanel(props) {
+  var sExp = useState(false); var exp = sExp[0]; var setExp = sExp[1];
   var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
   var PORZ = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,
@@ -3576,8 +3577,12 @@ function NutriPanel(props) {
       )}
 
       <div style={{marginBottom:8}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#8A949B",marginBottom:4}}>Porzioni · tocca i grammi per regolarli</div>
-        {items.map(function(it){
+        <div onClick={function(){ setExp(!exp); }}
+          style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:11,fontWeight:700,color:"#2F6586",padding:"2px 0"}}>
+          <i className={"ti "+(exp?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:15}}/>
+          {exp ? "Nascondi le porzioni" : "Regola le porzioni (grammi)"}
+        </div>
+        {exp&&items.map(function(it){
           var gv = grammi[it.field];
           return (
             <div key={it.field} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #EAF0F4"}}>
@@ -4169,6 +4174,8 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var scelteProssima=builderScelteProssima; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
+  var sVP=useState(false); var vediPiatto=sVP[0]; var setVediPiatto=sVP[1];
+  var sVS=useState(false); var vediSett=sVS[0]; var setVediSett=sVS[1];
 
   // Scelte attive in base alla settimana selezionata
   var scelteAttive = settB===0 ? scelte : scelteProssima;
@@ -4305,35 +4312,54 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           setCustomIng={setCustomIng}/>
       </div>
 
-      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
-        <div style={{width:96,flexShrink:0}}>
-          <PiattoVisivo
-            carbo={liveScelta.carbo||null}
-            prot={liveScelta.proteina||null}
-            verdura={liveScelta.verdura||null}
-            frutta={liveScelta.frutta||null}
-            lattic={liveScelta.latticino||null}
-            isPrinc={pastoSel==="Pranzo"||pastoSel==="Cena"}/>
+      <button onClick={function(){setVediPiatto(!vediPiatto);}}
+        style={{width:"100%",padding:"11px 14px",borderRadius:14,border:"1px solid #E3EAEE",background:"#fff",
+          display:"flex",alignItems:"center",gap:9,cursor:"pointer",marginBottom:10,
+          fontSize:13,fontWeight:700,color:"#2C3338",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+        <i className="ti ti-chart-pie" style={{fontSize:16,color:"#6BA6C9"}}/>
+        <span style={{flex:1,textAlign:"left"}}>Piatto e piramide</span>
+        <i className={"ti "+(vediPiatto?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16,color:"#8A949B"}}/>
+      </button>
+      {vediPiatto&&(
+        <div className="mf-card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+          <div style={{width:96,flexShrink:0}}>
+            <PiattoVisivo
+              carbo={liveScelta.carbo||null}
+              prot={liveScelta.proteina||null}
+              verdura={liveScelta.verdura||null}
+              frutta={liveScelta.frutta||null}
+              lattic={liveScelta.latticino||null}
+              isPrinc={pastoSel==="Pranzo"||pastoSel==="Cena"}/>
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <PiramideLive scelte={scelteAttive}/>
+          </div>
         </div>
-        <div style={{flex:1,minWidth:0}}>
-          <PiramideLive scelte={scelteAttive}/>
-        </div>
-      </div>
+      )}
 
-      <div className="mf-card" style={{padding:"12px 14px",marginTop:0}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span className="cap">Settimana</span>
-          <button onClick={function(){setShowSpesa(true);}}
-            style={{background:"#C2355A",color:"#fff",border:"none",borderRadius:20,padding:"6px 13px",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-            <i className="ti ti-shopping-cart" style={{fontSize:13}}/>Lista spesa
-          </button>
-        </div>
-        <GrigliaSettimana
-          scelte={scelteAttive} GIORNI={GIORNI_B} PASTI={PASTI_B}
-          giornoSel={giornoSel} pastoSel={pastoSel}
-          cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto}
-          setPopup={setPopup}/>
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <button onClick={function(){setVediSett(!vediSett);}}
+          style={{flex:1,padding:"11px 14px",borderRadius:14,border:"1px solid #E3EAEE",background:"#fff",
+            display:"flex",alignItems:"center",gap:9,cursor:"pointer",
+            fontSize:13,fontWeight:700,color:"#2C3338",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-calendar-week" style={{fontSize:16,color:"#6BA6C9"}}/>
+          <span style={{flex:1,textAlign:"left"}}>Settimana</span>
+          <i className={"ti "+(vediSett?"ti-chevron-up":"ti-chevron-down")} style={{fontSize:16,color:"#8A949B"}}/>
+        </button>
+        <button onClick={function(){setShowSpesa(true);}}
+          style={{background:"#C2355A",color:"#fff",border:"none",borderRadius:14,padding:"0 15px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+          <i className="ti ti-shopping-cart" style={{fontSize:14}}/>Spesa
+        </button>
       </div>
+      {vediSett&&(
+        <div className="mf-card" style={{padding:"12px 14px",marginBottom:10}}>
+          <GrigliaSettimana
+            scelte={scelteAttive} GIORNI={GIORNI_B} PASTI={PASTI_B}
+            giornoSel={giornoSel} pastoSel={pastoSel}
+            cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto}
+            setPopup={setPopup}/>
+        </div>
+      )}
 
       {popup&&<PopupPasto data={popup} scelte={scelteAttive} setScelte={setScelteAttive} setPopup={setPopup} cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto} GIORNI={GIORNI_B} PASTI={PASTI_B} onSalvaRicetta={function(r){setRicette(ricette.concat([r]));}}/>}
 
