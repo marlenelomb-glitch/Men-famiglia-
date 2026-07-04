@@ -4229,6 +4229,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   function apriGiorno(i) { cambiaGiorno(i); setStepCorrente(1); setVista("giorno"); }
 
   var sPicker=useState(null); var picker=sPicker[0]; var setPicker=sPicker[1];
+  var sPickRic=useState(false); var pickRic=sPickRic[0]; var setPickRic=sPickRic[1];
   var sPickS=useState(""); var pickS=sPickS[0]; var setPickS=sPickS[1];
   var sFGlut=useState(false); var fGlut=sFGlut[0]; var setFGlut=sFGlut[1];
   var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
@@ -4265,6 +4266,30 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     if(id===null) delete s[campo]; else s[campo]=id;
     salvaScelta(s);
   }
+  function attivaCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    if(!s.piattoUnico) s.piattoUnico = {nome:"", kcal:"", prot:""};
+    salvaScelta(s);
+  }
+  function disattivaCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    delete s.piattoUnico;
+    salvaScelta(s);
+  }
+  function setPiattoUnicoField(field, val) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    pu[field] = val;
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function usaRicetta(ric) {
+    var por = ric.porzioni && (ric.porzioni.adulto || ric.porzioni.adulta || {});
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    s.piattoUnico = {nome:ric.titolo, kcal:(por.kcal||""), prot:(por.prot||"")};
+    salvaScelta(s);
+    setPickRic(false);
+  }
   function setGrammiG(campo, val) {
     var s = Object.assign({}, scelteAttive[keyG]||{});
     var g = Object.assign({}, s.grammi||{});
@@ -4283,8 +4308,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var key=GIORNI_B[giornoSel]+"-"+pastoSel;
   var sceltaCorrente=scelteAttive[key]||null;
 
-  function hasSaved(g,p){var s=scelteAttive[g+"-"+p];return !!(s&&(s.carbo||s.proteina||s.frutta||s.latticino));}
-  function isCompleto(g,p){var s=scelteAttive[g+"-"+p];if(!s)return false;var t=PASTI_TIPO[p]||"pranzo";if(t==="pranzo"||t==="cena")return !!(s.carbo&&s.proteina&&s.verdura);return !!(s.carbo||s.frutta||s.latticino);}
+  function pastoCompl(s){ return !!(s && s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()); }
+  function hasSaved(g,p){var s=scelteAttive[g+"-"+p];return !!(s&&(pastoCompl(s)||s.carbo||s.proteina||s.frutta||s.latticino));}
+  function isCompleto(g,p){var s=scelteAttive[g+"-"+p];if(!s)return false;if(pastoCompl(s))return true;var t=PASTI_TIPO[p]||"pranzo";if(t==="pranzo"||t==="cena")return !!(s.carbo&&s.proteina&&s.verdura);return !!(s.carbo||s.frutta||s.latticino);}
   function cambiaGiorno(i){setGiornoSel(i);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[i]+"-"+pastoSel]||{});}
   function cambiaPasto(p){setPastoSel(p);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[giornoSel]+"-"+p]||{});}
 
@@ -4384,6 +4410,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
           {GIORNI_B.map(function(g,i){
             var sc = scelteAttive[g+"-"+pastoSel] || {};
+            var compl = sc.piattoUnico && sc.piattoUnico.nome && (""+sc.piattoUnico.nome).trim();
             var groups = [{tipo:"proteina",id:sc.proteina,label:"Proteina"},{tipo:"carbo",id:sc.carbo,label:"Carbo"},{tipo:"verdura",id:sc.verdura,label:"Verdura"}];
             var filled = groups.filter(function(x){ return x.id; }).length;
             var dataG = new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
@@ -4392,9 +4419,15 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:10}}>
                   <span style={{fontSize:14,fontWeight:800}}>{g.slice(0,3)}</span>
                   <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
-                  <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:filled===3?"#2E9E5B":"#8A949B"}}>{filled}/3</span>
+                  <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:(compl||filled===3)?"#2E9E5B":"#8A949B"}}>{compl?"Completo":(filled+"/3")}</span>
                   <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
                 </div>
+                {compl ? (
+                  <div style={{display:"flex",alignItems:"center",gap:10,background:"#F2F6F8",borderRadius:11,padding:"11px 13px"}}>
+                    <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}><i className="ti ti-tools-kitchen-2"/></div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sc.piattoUnico.nome}</div>
+                  </div>
+                ) : (
                 <div style={{display:"flex",gap:7}}>
                   {groups.map(function(gr){
                     if(!gr.id) return (
@@ -4411,6 +4444,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     );
                   })}
                 </div>
+                )}
               </div>
             );
           })}
@@ -4446,7 +4480,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>{GIORNI_B[giornoSel]}</div>
           <div style={{fontSize:13,color:"#8A949B"}}>{(function(){var d=new Date(lunediSettimana().getTime()); if(settB===1)d.setDate(d.getDate()+7); d.setDate(d.getDate()+giornoSel); return d.getDate()+" "+MESI_ABBR[d.getMonth()];})()} · rifinisci il pasto</div>
         </div>
-        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2E9E5B":"#8A949B"}}>{campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length}/{campiPasto().filter(function(c){ return !c.opt; }).length}</span>
+        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2E9E5B":"#8A949B"}}>{sceltaG.piattoUnico ? (pastoCompl(sceltaG)?"Completo":"Da compilare") : (campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length+"/"+campiPasto().filter(function(c){ return !c.opt; }).length)}</span>
       </div>
 
       <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
@@ -4463,6 +4497,43 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         })}
       </div>
 
+      <div style={{display:"flex",background:"#E2EEF5",borderRadius:12,padding:4,marginBottom:12}}>
+        {[{id:"ingredienti",l:"A ingredienti"},{id:"completo",l:"Pasto completo"}].map(function(mo){
+          var on=(mo.id==="completo")===(!!sceltaG.piattoUnico);
+          return <button key={mo.id} onClick={function(){ if(mo.id==="completo") attivaCompleto(); else disattivaCompleto(); }}
+            style={{flex:1,border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",
+              fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,padding:"8px 0",borderRadius:9,cursor:"pointer",
+              boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>{mo.l}</button>;
+        })}
+      </div>
+
+      {sceltaG.piattoUnico ? (
+        <div className="mf-card" style={{padding:"14px 15px",marginBottom:10,display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Nome del piatto</div>
+          <input value={sceltaG.piattoUnico.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
+            placeholder="Es. Lasagne, Parmigiana, Paella..."
+            style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · facoltativo</div>
+              <input inputMode="numeric" value={sceltaG.piattoUnico.kcal||""} onChange={function(e){ setPiattoUnicoField("kcal", e.target.value.replace(/[^0-9]/g,"")); }}
+                placeholder="es. 550" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · facolt.</div>
+              <input inputMode="numeric" value={sceltaG.piattoUnico.prot||""} onChange={function(e){ setPiattoUnicoField("prot", e.target.value.replace(/[^0-9]/g,"")); }}
+                placeholder="es. 20" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+          </div>
+          <button onClick={function(){ setPickRic(true); }}
+            style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <i className="ti ti-book" style={{fontSize:16}}/>Scegli da una ricetta
+          </button>
+          <div style={{fontSize:11,color:"#8A949B"}}>Le kcal sono facoltative e le inserisci a mano (o le prendi da una ricetta).</div>
+        </div>
+      ) : (
+      <div>
       <div className="cap" style={{marginBottom:8}}>Cosa mangi · tocca per scegliere</div>
       {campiPasto().map(function(c){
         var id=sceltaG[c.campo];
@@ -4498,6 +4569,8 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           frutta={sceltaG.frutta} lattic={sceltaG.latticino} pasto={pastoSel} profili={profili}
           grammi={sceltaG.grammi||{}} onGrammi={function(field,val){ setGrammiG(field, parseInt(val,10)||0); }}/>
       </div>
+      </div>
+      )}
 
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={function(){setShowSpesa(true);}}
@@ -4582,6 +4655,42 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   );
                 });
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pickRic&&(
+        <div onClick={function(){ setPickRic(false); }}
+          style={{position:"fixed",inset:0,background:"rgba(20,40,55,.4)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){ e.stopPropagation(); }}
+            style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"78vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 18px 10px",borderBottom:"1px solid #E3EAEE",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:16,fontWeight:800}}>Scegli una ricetta</div>
+              <i className="ti ti-x" onClick={function(){ setPickRic(false); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+            </div>
+            <div style={{padding:"10px 16px 0"}}>
+              <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:13,padding:"10px 12px"}}>
+                <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+                <input value={pickS} onChange={function(e){ setPickS(e.target.value); }} placeholder="Cerca una ricetta..."
+                  style={{border:"none",outline:"none",background:"none",flex:1,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:600,color:"#2C3338"}}/>
+              </div>
+            </div>
+            <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+              {DB_RICETTE.filter(function(rc){ var q=pickS.trim().toLowerCase(); return !q || rc.titolo.toLowerCase().indexOf(q)>=0; }).map(function(rc){
+                var por = rc.porzioni && (rc.porzioni.adulto || rc.porzioni.adulta || {});
+                return (
+                  <div key={rc.id} onClick={function(){ usaRicetta(rc); }}
+                    style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",cursor:"pointer"}}>
+                    <div style={{fontSize:22,width:34,textAlign:"center"}}>{rc.emoji||"🍽️"}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700}}>{rc.titolo}</div>
+                      <div style={{fontSize:11,color:"#8A949B"}}>{rc.categoria}{por.kcal?" · "+por.kcal+" kcal":""}{rc.tempo?" · "+rc.tempo:""}</div>
+                    </div>
+                    <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -5472,6 +5581,10 @@ function ingById(id) {
 
 function valoriPastoBuilder(scelta) {
   if(!scelta) return null;
+  if(scelta.piattoUnico && scelta.piattoUnico.nome && ("" + scelta.piattoUnico.nome).trim()) {
+    var pu = scelta.piattoUnico;
+    return {nome: ("" + pu.nome).trim(), kcal: parseInt(pu.kcal, 10) || 0, prot: parseInt(pu.prot, 10) || 0};
+  }
   var campi = [["carbo",0],["proteina",0],["verdura",150],["verdura2",150],["frutta",120],["latticino",100]];
   var nomi = []; var kcal = 0; var prot = 0;
   campi.forEach(function(c){
