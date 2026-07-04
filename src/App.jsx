@@ -260,6 +260,7 @@ function notificaIscrizione(emailUtente) {
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { DB_RICETTE } from "./ricette.js";
+import LoadingScreen from "./LoadingScreen.jsx";
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
 const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
@@ -7596,15 +7597,7 @@ export default function App() {
     <div style={{background:"#F5F8FC",minHeight:"100vh",maxWidth:390,margin:"0 auto",fontFamily:"'Nunito',system-ui,sans-serif"}}>
 
       {/* Loading */}
-      {loading&&(
-        <div style={{position:"fixed",inset:0,background:"#fff",display:"flex",
-          alignItems:"center",justifyContent:"center",zIndex:999}}>
-          <div style={{textAlign:"center"}}>
-            <div style={{fontSize:28,marginBottom:12}}>🍽</div>
-            <div style={{fontSize:13,color:"#8A949B"}}>Caricamento...</div>
-          </div>
-        </div>
-      )}
+      {loading&&<LoadingScreen/>}
 
       {/* Schermata di benvenuto */}
       {!loading&&!utente&&authView==="intro"&&(
