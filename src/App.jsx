@@ -4183,6 +4183,24 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
   var sVP=useState(false); var vediPiatto=sVP[0]; var setVediPiatto=sVP[1];
   var sVS=useState(false); var vediSett=sVS[0]; var setVediSett=sVS[1];
+  var sVista=useState("settimana"); var vista=sVista[0]; var setVista=sVista[1];
+  var sMsgB=useState(""); var msgB=sMsgB[0]; var setMsgB=sMsgB[1];
+
+  function iconaGruppo(tipo, id) {
+    var it = ingById(id);
+    if(tipo==="proteina") {
+      if(!it) return "ti-meat";
+      if(it.cat==="pesce") return "ti-fish";
+      if(it.cat==="legumi") return "ti-plant-2";
+      if(it.cat==="uova") return "ti-egg";
+      if(it.cat==="latticini") return "ti-cheese";
+      return "ti-meat";
+    }
+    if(tipo==="carbo") return "ti-baguette";
+    return "ti-salad";
+  }
+  function nomeGruppo(id) { var it = ingById(id); return it ? it.nome : ""; }
+  function apriGiorno(i) { cambiaGiorno(i); setStepCorrente(1); setVista("giorno"); }
 
   // Scelte attive in base alla settimana selezionata
   var scelteAttive = settB===0 ? scelte : scelteProssima;
@@ -4254,6 +4272,101 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </div>
       )}
 
+      {vista==="settimana"&&(function(){
+        var lunB = lunediSettimana(); if(settB===1) lunB.setDate(lunB.getDate()+7);
+        var protCount = {pesce:0,carne:0,legumi:0,uova:0};
+        GIORNI_B.forEach(function(g){ var s=scelteAttive[g+"-"+pastoSel]; if(s&&s.proteina){ var it=ingById(s.proteina); if(it){ if(it.cat==="pesce")protCount.pesce++; else if(it.cat==="legumi")protCount.legumi++; else if(it.cat==="uova")protCount.uova++; else protCount.carne++; } } });
+        var completiSett = GIORNI_B.filter(function(g){ var s=scelteAttive[g+"-"+pastoSel]; return s&&s.proteina&&s.carbo&&s.verdura; }).length;
+        var protParts = [];
+        if(protCount.pesce) protParts.push("pesce ×"+protCount.pesce);
+        if(protCount.legumi) protParts.push("legumi ×"+protCount.legumi);
+        if(protCount.carne) protParts.push("carne ×"+protCount.carne);
+        if(protCount.uova) protParts.push("uova ×"+protCount.uova);
+        return (
+        <div>
+          <div style={{marginBottom:12,paddingTop:4}}>
+            <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Builder</div>
+            <div style={{fontSize:13,color:"#8A949B"}}>Organizza la settimana, poi rifinisci il giorno</div>
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <span className="cap">Pasto</span>
+            <div style={{flex:1,display:"flex",background:"#E2EEF5",borderRadius:12,padding:4}}>
+              {["Pranzo","Cena"].map(function(m){
+                var on=pastoSel===m;
+                return <button key={m} onClick={function(){setPastoSel(m);}}
+                  style={{flex:1,border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",
+                    fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,padding:"8px 0",borderRadius:9,cursor:"pointer",
+                    boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>{m}</button>;
+              })}
+            </div>
+          </div>
+
+          <div style={{display:"flex",gap:8,padding:"0 4px",marginBottom:12}}>
+            <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-meat" style={{color:"#2F6586",fontSize:15}}/>Proteina</span>
+            <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-baguette" style={{color:"#2F6586",fontSize:15}}/>Carbo</span>
+            <span style={{flex:1,display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#8A949B"}}><i className="ti ti-salad" style={{color:"#2F6586",fontSize:15}}/>Verdura</span>
+          </div>
+
+          {GIORNI_B.map(function(g,i){
+            var sc = scelteAttive[g+"-"+pastoSel] || {};
+            var groups = [{tipo:"proteina",id:sc.proteina,label:"Proteina"},{tipo:"carbo",id:sc.carbo,label:"Carbo"},{tipo:"verdura",id:sc.verdura,label:"Verdura"}];
+            var filled = groups.filter(function(x){ return x.id; }).length;
+            var dataG = new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
+            return (
+              <div key={g} className="mf-card" onClick={function(){ apriGiorno(i); }} style={{padding:"12px 13px",marginBottom:10,cursor:"pointer"}}>
+                <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:10}}>
+                  <span style={{fontSize:14,fontWeight:800}}>{g.slice(0,3)}</span>
+                  <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:filled===3?"#2E9E5B":"#8A949B"}}>{filled}/3</span>
+                  <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                </div>
+                <div style={{display:"flex",gap:7}}>
+                  {groups.map(function(gr){
+                    if(!gr.id) return (
+                      <div key={gr.tipo} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5,background:"#fff",border:"1.5px dashed #C4D2DA",borderRadius:11,padding:"9px 4px"}}>
+                        <div style={{width:30,height:30,borderRadius:9,border:"1.5px dashed #C4D2DA",color:"#8A949B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}><i className="ti ti-plus"/></div>
+                        <div style={{fontSize:11,fontWeight:600,color:"#8A949B",textAlign:"center"}}>{gr.label}</div>
+                      </div>
+                    );
+                    return (
+                      <div key={gr.tipo} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:5,background:"#F2F6F8",borderRadius:11,padding:"9px 4px"}}>
+                        <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}><i className={"ti "+iconaGruppo(gr.tipo,gr.id)}/></div>
+                        <div style={{fontSize:11,fontWeight:700,textAlign:"center",lineHeight:1.2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{nomeGruppo(gr.id)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{background:"#E2EEF5",borderRadius:16,padding:"14px 15px",color:"#2F6586",marginBottom:12}}>
+            <div style={{fontSize:11,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:800,marginBottom:6}}>Equilibrio della settimana ({pastoSel})</div>
+            <div style={{display:"flex",alignItems:"center",gap:9,fontSize:12,fontWeight:600,padding:"4px 0"}}>
+              <i className="ti ti-circle-check" style={{fontSize:16}}/>{protParts.length?("Proteine: "+protParts.join(" · ")):"Nessuna proteina scelta ancora"}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:9,fontSize:12,fontWeight:600,padding:"4px 0"}}>
+              <i className="ti ti-info-circle" style={{fontSize:16}}/>{completiSett===7?"Tutti i giorni completi!":(7-completiSett)+" giorni da completare"}
+            </div>
+          </div>
+
+          <button onClick={function(){ setMsgB("La compilazione automatica arriva a breve. Per ora tocca un giorno per costruirlo."); setTimeout(function(){ setMsgB(""); }, 3500); }}
+            style={{width:"100%",padding:"14px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",
+              fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <i className="ti ti-wand" style={{fontSize:17}}/>Completa in automatico
+          </button>
+          {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+        </div>
+        );
+      })()}
+
+      {vista==="giorno"&&(
+      <div>
+      <button onClick={function(){ setVista("settimana"); }}
+        style={{display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",padding:"0 0 8px"}}>
+        <i className="ti ti-chevron-left" style={{fontSize:18}}/>Settimana
+      </button>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12,paddingTop:4}}>
         <div>
           <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>Builder</div>
@@ -4377,6 +4490,8 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto}
             setPopup={setPopup}/>
         </div>
+      )}
+      </div>
       )}
 
       {popup&&<PopupPasto data={popup} scelte={scelteAttive} setScelte={setScelteAttive} setPopup={setPopup} cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto} GIORNI={GIORNI_B} PASTI={PASTI_B} onSalvaRicetta={function(r){setRicette(ricette.concat([r]));}}/>}
