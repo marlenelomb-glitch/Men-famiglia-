@@ -258,9 +258,32 @@ function notificaIscrizione(emailUtente) {
   }).catch(function(){});
 }
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, Component } from "react";
 import { DB_RICETTE } from "./ricette.js";
 import LoadingScreen from "./LoadingScreen.jsx";
+
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = {err:null}; }
+  static getDerivedStateFromError(err) { return {err:err}; }
+  componentDidCatch(err, info) { console.error("UI error:", err, info); }
+  render() {
+    if(this.state.err) {
+      var self = this;
+      return (
+        <div style={{padding:"40px 24px",textAlign:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <div style={{fontSize:34,marginBottom:10}}>😕</div>
+          <div style={{fontSize:16,fontWeight:800,color:"#2C3338",marginBottom:8}}>Questa schermata ha avuto un problema</div>
+          <div style={{fontSize:12,color:"#8A949B",marginBottom:16,wordBreak:"break-word"}}>{String((this.state.err && this.state.err.message) || this.state.err)}</div>
+          <button onClick={function(){ self.setState({err:null}); }}
+            style={{padding:"12px 22px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+            Riprova
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
 const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
@@ -7846,6 +7869,7 @@ export default function App() {
             <i className="ti ti-arrow-left" style={{fontSize:18}}/>Home
           </button>
         )}
+        <ErrorBoundary key={tab}>
         {tab==="home" && (
           <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
         )}
@@ -7919,6 +7943,7 @@ export default function App() {
         {tab==="ai" && (
           <AssistenteAI profili={profili} familyId={familyId}/>
         )}
+        </ErrorBoundary>
       </div>
 
       <nav className="nav">
