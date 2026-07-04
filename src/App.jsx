@@ -4192,6 +4192,81 @@ function SpesaItemsB(props) {
 }
 
 
+var SINONIMI_PASTO = {
+  pollo:"pollo_f", petto:"pollo_f", cosce:"pollo_c", tacchino:"tacchino", fesa:"tacchino",
+  manzo:"manzo", vitello:"manzo", bistecca:"manzo", hamburger:"manzo", agnello:"agnello",
+  salmone:"salmone", merluzzo:"merluzzo", baccala:"merluzzo", nasello:"merluzzo", tonno:"tonno",
+  orata:"orata", branzino:"orata", spigola:"orata", gamber:"gamberetti", pesce:"merluzzo",
+  uova:"uova", uovo:"uova", frittata:"uova", omelette:"uova",
+  ceci:"ceci", hummus:"ceci", lenticchie:"lenticchie", fagioli:"fagioli", legumi:"lenticchie",
+  prosciutto:"prosciutto", bresaola:"bresaola", mortadella:"mortadella", salume:"prosciutto",
+  mozzarella:"mozzarella", ricotta:"ricotta", feta:"feta", yogurt:"yogurt_g",
+  patate:"patate", pure:"patate", pasta:"penne", spaghetti:"spaghetti", maccheroni:"penne",
+  penne:"penne", fusilli:"fusilli", riso:"riso_b", risotto:"risotto", lasagne:"lasagne",
+  lasagna:"lasagne", cannelloni:"lasagne", gnocchi:"gnocchi", ravioli:"ravioli", tortellini:"ravioli",
+  pane:"pane_int", pizza:"pizza", focaccia:"focaccia", piadina:"piadina", farro:"farro",
+  orzo:"orzo", quinoa:"quinoa", cous:"cous", polenta:"polenta", zuppa:"lenticchie",
+  zucchine:"zucchine", spinaci:"spinaci", broccoli:"broccoli", pomodor:"pomodori", insalata:"insalata",
+  carote:"carote", zucca:"zucca", funghi:"funghi", melanzane:"melanzane", parmigiana:"melanzane",
+  peperoni:"peperoni", cavolfiore:"cavolfiore", asparagi:"asparagi", piselli:"piselli_v", verdura:"insalata"
+};
+
+function porzioneRic(it) {
+  if(PROTEINE.some(function(x){ return x.id===it.id; })) {
+    if(it.cat==="affettati") return 60;
+    if(it.cat==="uova") return 120;
+    if(it.cat==="latticini") return 100;
+    if(it.cat==="legumi") return 150;
+    return 150;
+  }
+  if(CARBOIDRATI.some(function(x){ return x.id===it.id; })) {
+    if(it.cat==="tuberi") return 200;
+    if(it.cat==="pane") return 60;
+    return 80;
+  }
+  if(VERDURE.some(function(x){ return x.id===it.id; })) return 150;
+  return 120;
+}
+function tipoRic(it) {
+  if(PROTEINE.some(function(x){ return x.id===it.id; })) return "proteina";
+  if(CARBOIDRATI.some(function(x){ return x.id===it.id; })) return "carbo";
+  if(VERDURE.some(function(x){ return x.id===it.id; })) return "verdura";
+  return "frutta";
+}
+function riconosciPasto(testo) {
+  var t = (""+(testo||"")).toLowerCase();
+  if(!t.trim()) return {kcal:0, prot:0, items:[]};
+  var db = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+  var byWord = {};
+  var chosen = {};
+  Object.keys(SINONIMI_PASTO).forEach(function(k){
+    if(t.indexOf(k) >= 0 && !byWord[k]) {
+      var it = db.find(function(x){ return x.id === SINONIMI_PASTO[k]; });
+      if(it && !chosen[it.id]) { byWord[k] = it; chosen[it.id] = true; }
+    }
+  });
+  db.forEach(function(it){
+    var parole = it.nome.toLowerCase().split(/[^a-zàèéìòùü]+/).filter(function(w){ return w.length > 3; });
+    for(var i=0;i<parole.length;i++){
+      if(t.indexOf(parole[i]) >= 0) {
+        if(!byWord[parole[i]] && !chosen[it.id]) { byWord[parole[i]] = it; chosen[it.id] = true; }
+        break;
+      }
+    }
+  });
+  var kcal = 0, prot = 0, items = [];
+  Object.keys(byWord).forEach(function(w){
+    var it = byWord[w];
+    var g = porzioneRic(it);
+    kcal += it.kcal_p * g / 100;
+    prot += it.prot_p * g / 100;
+    items.push({id:it.id, nome:it.nome, tipo:tipoRic(it)});
+  });
+  var ordine = {proteina:0, carbo:1, verdura:2, frutta:3};
+  items.sort(function(a,b){ return ordine[a.tipo] - ordine[b.tipo]; });
+  return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
+}
+
 function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, onSavePasto}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
@@ -4285,6 +4360,15 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     var s = Object.assign({}, scelteAttive[keyG]||{});
     var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
     pu[field] = val;
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function riconosciCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    var r = riconosciPasto(pu.nome);
+    if(r.items.length){ pu.kcal = String(r.kcal); pu.prot = String(r.prot); pu.riconosciuti = r.items; pu.autofill = true; }
+    else { pu.riconosciuti = []; }
     s.piattoUnico = pu;
     salvaScelta(s);
   }
@@ -4517,18 +4601,42 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
       {sceltaG.piattoUnico ? (
         <div className="mf-card" style={{padding:"14px 15px",marginBottom:10,display:"flex",flexDirection:"column",gap:10}}>
-          <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Nome del piatto</div>
+          <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Scrivi il pasto così com'è</div>
           <input value={sceltaG.piattoUnico.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
-            placeholder="Es. Lasagne, Parmigiana, Paella..."
+            onBlur={function(){ riconosciCompleto(); }}
+            onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+            placeholder="Es. Pollo e patate, Lasagne, Pasta al pomodoro..."
             style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+
+          {sceltaG.piattoUnico.riconosciuti && sceltaG.piattoUnico.riconosciuti.length>0 && (
+            <div style={{background:"#EAF4EC",borderRadius:12,padding:"10px 12px"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#2E9E5B",marginBottom:7,display:"flex",alignItems:"center",gap:6}}>
+                <i className="ti ti-sparkles" style={{fontSize:14}}/>Riconosciuti (proteine stimate in automatico)
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {sceltaG.piattoUnico.riconosciuti.map(function(r){
+                  return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#fff",border:"1px solid #CDE3D5",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                    <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2E9E5B"}}/>{r.nome}
+                  </span>;
+                })}
+              </div>
+            </div>
+          )}
+
+          <button onClick={function(){ riconosciCompleto(); }}
+            style={{padding:"10px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <i className="ti ti-wand" style={{fontSize:16}}/>Riconosci alimenti e proteine
+          </button>
+
           <div style={{display:"flex",gap:8}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · facoltativo</div>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · {sceltaG.piattoUnico.autofill?"stimate":"facolt."}</div>
               <input inputMode="numeric" value={sceltaG.piattoUnico.kcal||""} onChange={function(e){ setPiattoUnicoField("kcal", e.target.value.replace(/[^0-9]/g,"")); }}
                 placeholder="es. 550" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · facolt.</div>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · {sceltaG.piattoUnico.autofill?"stimate":"facolt."}</div>
               <input inputMode="numeric" value={sceltaG.piattoUnico.prot||""} onChange={function(e){ setPiattoUnicoField("prot", e.target.value.replace(/[^0-9]/g,"")); }}
                 placeholder="es. 20" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
             </div>
@@ -4538,7 +4646,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
             <i className="ti ti-book" style={{fontSize:16}}/>Scegli da una ricetta
           </button>
-          <div style={{fontSize:11,color:"#8A949B"}}>Le kcal sono facoltative e le inserisci a mano (o le prendi da una ricetta).</div>
+          <div style={{fontSize:11,color:"#8A949B"}}>Tuo marito scrive il pasto, l'app riconosce gli alimenti e stima le proteine. Puoi correggere i numeri a mano.</div>
         </div>
       ) : (
       <div>
