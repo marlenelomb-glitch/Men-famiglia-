@@ -4388,7 +4388,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     var fuoriList = (pu && pu.fuori) ? pu.fuori : [];
     Object.keys(profili||{}).forEach(function(pid){
       var p = profili[pid];
-      if(fuoriList.indexOf(pid) >= 0) { out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", fuori: true}); return; }
+      if(fuoriList.indexOf(pid) >= 0) {
+        var fv = (pu && pu.fuoriVal && pu.fuoriVal[pid]) || {};
+        var fk = parseInt(fv.kcal, 10) || 0; var fp = parseInt(fv.prot, 10) || 0;
+        out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", fuori: true, kcal: fk, prot: fp, contato: (fk > 0 || fp > 0)});
+        return;
+      }
       var base = dishBase(pu, pid);
       var scale = (p.kcal_target || 1600) / 1600;
       var k = Math.round((base.kcal || 0) * scale);
@@ -4442,6 +4447,14 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         pu.altri = pu.altri.map(function(d){ var m = (d.membri||[]).slice(); var mi = m.indexOf(pid); if(mi >= 0) m.splice(mi,1); return Object.assign({}, d, {membri:m}); });
       }
       pu.fuori = f;
+    });
+  }
+  function setFuoriVal(pid, field, val) {
+    mutaPU(function(pu){
+      var fv = Object.assign({}, pu.fuoriVal||{});
+      fv[pid] = Object.assign({kcal:"",prot:""}, fv[pid]||{});
+      fv[pid][field] = val;
+      pu.fuoriVal = fv;
     });
   }
   function creaVariante() {
@@ -4747,9 +4760,16 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         {r.altro && r.dish && <div style={{fontSize:10,color:"#2F6586",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.dish}</div>}
                       </div>
                       {r.fuori ? (
-                        <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
-                          <i className="ti ti-door-exit" style={{fontSize:12}}/>A mensa / fuori
-                        </span>
+                        r.contato ? (
+                          <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                          <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                            <i className="ti ti-door-exit" style={{fontSize:12}}/>{r.prot}g · fuori
+                          </span></>
+                        ) : (
+                          <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                            <i className="ti ti-door-exit" style={{fontSize:12}}/>A mensa / fuori
+                          </span>
+                        )
                       ) : r.over ? (
                         <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
                         <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
@@ -4835,6 +4855,24 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     })}
                   </div>
                   <div style={{fontSize:10,color:"#8A949B"}}>Chi è a mensa o fuori non entra nel cucinato né nella spesa.</div>
+                  {(pu.fuori||[]).length>0 && (
+                    <div style={{borderTop:"1px solid #F1F4F6",paddingTop:9,display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{fontSize:10,color:"#8A949B",fontWeight:700}}>Vuoi contare il pasto fuori? Aggiungi kcal e proteine (facoltativo).</div>
+                      {(pu.fuori||[]).map(function(pid){
+                        var p = profili[pid]; if(!p) return null;
+                        var fv = (pu.fuoriVal||{})[pid] || {};
+                        return (
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:12,fontWeight:700,color:"#2C3338",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</span>
+                            <input inputMode="numeric" value={fv.kcal||""} onChange={function(e){ setFuoriVal(pid, "kcal", e.target.value.replace(/[^0-9]/g,"")); }}
+                              placeholder="kcal" style={{width:66,padding:"8px 10px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"center"}}/>
+                            <input inputMode="numeric" value={fv.prot||""} onChange={function(e){ setFuoriVal(pid, "prot", e.target.value.replace(/[^0-9]/g,"")); }}
+                              placeholder="prot g" style={{width:66,padding:"8px 10px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"center"}}/>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <button onClick={function(){ addPiatto(); }}
