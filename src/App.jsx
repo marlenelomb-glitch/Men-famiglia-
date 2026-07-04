@@ -763,7 +763,7 @@ function TabCalorie({menu, profili, builderScelte}) {
               </div>
               <div style={{background:"#f0f0f0",borderRadius:6,height:8,overflow:"hidden"}}>
                 <div style={{width:pctProt+"%",height:"100%",borderRadius:6,
-                  background:overProt?"#C0392B":profilo.isApro?"#E65100":"#52B788"}}/>
+                  background:overProt?"#C0392B":profilo.isApro?"#E65100":"#6BA6C9"}}/>
               </div>
             </div>
             <div style={{borderTop:"1px solid #f5f5f5",paddingTop:8}}>
@@ -1746,7 +1746,7 @@ function TabPiramide({menu, builderScelte}) {
 
   var LIVELLI = [
     {id:"cereali",    label:"Cereali e carboidrati", target:14, color:"#D4A017", desc:"2 porzioni/giorno"},
-    {id:"verdura",    label:"Verdure",                target:21, color:"#52B788", desc:"3 porzioni/giorno"},
+    {id:"verdura",    label:"Verdure",                target:21, color:"#6BA6C9", desc:"3 porzioni/giorno"},
     {id:"frutta",     label:"Frutta",                 target:14, color:"#E07A5F", desc:"2 porzioni/giorno"},
     {id:"legumi",     label:"Legumi",                 target:3,  color:"#8E44AD", desc:"3x settimana"},
     {id:"pesce",      label:"Pesce",                  target:3,  color:"#5390D9", desc:"3x settimana"},
@@ -3302,7 +3302,7 @@ function PiattoVisivo(props) {
         {isPrinc ? (
           <div style={{width:"100%",height:"100%",display:"flex",flexWrap:"wrap"}}>
             <div style={{width:"50%",height:"50%",background:c?"#D4A01799":"#f0f0f0"}}/>
-            <div style={{width:"50%",height:"50%",background:v?"#52B78899":"#f0f0f0"}}/>
+            <div style={{width:"50%",height:"50%",background:v?"#6BA6C999":"#f0f0f0"}}/>
             <div style={{width:"100%",height:"50%",background:p?"#E07A5F99":"#f0f0f0"}}/>
           </div>
         ) : (
@@ -3317,8 +3317,8 @@ function PiattoVisivo(props) {
             <span style={{fontSize:8,color:c?"#D4A017":"#bbb"}}>{c?"Carbo":"manca C"}</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
-            <div style={{width:6,height:6,borderRadius:"50%",background:v?"#52B788":"#ddd"}}/>
-            <span style={{fontSize:8,color:v?"#52B788":"#bbb"}}>{v?"Verdura":"manca V"}</span>
+            <div style={{width:6,height:6,borderRadius:"50%",background:v?"#6BA6C9":"#ddd"}}/>
+            <span style={{fontSize:8,color:v?"#6BA6C9":"#bbb"}}>{v?"Verdura":"manca V"}</span>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
             <div style={{width:6,height:6,borderRadius:"50%",background:p?"#E07A5F":"#ddd"}}/>
@@ -3347,7 +3347,7 @@ function PiramideLive(props) {
   });
   var rows=[
     {id:"cereali",label:"Cereali",target:14,color:"#D4A017"},
-    {id:"verdura",label:"Verdura",target:35,color:"#52B788"},
+    {id:"verdura",label:"Verdura",target:35,color:"#6BA6C9"},
     {id:"frutta",label:"Frutta",target:21,color:"#E07A5F"},
     {id:"legumi",label:"Legumi",target:3,color:"#8E44AD"},
     {id:"pesce",label:"Pesce",target:3,color:"#5390D9"},
@@ -3752,7 +3752,7 @@ function CostruttorePasto(props) {
             <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:prot?"#E07A5F":"#EEF1F3"}}>
               <span style={{fontSize:11,fontWeight:800,color:prot?"#fff":"#B4BEC4"}}>P</span>
             </div>
-            <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:verd?"#52B788":"#EEF1F3"}}>
+            <div style={{width:24,height:24,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:verd?"#6BA6C9":"#EEF1F3"}}>
               <span style={{fontSize:11,fontWeight:800,color:verd?"#fff":"#B4BEC4"}}>V</span>
             </div>
             {completo&&<div style={{width:24,height:24,borderRadius:"50%",background:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center"}}><i className="ti ti-check" style={{fontSize:13,color:"#fff"}}/></div>}
@@ -3810,7 +3810,7 @@ function CostruttorePasto(props) {
               <TwoLevelDrop label="Proteine" value={prot} onChange={setProtN} cats={PROT_CATS} db={PROT_ALL} color="#E07A5F" warn={!prot}/>
 
               <div style={{marginBottom:10}}>
-                <div style={{fontSize:9,fontWeight:700,marginBottom:5,color:!verd?"#C0392B":"#52B788"}}>
+                <div style={{fontSize:9,fontWeight:700,marginBottom:5,color:!verd?"#C0392B":"#6BA6C9"}}>
                   Verdura
                   {verd&&<span style={{marginLeft:6,fontSize:10}}>{selVerd&&(selVerd.emoji+"?"+selVerd.nome)}<button onClick={function(){setVerdN(null);}} style={{marginLeft:4,background:"none",border:"none",color:"#8A949B",fontSize:11,cursor:"pointer"}}>x</button></span>}
                 </div>
@@ -3819,8 +3819,8 @@ function CostruttorePasto(props) {
                     return (
                       <button key={v.id} onClick={function(){setVerdN(verd===v.id?null:v.id);}}
                         style={{padding:"5px 9px",borderRadius:20,fontSize:9,cursor:"pointer",
-                          border:"1.5px solid "+(verd===v.id?"#52B788":"#ddd"),
-                          background:verd===v.id?"#52B788":"#fff",
+                          border:"1.5px solid "+(verd===v.id?"#6BA6C9":"#ddd"),
+                          background:verd===v.id?"#6BA6C9":"#fff",
                           color:verd===v.id?"#fff":"#444",fontWeight:verd===v.id?700:400}}>
                         {v.emoji} {v.nome}
                       </button>
@@ -4124,7 +4124,7 @@ function PopupPasto(props) {
 
 // Categorie supermercato per la spesa
 var CATS_SPESA = [
-  {id:"ortofrutta",  l:"Ortofrutta",      emoji:"?", color:"#52B788"},
+  {id:"ortofrutta",  l:"Ortofrutta",      emoji:"?", color:"#6BA6C9"},
   {id:"carne_pesce", l:"Carne e Pesce",   emoji:"?", color:"#E07A5F"},
   {id:"pasta_riso",  l:"Pasta e Riso",    emoji:"?", color:"#D4A017"},
   {id:"pane_cereal", l:"Pane e Cereali",  emoji:"?", color:"#C9A85C"},
@@ -4652,7 +4652,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:10}}>
                   <span style={{fontSize:14,fontWeight:800}}>{g.slice(0,3)}</span>
                   <span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
-                  <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:(compl||filled===3)?"#2E9E5B":"#8A949B"}}>{compl?"Completo":(filled+"/3")}</span>
+                  <span style={{marginLeft:"auto",fontSize:11,fontWeight:700,color:(compl||filled===3)?"#2F6586":"#8A949B"}}>{compl?"Completo":(filled+"/3")}</span>
                   <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
                 </div>
                 {compl ? (
@@ -4713,7 +4713,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>{GIORNI_B[giornoSel]}</div>
           <div style={{fontSize:13,color:"#8A949B"}}>{(function(){var d=new Date(lunediSettimana().getTime()); if(settB===1)d.setDate(d.getDate()+7); d.setDate(d.getDate()+giornoSel); return d.getDate()+" "+MESI_ABBR[d.getMonth()];})()} · rifinisci il pasto</div>
         </div>
-        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2E9E5B":"#8A949B"}}>{sceltaG.piattoUnico ? (pastoCompl(sceltaG)?"Completo":"Da compilare") : (campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length+"/"+campiPasto().filter(function(c){ return !c.opt; }).length)}</span>
+        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2F6586":"#8A949B"}}>{sceltaG.piattoUnico ? (pastoCompl(sceltaG)?"Completo":"Da compilare") : (campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length+"/"+campiPasto().filter(function(c){ return !c.opt; }).length)}</span>
       </div>
 
       <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
@@ -5050,7 +5050,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         {vt&&<div style={{fontSize:11,color:"#C0392B",fontWeight:600}}>Non adatto ({vt})</div>}
                       </div>
                       {!vt&&uso>=2&&<span style={{fontSize:10,fontWeight:700,background:"#F6ECD9",color:"#8A5A12",padding:"3px 8px",borderRadius:20}}>{uso}× settimana</span>}
-                      {!vt&&uso===0&&stag&&<span style={{fontSize:10,fontWeight:700,background:"#E8F3EC",color:"#2E9E5B",padding:"3px 8px",borderRadius:20}}>di stagione</span>}
+                      {!vt&&uso===0&&stag&&<span style={{fontSize:10,fontWeight:700,background:"#E2EEF5",color:"#2F6586",padding:"3px 8px",borderRadius:20}}>di stagione</span>}
                       <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
                         border:"1.5px solid "+(sel?"#2F6586":"#C9D3D9"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
                         {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
@@ -5693,7 +5693,7 @@ function lunediSettimana() {
 }
 
 var REAZIONI = [
-  {id:"ok",       l:"Accetto",  ic:"ti-check",     c:"#2E9E5B", bg:"#E8F3EC"},
+  {id:"ok",       l:"Accetto",  ic:"ti-check",     c:"#2F6586", bg:"#E2EEF5"},
   {id:"modifica", l:"Modifica", ic:"ti-pencil",    c:"#E67E22", bg:"#FBEEE0"},
   {id:"fuori",    l:"Fuori",    ic:"ti-door-exit", c:"#C2355A", bg:"#FBE7EC"}
 ];
@@ -6200,7 +6200,7 @@ function percentilePeso(sesso, etaAnni, pesoKg) {
   var banda; var colore;
   if(perc < 3) { banda = "sotto la media"; colore = "#8A5A12"; }
   else if(perc < 15) { banda = "norma bassa"; colore = "#2F6586"; }
-  else if(perc <= 85) { banda = "nella media"; colore = "#2E9E5B"; }
+  else if(perc <= 85) { banda = "nella media"; colore = "#2F6586"; }
   else if(perc <= 97) { banda = "sopra la media"; colore = "#2F6586"; }
   else { banda = "sopra la media alta"; colore = "#8A5A12"; }
   return {perc: perc, banda: banda, colore: colore, z: z};
@@ -6575,7 +6575,7 @@ function AmiciView(props) {
                     <div style={{fontSize:14,fontWeight:700}}>@{u.username}</div>
                     {u.nome && <div style={{fontSize:11,color:"#8A949B"}}>{u.nome}</div>}
                   </div>
-                  {st==="amico" ? <span style={{fontSize:12,fontWeight:700,color:"#2E9E5B",display:"flex",alignItems:"center",gap:4}}><i className="ti ti-check"/>Amici</span>
+                  {st==="amico" ? <span style={{fontSize:12,fontWeight:700,color:"#2F6586",display:"flex",alignItems:"center",gap:4}}><i className="ti ti-check"/>Amici</span>
                     : st==="inviata" ? <span style={{fontSize:12,fontWeight:700,color:"#8A949B"}}>In attesa</span>
                     : st==="ricevuta" ? <span style={{fontSize:12,fontWeight:700,color:"#2F6586"}}>Ti ha aggiunto</span>
                     : <button onClick={function(){ aggiungi(u.user_id); }} style={{border:"1.5px solid #2F6586",background:"#2F6586",color:"#fff",borderRadius:20,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Aggiungi</button>}
@@ -6593,7 +6593,7 @@ function AmiciView(props) {
                   <div key={a.id} style={{display:"flex",alignItems:"center",gap:10}}>
                     {avatarU(a.utente, 34)}
                     <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:700}}>@{a.utente.username}</div></div>
-                    <button onClick={function(){ accetta(a); }} style={{border:"none",background:"#2E9E5B",color:"#fff",borderRadius:20,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Accetta</button>
+                    <button onClick={function(){ accetta(a); }} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:20,padding:"6px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Accetta</button>
                     <i className="ti ti-x" onClick={function(){ elimina(a); }} style={{fontSize:18,color:"#B4BEC4",cursor:"pointer"}}/>
                   </div>
                 );
@@ -6796,7 +6796,7 @@ function SaluteView(props) {
                 <span style={{fontSize:26,fontWeight:800,color:pctl.colore}}>{Math.round(pctl.perc)}°</span>
                 <span style={{fontSize:13,fontWeight:700,color:pctl.colore}}>percentile · {pctl.banda}</span>
               </div>
-              <div style={{position:"relative",height:8,borderRadius:6,background:"linear-gradient(90deg,#F6ECD9,#CDE3D5,#CDE3D5,#F6ECD9)",marginBottom:8}}>
+              <div style={{position:"relative",height:8,borderRadius:6,background:"linear-gradient(90deg,#F6ECD9,#CADCE8,#CADCE8,#F6ECD9)",marginBottom:8}}>
                 <div style={{position:"absolute",top:-3,left:("" + Math.max(0,Math.min(100,pctl.perc))) + "%",transform:"translateX(-50%)",
                   width:14,height:14,borderRadius:"50%",background:"#fff",border:"3px solid " + pctl.colore}}/>
               </div>
@@ -7309,7 +7309,7 @@ function scadStato(scadenza) {
   var diff = (d.getTime() - new Date().getTime()) / 86400000;
   if(diff < 0) return {t:"Scaduto", c:"#C0392B"};
   if(diff <= 3) return {t:"In scadenza", c:"#E67E22"};
-  return {t:"OK", c:"#2E9E5B"};
+  return {t:"OK", c:"#2F6586"};
 }
 
 var SUGGERIMENTI_DISPENSA = [
