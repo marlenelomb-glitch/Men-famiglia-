@@ -36,6 +36,16 @@ function createSupabaseClient() {
         body: JSON.stringify({email:email, password:password})
       }).then(function(r){return r.json();});
     },
+    refreshSession: function() {
+      if(!sbSession || !sbSession.refresh_token) return Promise.resolve(null);
+      return fetch(auth_url("/token?grant_type=refresh_token"), {
+        method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+        body: JSON.stringify({refresh_token: sbSession.refresh_token})
+      }).then(function(r){ return r.json(); }).then(function(res){
+        if(res && res.access_token) { sbSession = res; try { localStorage.setItem("mf_session", JSON.stringify(res)); } catch(e){} return res; }
+        return null;
+      }).catch(function(){ return null; });
+    },
     resendConfirm: function(email) {
       return fetch(auth_url("/resend"), {
         method:"POST", headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
@@ -8994,6 +9004,9 @@ export default function App() {
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
   function sincronizzaTutto(cb) {
+    supabase.refreshSession().then(function(){ sincronizzaTuttoInterno(cb); });
+  }
+  function sincronizzaTuttoInterno(cb) {
     if(!userId){ cb("Non risulti loggato (userId mancante). Rifai il login e riprova."); return; }
     if(familyId){ pushAll(familyId, cb); return; }
     supabase.from("families").select("id").eq("owner_id", userId).then(function(fam){
@@ -9008,6 +9021,9 @@ export default function App() {
   }
 
   function controllaCloud(cb) {
+    supabase.refreshSession().then(function(){ controllaCloudInterno(cb); });
+  }
+  function controllaCloudInterno(cb) {
     var loc = Object.keys(profili||{}).length;
     if(!userId){ cb("Non risulti loggato (userId mancante). Rifai il login."); return; }
     supabase.from("families").select("id").eq("owner_id", userId).then(function(fam){
@@ -9069,15 +9085,23 @@ export default function App() {
   }
 
   useEffect(function(){
-    var safety = setTimeout(function(){ setLoading(false); }, 6000);
+    var safety = setTimeout(function(){ setLoading(false); }, 8000);
     if(sbSession&&!utente&&loading){
-      supabase.getSession().then(function(user){
-        if(user&&user.id){setUtente({email:user.email});initFamily(user.id);}
-        else{sbSession=null;localStorage.removeItem("mf_session");setLoading(false);}
-      }, function(e){ console.error("Supabase: getSession errore", e); sbSession=null;localStorage.removeItem("mf_session");setLoading(false); });
+      supabase.refreshSession().then(function(){
+        supabase.getSession().then(function(user){
+          if(user&&user.id){setUtente({email:user.email});initFamily(user.id);}
+          else{sbSession=null;localStorage.removeItem("mf_session");setLoading(false);}
+        }, function(e){ console.error("Supabase: getSession errore", e); sbSession=null;localStorage.removeItem("mf_session");setLoading(false); });
+      });
     }
     return function(){ clearTimeout(safety); };
   }, []);
+
+  useEffect(function(){
+    if(!utente) return;
+    var iv = setInterval(function(){ supabase.refreshSession(); }, 50*60*1000);
+    return function(){ clearInterval(iv); };
+  }, [utente]);
 
   const handleSetTab = (t) => {
     if(t !== "menu") setAutoGeneraMenu(false);
