@@ -6045,12 +6045,6 @@ function MenuView(props) {
         );
       })}
 
-      <div className="mf-card acc" onClick={function(){ setTab("ai"); }}
-        style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
-        <i className="ti ti-sparkles" style={{fontSize:19}}/>
-        <div style={{flex:1,fontSize:13}}>Completa la settimana con un menu bilanciato (AI)</div>
-        <i className="ti ti-arrow-right"/>
-      </div>
     </div>
   );
 }
@@ -9039,7 +9033,6 @@ export default function App() {
     {id:"idee",        l:"Idee",     ic:"ti-bulb"},
     {id:"impostazioni",l:"Impost.",  ic:"ti-settings"},
     {id:"builder",     l:"Builder",  ic:"ti-pencil"},
-    {id:"ai",          l:"AI",       ic:"ti-sparkles"},
   ];
 
   const TABS_ROW1 = TABS.slice(0,5);
@@ -9055,7 +9048,6 @@ export default function App() {
     {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
-    {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
     {id:"impostazioni",l:"Impostazioni",  ic:"ti-settings",           s:"Famiglia e PIN"}
   ];
   var MORE_TABS = SHEET_ITEMS.map(function(x){ return x.id; });
@@ -9446,9 +9438,6 @@ export default function App() {
             builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
             onSavePasto={savePastoToSupabase}/>
-        )}
-        {tab==="ai" && (
-          <AssistenteAI profili={profili} familyId={familyId}/>
         )}
         </ErrorBoundary>
       </div>
