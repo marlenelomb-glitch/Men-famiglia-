@@ -5750,28 +5750,6 @@ var REAZIONI = [
 function reazById(id){ return REAZIONI.find(function(r){ return r.id === id; }) || null; }
 function isoDay(dt){ return dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2)+"-"+("0"+dt.getDate()).slice(-2); }
 function lunediDi(dt) { var m = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()); m.setDate(m.getDate() - ((m.getDay()+6)%7)); return m; }
-function settimanaMensaNum(mensa, dataRef) {
-  if(!mensa || !mensa.correnteMonday || !mensa.correnteNum) return null;
-  var base = lunediDi(new Date(mensa.correnteMonday + "T00:00:00"));
-  var cur = lunediDi(dataRef || new Date());
-  var weeks = Math.round((cur.getTime() - base.getTime()) / (7*24*3600*1000));
-  return (((mensa.correnteNum - 1 + weeks) % 4) + 4) % 4 + 1;
-}
-function comprimiFoto(file, cb) {
-  var reader = new FileReader();
-  reader.onload = function(e){
-    var img = new Image();
-    img.onload = function(){
-      var max = 1100; var w = img.width; var h = img.height;
-      if(w > max || h > max) { if(w > h) { h = Math.round(h*max/w); w = max; } else { w = Math.round(w*max/h); h = max; } }
-      var c = document.createElement("canvas"); c.width = w; c.height = h;
-      c.getContext("2d").drawImage(img, 0, 0, w, h);
-      cb(c.toDataURL("image/jpeg", 0.72));
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
 
 var GUEST_RESTR = [
   {id:"glutine",      l:"Senza glutine"},
