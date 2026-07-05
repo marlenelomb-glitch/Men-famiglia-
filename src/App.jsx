@@ -6205,35 +6205,34 @@ function PiramideView() {
   );
 }
 
+// OMS peso-per-eta, valori LMS ufficiali (0-60 mesi = WHO Child Growth Standards; 6-10 anni = WHO 2007). m = mesi.
 var WHO_WFA_M = [
-  {a:0.5,  L:0.1257, M:7.9340,  S:0.11316},
-  {a:0.75, L:0.0959, M:8.9014,  S:0.11080},
-  {a:1.0,  L:0.0402, M:9.6479,  S:0.10958},
-  {a:1.5,  L:-0.0526,M:10.9385, S:0.10897},
-  {a:2.0,  L:-0.0997,M:12.1515, S:0.10877},
-  {a:3.0,  L:-0.1358,M:14.3429, S:0.11274},
-  {a:4.0,  L:-0.1710,M:16.3489, S:0.11832},
-  {a:5.0,  L:-0.2049,M:18.3366, S:0.12988},
-  {a:6.0,  L:-0.6288,M:20.2734, S:0.14859},
-  {a:7.0,  L:-0.9268,M:22.4638, S:0.15870},
-  {a:8.0,  L:-1.1602,M:25.0170, S:0.16702},
-  {a:9.0,  L:-1.3172,M:28.1216, S:0.17362},
-  {a:10.0, L:-1.3901,M:31.4327, S:0.17766}
+  {m:0,L:0.3487,M:3.3464,S:0.14602},{m:1,L:0.2297,M:4.4709,S:0.13395},{m:2,L:0.197,M:5.5675,S:0.12385},
+  {m:3,L:0.1738,M:6.3762,S:0.11727},{m:4,L:0.1553,M:7.0023,S:0.11316},{m:5,L:0.1395,M:7.5105,S:0.1108},
+  {m:6,L:0.1257,M:7.934,S:0.10958},{m:7,L:0.1134,M:8.297,S:0.10902},{m:8,L:0.1021,M:8.6151,S:0.10882},
+  {m:9,L:0.0917,M:8.9014,S:0.10881},{m:10,L:0.082,M:9.1649,S:0.10891},{m:11,L:0.073,M:9.4122,S:0.10906},
+  {m:12,L:0.0644,M:9.6479,S:0.10925},{m:13,L:0.0563,M:9.8749,S:0.10949},{m:14,L:0.0487,M:10.0953,S:0.10976},
+  {m:15,L:0.0413,M:10.3108,S:0.11007},{m:16,L:0.0343,M:10.5228,S:0.11041},{m:17,L:0.0275,M:10.7319,S:0.11079},
+  {m:18,L:0.0211,M:10.9385,S:0.11119},{m:19,L:0.0148,M:11.143,S:0.11164},{m:20,L:0.0087,M:11.3462,S:0.11211},
+  {m:21,L:0.0029,M:11.5486,S:0.11261},{m:22,L:-0.0028,M:11.7504,S:0.11314},{m:23,L:-0.0083,M:11.9514,S:0.11369},
+  {m:24,L:-0.0137,M:12.1515,S:0.11426},{m:30,L:-0.0431,M:13.3,S:0.11781},{m:36,L:-0.0689,M:14.3429,S:0.12116},
+  {m:42,L:-0.092,M:15.3486,S:0.12425},{m:48,L:-0.1131,M:16.3489,S:0.12759},{m:54,L:-0.1325,M:17.3452,S:0.13133},
+  {m:60,L:-0.1506,M:18.3366,S:0.13517},{m:72,L:-0.6288,M:20.2734,S:0.14859},{m:84,L:-0.9268,M:22.4638,S:0.1587},
+  {m:96,L:-1.1602,M:25.017,S:0.16702},{m:108,L:-1.3172,M:28.1216,S:0.17362},{m:120,L:-1.3901,M:31.4327,S:0.17766}
 ];
 var WHO_WFA_F = [
-  {a:0.5,  L:0.1002, M:7.2970,  S:0.12204},
-  {a:0.75, L:0.0965, M:8.2254,  S:0.11876},
-  {a:1.0,  L:0.0965, M:8.9481,  S:0.11712},
-  {a:1.5,  L:0.0446, M:10.2315, S:0.11570},
-  {a:2.0,  L:-0.0263,M:11.4775, S:0.11498},
-  {a:3.0,  L:-0.0630,M:13.8600, S:0.12100},
-  {a:4.0,  L:-0.1051,M:16.0700, S:0.12700},
-  {a:5.0,  L:-0.1400,M:18.2000, S:0.13500},
-  {a:6.0,  L:-0.8886,M:19.6363, S:0.16942},
-  {a:7.0,  L:-1.0577,M:21.8446, S:0.17505},
-  {a:8.0,  L:-1.1726,M:24.8420, S:0.17999},
-  {a:9.0,  L:-1.2342,M:28.4593, S:0.18272},
-  {a:10.0, L:-1.2549,M:32.1670, S:0.18327}
+  {m:0,L:0.3809,M:3.2322,S:0.14171},{m:1,L:0.1714,M:4.1873,S:0.13724},{m:2,L:0.0962,M:5.1282,S:0.13},
+  {m:3,L:0.0402,M:5.8458,S:0.12619},{m:4,L:-0.005,M:6.4237,S:0.12402},{m:5,L:-0.043,M:6.8985,S:0.12274},
+  {m:6,L:-0.0756,M:7.297,S:0.12204},{m:7,L:-0.1039,M:7.6422,S:0.12178},{m:8,L:-0.1288,M:7.9487,S:0.12181},
+  {m:9,L:-0.1507,M:8.2254,S:0.12199},{m:10,L:-0.17,M:8.48,S:0.12223},{m:11,L:-0.1872,M:8.7192,S:0.12247},
+  {m:12,L:-0.2024,M:8.9481,S:0.12268},{m:13,L:-0.2158,M:9.1699,S:0.12283},{m:14,L:-0.2278,M:9.387,S:0.12294},
+  {m:15,L:-0.2384,M:9.6008,S:0.12299},{m:16,L:-0.2478,M:9.8124,S:0.12303},{m:17,L:-0.2562,M:10.0226,S:0.12306},
+  {m:18,L:-0.2637,M:10.2315,S:0.12309},{m:19,L:-0.2703,M:10.4393,S:0.12315},{m:20,L:-0.2762,M:10.6464,S:0.12323},
+  {m:21,L:-0.2815,M:10.8534,S:0.12335},{m:22,L:-0.2862,M:11.0608,S:0.1235},{m:23,L:-0.2903,M:11.2688,S:0.12369},
+  {m:24,L:-0.2941,M:11.4775,S:0.1239},{m:30,L:-0.3101,M:12.7055,S:0.12587},{m:36,L:-0.3201,M:13.8503,S:0.12919},
+  {m:42,L:-0.3283,M:14.9727,S:0.13376},{m:48,L:-0.3361,M:16.0697,S:0.13884},{m:54,L:-0.344,M:17.1551,S:0.14371},
+  {m:60,L:-0.3518,M:18.2193,S:0.14821},{m:72,L:-0.8886,M:19.6363,S:0.16942},{m:84,L:-1.0577,M:21.8446,S:0.17505},
+  {m:96,L:-1.1726,M:24.842,S:0.17999},{m:108,L:-1.2342,M:28.4593,S:0.18272},{m:120,L:-1.2549,M:32.167,S:0.18327}
 ];
 
 function normalCDF(z) {
@@ -6243,25 +6242,24 @@ function normalCDF(z) {
   return z > 0 ? 1 - p : p;
 }
 
-function lmsInterp(tab, a) {
-  if(a <= tab[0].a) return tab[0];
-  if(a >= tab[tab.length-1].a) return tab[tab.length-1];
-  var i;
-  for(i = 0; i < tab.length - 1; i++) {
-    if(a >= tab[i].a && a <= tab[i+1].a) {
+function lmsInterp(tab, m) {
+  if(m <= tab[0].m) return tab[0];
+  if(m >= tab[tab.length-1].m) return tab[tab.length-1];
+  for(var i = 0; i < tab.length - 1; i++) {
+    if(m >= tab[i].m && m <= tab[i+1].m) {
       var lo = tab[i]; var hi = tab[i+1];
-      var f = (a - lo.a) / (hi.a - lo.a);
+      var f = (m - lo.m) / (hi.m - lo.m);
       return {L: lo.L + (hi.L - lo.L) * f, M: lo.M + (hi.M - lo.M) * f, S: lo.S + (hi.S - lo.S) * f};
     }
   }
   return tab[tab.length-1];
 }
 
-function percentilePeso(sesso, etaAnni, pesoKg) {
+function percentilePeso(sesso, etaMesi, pesoKg) {
   if(!pesoKg || !(pesoKg > 0)) return null;
-  if(etaAnni == null || etaAnni < 0.4 || etaAnni > 10.5) return null;
+  if(etaMesi == null || etaMesi < 0 || etaMesi > 126) return null;
   var tab = (sesso === "maschio" || sesso === "M" || sesso === "m") ? WHO_WFA_M : WHO_WFA_F;
-  var l = lmsInterp(tab, etaAnni);
+  var l = lmsInterp(tab, etaMesi);
   var z = l.L !== 0 ? (Math.pow(pesoKg / l.M, l.L) - 1) / (l.L * l.S) : Math.log(pesoKg / l.M) / l.S;
   var perc = normalCDF(z) * 100;
   if(perc < 0.1) perc = 0.1;
@@ -6735,13 +6733,13 @@ function SaluteView(props) {
   var log = selProf ? (pesoLog[selProf.nome] || []).slice() : [];
   log.sort(function(a,b){ return (a.data || "") < (b.data || "") ? -1 : 1; });
 
-  var etaAnni = null;
+  var etaAnni = null; var etaMesi = null;
   if(selProf) {
-    if(selProf.dataNascita) etaAnni = calcolaEta(selProf.dataNascita).mesi / 12;
-    else if(selProf.eta) etaAnni = selProf.eta;
+    if(selProf.dataNascita) { etaMesi = calcolaEta(selProf.dataNascita).mesi; etaAnni = etaMesi / 12; }
+    else if(selProf.eta) { etaAnni = selProf.eta; etaMesi = selProf.eta * 12; }
   }
   var pesoAttuale = log.length ? log[log.length-1].valore : (selProf ? selProf.peso : 0);
-  var pctl = selProf ? percentilePeso(selProf.sesso, etaAnni, pesoAttuale) : null;
+  var pctl = selProf ? percentilePeso(selProf.sesso, etaMesi, pesoAttuale) : null;
 
   var iniziale = log.length ? log[0].valore : 0;
   var variazione = log.length >= 2 ? (pesoAttuale - iniziale) : 0;
