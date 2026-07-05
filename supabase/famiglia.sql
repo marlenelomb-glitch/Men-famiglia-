@@ -59,6 +59,15 @@ create policy "inv_update_owner" on public.famiglia_inviti
   using (family_id in (select id from public.families where owner_id = auth.uid()));
 
 
+-- app_state: tabella chiave/valore per famiglia (creata qui se mancante)
+create table if not exists public.app_state (
+  family_id   uuid not null,
+  chiave      text not null,
+  dati        jsonb,
+  updated_at  timestamptz default now(),
+  primary key (family_id, chiave)
+);
+
 -- 3) ACCESSO DEI MEMBRI AI DATI DELLA FAMIGLIA
 -- Queste policy sono ADDITIVE: concedono l'accesso a proprietario + membri.
 -- Se sulle tabelle RLS e' spento, sono inerti (non rompono nulla).
@@ -73,6 +82,12 @@ returns setof uuid language sql stable security definer as $$
   select family_id from public.membri_famiglia where user_id = auth.uid()
 $$;
 
+-- app_state
+drop policy if exists "appstate_membri" on public.app_state;
+create policy "appstate_membri" on public.app_state for all to authenticated
+  using (family_id in (select public.mie_famiglie()))
+  with check (family_id in (select public.mie_famiglie()));
+
 -- profiles
 drop policy if exists "profiles_membri" on public.profiles;
 create policy "profiles_membri" on public.profiles for all to authenticated
@@ -82,12 +97,6 @@ create policy "profiles_membri" on public.profiles for all to authenticated
 -- builder_scelte
 drop policy if exists "builder_membri" on public.builder_scelte;
 create policy "builder_membri" on public.builder_scelte for all to authenticated
-  using (family_id in (select public.mie_famiglie()))
-  with check (family_id in (select public.mie_famiglie()));
-
--- app_state
-drop policy if exists "appstate_membri" on public.app_state;
-create policy "appstate_membri" on public.app_state for all to authenticated
   using (family_id in (select public.mie_famiglie()))
   with check (family_id in (select public.mie_famiglie()));
 
