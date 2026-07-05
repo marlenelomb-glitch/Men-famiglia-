@@ -2744,7 +2744,7 @@ const ORI_IMP    = ["07:00","08:00","09:00","10:00","17:00","18:00","19:00","20:
 function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione,
                           pesoLog, setPesoLog, pin, setPin, onModificaFamiglia,
                           familyId, userId, isAdmin, onIscritti, onJoinedFamiglia,
-                          utenteEmail, onSincronizza, onControlla}) {
+                          utenteEmail, onSincronizza, onControlla, onLogout}) {
   const [sezione, setSezione] = useState("");
   var sSync = useState(""); var syncMsg = sSync[0]; var setSyncMsg = sSync[1];
   var sSyncL = useState(false); var syncLoad = sSyncL[0]; var setSyncLoad = sSyncL[1];
@@ -2847,6 +2847,13 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
             <i className="ti ti-cloud-search" style={{fontSize:16}}/>Controlla cosa c'è sul cloud
           </button>
           {syncMsg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600,lineHeight:1.4,background:"#F2F6F8",borderRadius:10,padding:"10px 12px"}}>{syncMsg}</div>}
+          <div style={{borderTop:"1px solid #F1F4F6",paddingTop:12,marginTop:2}}>
+            <div style={{fontSize:11,color:"#8A949B",marginBottom:8}}>Se l'accesso è bloccato o i dati non si salvano, esci e rientra: aggiorna l'accesso. I dati sul telefono restano.</div>
+            <button onClick={function(){ if(window.confirm("Esci dall'account? I tuoi dati sul telefono restano. Dovrai rifare il login.")) { if(onLogout) onLogout(); } }}
+              style={{width:"100%",border:"1.5px solid #C2355A",background:"#fff",color:"#C2355A",borderRadius:13,padding:"11px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+              <i className="ti ti-logout" style={{fontSize:17}}/>Esci dall'account
+            </button>
+          </div>
         </div>
       )}
 
@@ -9541,7 +9548,7 @@ export default function App() {
               pin={pin} setPin={setPinLS}
               familyId={familyId} userId={userId} isAdmin={isAdmin}
               utenteEmail={utente ? utente.email : ""}
-              onSincronizza={sincronizzaTutto} onControlla={controllaCloud}
+              onSincronizza={sincronizzaTutto} onControlla={controllaCloud} onLogout={doLogout}
               onIscritti={function(){ handleSetTab("iscritti"); }}
               onJoinedFamiglia={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}
               onModificaFamiglia={function(){ setModificaFam(true); }}/>
