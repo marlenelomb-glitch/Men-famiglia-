@@ -2731,8 +2731,9 @@ const GIORNI_IMP = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato",
 const ORI_IMP    = ["07:00","08:00","09:00","10:00","17:00","18:00","19:00","20:00","21:00"];
 
 function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione,
-                          pesoLog, setPesoLog, pin, setPin, onModificaFamiglia}) {
-  const [sezione, setSezione] = useState("famiglia");
+                          pesoLog, setPesoLog, pin, setPin, onModificaFamiglia,
+                          familyId, userId, isAdmin, onIscritti, onJoinedFamiglia}) {
+  const [sezione, setSezione] = useState("");
   const [nuovoPin, setNuovoPin] = useState("");
   const [confPin, setConfPin] = useState("");
   const [pinErr, setPinErr] = useState("");
@@ -2759,34 +2760,57 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
   };
 
   const SEZIONI = [
-    {id:"famiglia",   l:"Familiari"},
-    {id:"nutrizionale",l:"Nutrizione"},
-    {id:"pesi",       l:"Pesi iniziali"},
-    {id:"piano",      l:"Pianificazione"},
-    {id:"sicurezza",  l:"PIN"},
+    {id:"famiglia",    l:"La tua famiglia",     s:"Profili e restrizioni",       ic:"ti-users"},
+    {id:"condivisa",   l:"Famiglia condivisa",  s:"Invita altri con un codice",  ic:"ti-users-group"},
+    {id:"nutrizionale",l:"Valori nutrizionali", s:"Kcal e proteine per membro",  ic:"ti-flame"},
+    {id:"pesi",        l:"Pesi e misure",       s:"Peso, altezza, eta",          ic:"ti-scale"},
+    {id:"piano",       l:"Promemoria settimana",s:"Quando pianificare il menu",  ic:"ti-calendar"},
+    {id:"sicurezza",   l:"Blocco con PIN",      s:"Proteggi l'app",              ic:"ti-lock"},
   ];
+  var sezCorr = SEZIONI.find(function(x){ return x.id===sezione; });
 
   return (
     <div>
-      <div style={{fontSize:11,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:800,color:"#8A949B",marginBottom:8}}>
-        Cosa vuoi impostare
-      </div>
+      {sezione==="" ? (
+        <div>
+          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:4,marginBottom:12}}>Impostazioni</div>
+          <div className="mf-card flush">
+            {SEZIONI.map(function(s){
+              return (
+                <div key={s.id} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ setSezione(s.id); }}>
+                  <div className="mf-ic"><i className={"ti "+s.ic}/></div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>{s.l}</div>
+                    <div style={{fontSize:11,color:"#8A949B"}}>{s.s}</div>
+                  </div>
+                  <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                </div>
+              );
+            })}
+            {isAdmin && (
+              <div className="mf-row" style={{cursor:"pointer"}} onClick={function(){ if(onIscritti) onIscritti(); }}>
+                <div className="mf-ic"><i className="ti ti-user-check"/></div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Iscritti all'app</div>
+                  <div style={{fontSize:11,color:"#8A949B"}}>Elenco degli utenti registrati</div>
+                </div>
+                <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div onClick={function(){ setSezione(""); }} style={{display:"flex",alignItems:"center",gap:6,color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",paddingTop:4,marginBottom:12}}>
+            <i className="ti ti-chevron-left" style={{fontSize:18}}/>Impostazioni
+          </div>
+          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em",marginBottom:14,display:"flex",alignItems:"center",gap:9}}>
+            <i className={"ti "+(sezCorr?sezCorr.ic:"ti-settings")} style={{color:"#2F6586",fontSize:22}}/>{sezCorr?sezCorr.l:"Impostazioni"}
+          </div>
 
-      <div style={{display:"flex",gap:7,marginBottom:16,overflowX:"auto",paddingBottom:3}}>
-        {SEZIONI.map(function(s){
-          var on = sezione===s.id;
-          return (
-            <button key={s.id} onClick={function(){ setSezione(s.id); }}
-              style={{padding:"8px 14px",borderRadius:20,whiteSpace:"nowrap",flexShrink:0,
-                border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),
-                background:on?"#2F6586":"#fff",
-                color:on?"#fff":"#2C3338",
-                fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-              {s.l}
-            </button>
-          );
-        })}
-      </div>
+      {sezione==="condivisa" && (
+        <FamigliaCondivisa familyId={familyId} userId={userId} onJoined={onJoinedFamiglia}/>
+      )}
 
       {/* ── FAMILIARI ── */}
       {sezione==="famiglia" && (
@@ -3087,6 +3111,8 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
               Salva PIN
             </button>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>
@@ -9396,24 +9422,14 @@ export default function App() {
         )}
         {tab==="impostazioni" && (
           <div>
-            {isAdmin&&(
-            <div className="mf-card" onClick={function(){ handleSetTab("iscritti"); }}
-              style={{display:"flex",alignItems:"center",gap:12,marginBottom:14,cursor:"pointer"}}>
-              <div className="mf-ic"><i className="ti ti-users"/></div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Iscritti all'app</div>
-                <div style={{fontSize:11,color:"#8A949B"}}>Elenco degli utenti registrati</div>
-              </div>
-              <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
-            </div>
-            )}
-            <FamigliaCondivisa familyId={familyId} userId={userId}
-              onJoined={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}/>
             <TabImpostazioni
               profili={profili} setProfili={setProfiliLS}
               pianificazione={pianificazione} setPianificazione={setPianificazione}
               pesoLog={pesoLog} setPesoLog={setPesoLogLS}
               pin={pin} setPin={setPinLS}
+              familyId={familyId} userId={userId} isAdmin={isAdmin}
+              onIscritti={function(){ handleSetTab("iscritti"); }}
+              onJoinedFamiglia={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}
               onModificaFamiglia={function(){ setModificaFam(true); }}/>
           </div>
         )}
