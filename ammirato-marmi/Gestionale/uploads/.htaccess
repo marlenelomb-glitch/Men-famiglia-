@@ -1,0 +1,6 @@
+# Nessuna esecuzione di script nella cartella upload
+<FilesMatch "\.(php|phtml|php3|php4|php5|pl|py|cgi)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+Options -Indexes
