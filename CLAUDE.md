@@ -23,6 +23,20 @@ App per la gestione del menu settimanale familiare con database nutrizionale.
 - Niente optional chaining (?.)
 - Niente commenti JSX
 
+## Stile grafico e colori (SEMPRE, ogni modifica presente e futura)
+Ogni nuova UI deve usare SOLO questa palette, coerente col resto dell'app. Niente verde né altri colori estranei.
+- Primario (testo forte, bottoni pieni, icone attive): #2F6586
+- Secondario / bordi accento: #6BA6C9
+- Tinta chiara (sfondi tenui, chip attivi, badge): #E2EEF5
+- Bordo tenue accento: #CADCE8
+- Sfondo pagina: #F2F6F8
+- Testo principale: #2C3338 · Testo secondario/label: #8A949B
+- Accento (rosso, solo stati "fuori"/eliminazioni/errori): #C2355A su sfondo #FBE7EC
+- Avviso (giallo, solo warning/limiti superati): testo #8A5A12 su sfondo #F6ECD9
+- Card: sfondo #fff, bordo 1px #E3EAEE, border-radius 14-18
+- Font: 'Nunito', system-ui. Icone: Tabler (classe "ti ti-...")
+- Classi utili già presenti: mf-card, mf-card acc (tinta blu), mf-card warn (giallo), cap (label maiuscola)
+
 ## Supabase
 - URL: https://vukczlbuonvisuyobprq.supabase.co
 - Tabelle: families, profiles, builder_scelte, peso_log, dispensa, ricette
