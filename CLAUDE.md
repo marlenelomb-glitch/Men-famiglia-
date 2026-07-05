@@ -17,6 +17,8 @@ App per la gestione del menu settimanale familiare con database nutrizionale.
 - Neonato 9-12 mesi: 800 kcal/die
 
 ## Regole importanti
+- Font SEMPRE Nunito (su input/textarea/button va messo esplicito: fontFamily:"'Nunito',system-ui,sans-serif", perché non lo ereditano)
+- Colori SOLO dalla palette qui sotto, mai verde né colori estranei
 - Niente arrow functions nei componenti principali
 - Niente array destructuring con useState, usare var s=useState(); var a=s[0]; var b=s[1];
 - Tutti i componenti devono essere top-level, mai annidati
