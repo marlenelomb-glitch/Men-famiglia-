@@ -2768,22 +2768,24 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
 
   return (
     <div>
-      <div style={{fontSize:14,fontWeight:800,color:"#2F6586",marginBottom:12}}>
-        Impostazioni
+      <div style={{fontSize:11,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:800,color:"#8A949B",marginBottom:8}}>
+        Cosa vuoi impostare
       </div>
 
-      {/* Selector sezioni */}
-      <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:3}}>
-        {SEZIONI.map(s=>(
-          <button key={s.id} onClick={()=>setSezione(s.id)}
-            style={{padding:"5px 12px",borderRadius:20,whiteSpace:"nowrap",
-              border:"1.5px solid "+(sezione===s.id?"#2F6586":"#ddd"),
-              background:sezione===s.id?"#2F6586":"#fff",
-              color:sezione===s.id?"#fff":"#555",
-              fontWeight:sezione===s.id?700:400,fontSize:10,cursor:"pointer"}}>
-            {s.l}
-          </button>
-        ))}
+      <div style={{display:"flex",gap:7,marginBottom:16,overflowX:"auto",paddingBottom:3}}>
+        {SEZIONI.map(function(s){
+          var on = sezione===s.id;
+          return (
+            <button key={s.id} onClick={function(){ setSezione(s.id); }}
+              style={{padding:"8px 14px",borderRadius:20,whiteSpace:"nowrap",flexShrink:0,
+                border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),
+                background:on?"#2F6586":"#fff",
+                color:on?"#fff":"#2C3338",
+                fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              {s.l}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── FAMILIARI ── */}
