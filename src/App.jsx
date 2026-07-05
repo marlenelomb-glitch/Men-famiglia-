@@ -8556,6 +8556,13 @@ export default function App() {
         var pf={};
         rows.forEach(function(r){ pf[r.profile_id]=r.dati; });
         setProfili(pf); saveLS("profili", pf);
+      } else {
+        var locP = loadLS("profili", {});
+        if(locP && Object.keys(locP).length>0){
+          Object.keys(locP).forEach(function(pid){
+            supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:locP[pid], updated_at:new Date().toISOString()});
+          });
+        }
       }
     }, function(e){ console.error("Supabase: profiles errore", e); });
     supabase.from("builder_scelte").select("*").eq("family_id",fid).then(function(rows){
