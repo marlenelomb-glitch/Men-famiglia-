@@ -4343,6 +4343,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var sVS=useState(false); var vediSett=sVS[0]; var setVediSett=sVS[1];
   var sVista=useState("settimana"); var vista=sVista[0]; var setVista=sVista[1];
   var sMsgB=useState(""); var msgB=sMsgB[0]; var setMsgB=sMsgB[1];
+  var sOpzF=useState(false); var mostraOpzFam=sOpzF[0]; var setMostraOpzFam=sOpzF[1];
 
   function iconaGruppo(tipo, id) {
     var it = ingById(id);
@@ -4863,6 +4864,33 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
           {(function(){
             var pu = sceltaG.piattoUnico;
+            var membri = Object.keys(profili||{}).length;
+            if(membri===0) return null;
+            var kb = parseInt(pu.kcal, 10) || 0; var pb = parseInt(pu.prot, 10) || 0;
+            var righe = (kb || pb) ? stimaFamiglia(pu) : [];
+            var problemi = righe.filter(function(x){ return x.problema; }).length;
+            var nAltri = (pu.altri||[]).length; var nFuori = (pu.fuori||[]).length;
+            var sub, subCol;
+            if(problemi > 0) { sub = "Non adatto a " + problemi + " membri — apri e adatta"; subCol = "#8A5A12"; }
+            else if(nAltri || nFuori) { sub = [nAltri?(nAltri+" piatto in più"):"", nFuori?(nFuori+" a mensa/fuori"):""].filter(Boolean).join(" · "); subCol = "#2F6586"; }
+            else { sub = "Chi mangia altro · mensa/fuori · varianti"; subCol = "#8A949B"; }
+            return (
+              <button onClick={function(){ setMostraOpzFam(!mostraOpzFam); }}
+                style={{border:"1.5px solid "+(problemi>0?"#E0C48A":"#E3EAEE"),background:problemi>0?"#FBF3E2":"#fff",borderRadius:14,padding:"12px 13px",cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:11,fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+                <i className={"ti "+(problemi>0?"ti-alert-triangle":"ti-users")} style={{fontSize:19,color:problemi>0?"#8A5A12":"#2F6586",flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Opzioni per la famiglia</div>
+                  <div style={{fontSize:11,color:subCol,fontWeight:problemi>0?700:400}}>{sub}</div>
+                </div>
+                <i className={"ti "+(mostraOpzFam?"ti-chevron-up":"ti-chevron-down")} style={{color:"#B4BEC4",fontSize:18}}/>
+              </button>
+            );
+          })()}
+
+          {mostraOpzFam && (<>
+          {(function(){
+            var pu = sceltaG.piattoUnico;
             var kb = parseInt(pu.kcal, 10) || 0;
             var pb = parseInt(pu.prot, 10) || 0;
             var membri = Object.keys(profili||{}).length;
@@ -5006,6 +5034,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               </div>
             );
           })()}
+          </>)}
 
           <button onClick={function(){ setPickRic(true); }}
             style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
