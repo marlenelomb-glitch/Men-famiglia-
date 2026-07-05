@@ -6713,6 +6713,91 @@ function AmiciView(props) {
   );
 }
 
+function randomCodice() {
+  var c = ""; var A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  for(var i=0;i<6;i++){ c += A.charAt(Math.floor(Math.random()*A.length)); }
+  return c;
+}
+function FamigliaCondivisa(props) {
+  var familyId = props.familyId;
+  var userId = props.userId;
+  var onJoined = props.onJoined || function(){};
+  var sCode = useState(""); var codice = sCode[0]; var setCodice = sCode[1];
+  var sInp = useState(""); var inp = sInp[0]; var setInp = sInp[1];
+  var sMsg = useState(""); var msg = sMsg[0]; var setMsg = sMsg[1];
+  var sNum = useState(0); var numMembri = sNum[0]; var setNumMembri = sNum[1];
+
+  function flash(t){ setMsg(t); setTimeout(function(){ setMsg(""); }, 3200); }
+  function carica() {
+    if(!familyId) return;
+    supabase.from("famiglia_inviti").select("codice").eq("family_id", familyId).then(function(rows){ if(rows && rows.length) setCodice(rows[0].codice); }, function(){});
+    supabase.from("membri_famiglia").select("user_id").eq("family_id", familyId).then(function(rows){ setNumMembri((rows||[]).length); }, function(){});
+  }
+  useEffect(function(){ carica(); }, [familyId]);
+
+  function genera() {
+    if(!familyId){ flash("Accedi prima."); return; }
+    var c = randomCodice();
+    supabase.from("famiglia_inviti").upsert({codice:c, family_id:familyId}, {onConflict:"family_id"}).then(function(res){
+      if(res && res.length){ setCodice(res[0].codice); flash("Codice creato!"); }
+      else { setCodice(c); flash("Codice creato!"); }
+    }, function(){ flash("Manca la tabella su Supabase (supabase/famiglia.sql)."); });
+  }
+  function copia() {
+    if(codice && typeof navigator !== "undefined" && navigator.clipboard){ navigator.clipboard.writeText(codice); flash("Codice copiato!"); }
+  }
+  function entra() {
+    var c = (""+inp).toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if(c.length < 4){ flash("Inserisci il codice che hai ricevuto."); return; }
+    supabase.from("famiglia_inviti").select("family_id").eq("codice", c).then(function(rows){
+      if(!rows || !rows.length){ flash("Codice non valido."); return; }
+      var fid = rows[0].family_id;
+      if(fid === familyId){ flash("Sei già in questa famiglia."); return; }
+      supabase.from("membri_famiglia").upsert({family_id:fid, user_id:userId, ruolo:"membro"}, {onConflict:"family_id,user_id"}).then(function(){
+        flash("Entrato! Carico la famiglia…");
+        onJoined(fid);
+      }, function(){ flash("Non riesco a entrare (controlla le tabelle Supabase)."); });
+    }, function(){ flash("Non riesco a leggere il codice (tabella mancante?)."); });
+  }
+
+  return (
+    <div className="mf-card" style={{marginBottom:14,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div className="mf-ic"><i className="ti ti-users-group"/></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Famiglia condivisa</div>
+          <div style={{fontSize:11,color:"#8A949B"}}>Fai entrare altri (tuo marito) con la loro email</div>
+        </div>
+      </div>
+
+      <div style={{borderTop:"1px solid #F1F4F6",paddingTop:11}}>
+        <div className="cap" style={{marginBottom:8}}>Invita in questa famiglia</div>
+        {codice ? (
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{flex:1,background:"#E2EEF5",borderRadius:12,padding:"12px 14px",fontSize:22,fontWeight:800,letterSpacing:"0.14em",color:"#2F6586",textAlign:"center"}}>{codice}</div>
+            <button onClick={copia} style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"12px 14px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-copy" style={{fontSize:16}}/>Copia</button>
+          </div>
+        ) : (
+          <button onClick={genera} style={{width:"100%",border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Genera codice invito</button>
+        )}
+        <div style={{fontSize:11,color:"#8A949B",marginTop:7}}>Dai questo codice a chi vuoi far entrare. {numMembri>0?("Persone entrate: "+numMembri):""}</div>
+      </div>
+
+      <div style={{borderTop:"1px solid #F1F4F6",paddingTop:11}}>
+        <div className="cap" style={{marginBottom:8}}>Entra in una famiglia</div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={inp} onChange={function(e){ setInp(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"")); }} placeholder="Codice ricevuto"
+            maxLength={6} style={{flex:1,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:800,letterSpacing:"0.1em",textAlign:"center",outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <button onClick={entra} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"0 18px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Entra</button>
+        </div>
+        <div style={{fontSize:11,color:"#8A949B",marginTop:7}}>Attenzione: entrando lasci la tua famiglia attuale per usare quella condivisa.</div>
+      </div>
+
+      {msg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600}}>{msg}</div>}
+    </div>
+  );
+}
+
 function MedicineView(props) {
   var profili = props.profili || {};
   var medicine = props.medicine || {};
@@ -8751,6 +8836,13 @@ export default function App() {
   // Reset auto-genera dopo che TabMenu lo ha usato
   const [autoGeneraMenu, setAutoGeneraMenu] = useState(false);
 
+  function creaNuovaFamiglia(userId) {
+    supabase.from("families").insert({owner_id:userId}).then(function(r2) {
+      if(r2&&r2.length>0){var f2=r2[0].id;setFamilyId(f2);saveLS("family_id",f2);}
+      else{ console.error("Supabase: insert families fallito", r2); }
+      setLoading(false);
+    }, function(e){ console.error("Supabase: insert families errore", e); setLoading(false); });
+  }
   function initFamily(userId) {
     setUserId(userId);
     setTimeout(function(){ setLoading(false); }, 8000);
@@ -8759,11 +8851,13 @@ export default function App() {
       if(rows && rows.length > 0) {
         var fid=rows[0].id; setFamilyId(fid); saveLS("family_id",fid); loadFromSupabase(fid);
       } else {
-        supabase.from("families").insert({owner_id:userId}).then(function(r2) {
-          if(r2&&r2.length>0){var f2=r2[0].id;setFamilyId(f2);saveLS("family_id",f2);}
-          else{ console.error("Supabase: insert families fallito", r2); }
-          setLoading(false);
-        }, function(e){ console.error("Supabase: insert families errore", e); setLoading(false); });
+        supabase.from("membri_famiglia").select("family_id").eq("user_id", userId).then(function(mrows){
+          if(mrows && mrows.length > 0) {
+            var mfid = mrows[0].family_id; setFamilyId(mfid); saveLS("family_id",mfid); loadFromSupabase(mfid);
+          } else {
+            creaNuovaFamiglia(userId);
+          }
+        }, function(){ creaNuovaFamiglia(userId); });
       }
     }, function(e){ console.error("Supabase: select families errore", e); setLoading(false); })
     .catch(function(e){ console.error("Supabase: initFamily errore", e); setLoading(false); });
@@ -9327,6 +9421,8 @@ export default function App() {
               <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
             </div>
             )}
+            <FamigliaCondivisa familyId={familyId} userId={userId}
+              onJoined={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}/>
             <TabImpostazioni
               profili={profili} setProfili={setProfiliLS}
               pianificazione={pianificazione} setPianificazione={setPianificazione}
