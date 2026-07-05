@@ -5817,11 +5817,24 @@ function MenuView(props) {
   var range = lun.getDate() + "-" + dom.getDate() + " " + MESI_ABBR[dom.getMonth()];
   var weekKey = isoDay(lun);
 
-  var membro = profili[midSel] || vals[0] || null;
+  var membro = midSel ? (profili[midSel] || null) : null;
   var mkey = membro ? membro.id : "";
 
-  function nomePasto(giorno, m) {
-    var info = pastoUnificato(builder, menu, giorno, m);
+  function nomePasto(giorno, mealName) {
+    var b = (builder || {})[giorno + "-" + mealName];
+    if(b && b.piattoUnico && b.piattoUnico.nome && (""+b.piattoUnico.nome).trim()) {
+      var pu = b.piattoUnico;
+      if(membro) {
+        if((pu.fuori||[]).indexOf(membro.id) >= 0) return "A mensa / fuori";
+        var alt = null;
+        (pu.altri||[]).forEach(function(dd){ if((dd.membri||[]).indexOf(membro.id) >= 0) alt = dd; });
+        if(alt && (""+alt.nome).trim()) return (""+alt.nome).trim();
+        return (""+pu.nome).trim();
+      }
+      var extra = (pu.altri && pu.altri.length) ? (" (+"+pu.altri.length+")") : "";
+      return (""+pu.nome).trim() + extra;
+    }
+    var info = pastoUnificato(builder, menu, giorno, mealName);
     return info ? info.nome : null;
   }
   function getReaz(day, mid) {
@@ -5876,8 +5889,14 @@ function MenuView(props) {
 
       {vals.length>0&&(
         <div>
-          <div className="cap" style={{marginBottom:8}}>Chi sei? Rispondi ai pasti della settimana</div>
+          <div className="cap" style={{marginBottom:8}}>Vista: famiglia o singolo membro</div>
           <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+            <button onClick={function(){ setMidSel(""); setEditDay(""); }}
+              style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px 6px 6px",borderRadius:22,flexShrink:0,cursor:"pointer",
+                border:"1.5px solid "+(midSel===""?"#2F6586":"#E3EAEE"),background:midSel===""?"#E2EEF5":"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              <span style={{width:26,height:26,borderRadius:"50%",background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}><i className="ti ti-users"/></span>
+              <span style={{fontSize:13,fontWeight:midSel===""?800:600,color:midSel===""?"#2F6586":"#2C3338"}}>Famiglia</span>
+            </button>
             {vals.map(function(p){
               var on = mkey === p.id;
               return (
