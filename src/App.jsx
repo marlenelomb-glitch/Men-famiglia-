@@ -2734,7 +2734,7 @@ const ORI_IMP    = ["07:00","08:00","09:00","10:00","17:00","18:00","19:00","20:
 function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione,
                           pesoLog, setPesoLog, pin, setPin, onModificaFamiglia,
                           familyId, userId, isAdmin, onIscritti, onJoinedFamiglia,
-                          utenteEmail, onSincronizza}) {
+                          utenteEmail, onSincronizza, onControlla}) {
   const [sezione, setSezione] = useState("");
   var sSync = useState(""); var syncMsg = sSync[0]; var setSyncMsg = sSync[1];
   var sSyncL = useState(false); var syncLoad = sSyncL[0]; var setSyncLoad = sSyncL[1];
@@ -2832,7 +2832,11 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
             style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"13px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:syncLoad?0.7:1}}>
             <i className="ti ti-cloud-up" style={{fontSize:18}}/>{syncLoad ? "Sincronizzo…" : "Sincronizza tutto sul cloud"}
           </button>
-          {syncMsg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600,lineHeight:1.4}}>{syncMsg}</div>}
+          <button onClick={function(){ setSyncMsg("Controllo…"); if(onControlla) onControlla(function(msg){ setSyncMsg(msg); }); }}
+            style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:13,padding:"11px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <i className="ti ti-cloud-search" style={{fontSize:16}}/>Controlla cosa c'è sul cloud
+          </button>
+          {syncMsg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600,lineHeight:1.4,background:"#F2F6F8",borderRadius:10,padding:"10px 12px"}}>{syncMsg}</div>}
         </div>
       )}
 
@@ -8979,16 +8983,43 @@ export default function App() {
     supabase.from("peso_log").upsert({family_id:familyId,profile_nome:nome,data:data,valore:valore});
   }
 
-  function sincronizzaTutto(cb) {
-    if(!familyId){ cb("Nessuna famiglia collegata: chiudi e riapri l'app una volta, poi riprova."); return; }
+  function pushAll(fid, cb) {
     var stamp = new Date().toISOString();
     var nP=0, nB=0, nS=0;
-    Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:familyId, profile_id:pid, dati:profili[pid], updated_at:stamp}); } });
-    Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:familyId, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}); });
-    Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:familyId, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}); });
+    Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}); } });
+    Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}); });
+    Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}); });
     var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine};
-    Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:familyId, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
-    setTimeout(function(){ cb("Fatto! Inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1400);
+    Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
+    setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
+  }
+  function sincronizzaTutto(cb) {
+    if(!userId){ cb("Non risulti loggato (userId mancante). Rifai il login e riprova."); return; }
+    if(familyId){ pushAll(familyId, cb); return; }
+    supabase.from("families").select("id").eq("owner_id", userId).then(function(fam){
+      if(Array.isArray(fam) && fam.length>0){ var fid=fam[0].id; setFamilyId(fid); saveLS("family_id",fid); pushAll(fid, cb); }
+      else {
+        supabase.from("families").insert({owner_id:userId}).then(function(ins){
+          if(Array.isArray(ins) && ins.length>0){ var f2=ins[0].id; setFamilyId(f2); saveLS("family_id",f2); pushAll(f2, cb); }
+          else { cb("Non riesco a creare la famiglia sul cloud. " + (ins && ins.message ? ("Errore: "+ins.message) : "")); }
+        }, function(){ cb("Errore creando la famiglia sul cloud."); });
+      }
+    }, function(){ cb("Errore contattando il cloud (famiglie)."); });
+  }
+
+  function controllaCloud(cb) {
+    var loc = Object.keys(profili||{}).length;
+    if(!userId){ cb("Non risulti loggato (userId mancante). Rifai il login."); return; }
+    supabase.from("families").select("id").eq("owner_id", userId).then(function(fam){
+      var nFam = Array.isArray(fam) ? fam.length : 0;
+      var famErr = (fam && !Array.isArray(fam) && fam.message) ? fam.message : "";
+      if(!familyId){ cb("Famiglie sul cloud: " + nFam + (famErr?(" · ERRORE: "+famErr):"") + " · Profili sul telefono: " + loc + " · (familyId locale MANCANTE)"); return; }
+      supabase.from("profiles").select("profile_id").eq("family_id", familyId).then(function(pr){
+        var nPr = Array.isArray(pr) ? pr.length : 0;
+        var prErr = (pr && !Array.isArray(pr) && pr.message) ? pr.message : "";
+        cb("Cloud → famiglie: " + nFam + " · profili nel cloud: " + nPr + " · profili sul telefono: " + loc + (prErr?(" · ERRORE: "+prErr):(famErr?(" · ERRORE: "+famErr):"")));
+      }, function(){ cb("Errore leggendo i profili dal cloud."); });
+    }, function(){ cb("Errore leggendo le famiglie dal cloud."); });
   }
 
   function doLogin() {
@@ -9486,7 +9517,7 @@ export default function App() {
               pin={pin} setPin={setPinLS}
               familyId={familyId} userId={userId} isAdmin={isAdmin}
               utenteEmail={utente ? utente.email : ""}
-              onSincronizza={sincronizzaTutto}
+              onSincronizza={sincronizzaTutto} onControlla={controllaCloud}
               onIscritti={function(){ handleSetTab("iscritti"); }}
               onJoinedFamiglia={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}
               onModificaFamiglia={function(){ setModificaFam(true); }}/>
