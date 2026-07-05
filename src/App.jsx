@@ -7021,7 +7021,7 @@ function SaluteView(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Salute</div>
+      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Famiglia</div>
 
       {vals.length > 0 && (
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
@@ -9048,10 +9048,10 @@ export default function App() {
   const TABS_ROW2 = TABS.slice(5);
   var s_sheet = useState(false); var sheetOpen = s_sheet[0]; var setSheetOpen = s_sheet[1];
   var SHEET_ITEMS = [
+    {id:"salute",      l:"Famiglia",      ic:"ti-users",              s:"Profili, pesi e crescita"},
     {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
     {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
     {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
-    {id:"salute",      l:"Salute",        ic:"ti-heart-rate-monitor", s:"Profili e obiettivi"},
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
     {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
