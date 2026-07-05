@@ -8886,7 +8886,7 @@ export default function App() {
   }
 
   // ── Auth state ──────────────────────────────────────────────
-  var s_user    = useState(sbSession?{email:sbSession.email}:null);
+  var s_user    = useState(sbSession && sbSession.user ? {email:sbSession.user.email} : null);
   var utente    = s_user[0]; var setUtente = s_user[1];
   var s_fid     = useState(loadLS("family_id",null));
   var familyId  = s_fid[0]; var setFamilyId = s_fid[1];
@@ -8957,7 +8957,7 @@ export default function App() {
         var locP = loadLS("profili", {});
         if(locP && Object.keys(locP).length>0){
           Object.keys(locP).forEach(function(pid){
-            supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:locP[pid], updated_at:new Date().toISOString()});
+            supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:locP[pid], updated_at:new Date().toISOString()}, {onConflict:"family_id,profile_id"});
           });
         }
       }
@@ -9003,7 +9003,7 @@ export default function App() {
   function pushAll(fid, cb) {
     var stamp = new Date().toISOString();
     var nP=0, nB=0, nS=0;
-    Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}); } });
+    Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}); });
     var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine};
@@ -9209,7 +9209,7 @@ export default function App() {
       saveLS("profili", next);
       if(familyId) {
         Object.keys(next).forEach(function(pid) {
-          supabase.from("profiles").upsert({family_id:familyId, profile_id:pid, dati:next[pid], updated_at:new Date().toISOString()});
+          supabase.from("profiles").upsert({family_id:familyId, profile_id:pid, dati:next[pid], updated_at:new Date().toISOString()}, {onConflict:"family_id,profile_id"});
         });
         Object.keys(prev).forEach(function(pid) {
           if(!next[pid]) supabase.from("profiles").delete().eq("family_id",familyId).eq("profile_id",pid);
