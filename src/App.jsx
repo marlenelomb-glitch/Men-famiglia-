@@ -8843,24 +8843,26 @@ export default function App() {
       setLoading(false);
     }, function(e){ console.error("Supabase: insert families errore", e); setLoading(false); });
   }
-  function initFamily(userId) {
-    setUserId(userId);
-    setTimeout(function(){ setLoading(false); }, 8000);
-    supabase.from("families").select("id").eq("owner_id", userId)
-    .then(function(rows) {
+  function caricaOwned(userId) {
+    supabase.from("families").select("id").eq("owner_id", userId).then(function(rows) {
       if(rows && rows.length > 0) {
         var fid=rows[0].id; setFamilyId(fid); saveLS("family_id",fid); loadFromSupabase(fid);
       } else {
-        supabase.from("membri_famiglia").select("family_id").eq("user_id", userId).then(function(mrows){
-          if(mrows && mrows.length > 0) {
-            var mfid = mrows[0].family_id; setFamilyId(mfid); saveLS("family_id",mfid); loadFromSupabase(mfid);
-          } else {
-            creaNuovaFamiglia(userId);
-          }
-        }, function(){ creaNuovaFamiglia(userId); });
+        creaNuovaFamiglia(userId);
       }
-    }, function(e){ console.error("Supabase: select families errore", e); setLoading(false); })
-    .catch(function(e){ console.error("Supabase: initFamily errore", e); setLoading(false); });
+    }, function(e){ console.error("Supabase: select families errore", e); setLoading(false); });
+  }
+  function initFamily(userId) {
+    setUserId(userId);
+    setTimeout(function(){ setLoading(false); }, 8000);
+    // Prima le famiglie a cui sono stato invitato (membro), poi la mia
+    supabase.from("membri_famiglia").select("family_id").eq("user_id", userId).then(function(mrows) {
+      if(mrows && mrows.length > 0) {
+        var mfid = mrows[0].family_id; setFamilyId(mfid); saveLS("family_id",mfid); loadFromSupabase(mfid);
+      } else {
+        caricaOwned(userId);
+      }
+    }, function(){ caricaOwned(userId); });
   }
 
   function loadFromSupabase(fid) {
