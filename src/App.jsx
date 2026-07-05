@@ -6713,6 +6713,158 @@ function AmiciView(props) {
   );
 }
 
+function MedicineView(props) {
+  var profili = props.profili || {};
+  var medicine = props.medicine || {};
+  var setMedicine = props.setMedicine || function(){};
+  var vals = Object.values(profili);
+  var oggi = isoDay(new Date());
+
+  var sSel = useState(vals.length ? vals[0].id : ""); var selId = sSel[0]; var setSelId = sSel[1];
+  var sAdd = useState(false); var adding = sAdd[0]; var setAdding = sAdd[1];
+  var sN = useState(""); var nome = sN[0]; var setNome = sN[1];
+  var sD = useState(""); var dose = sD[0]; var setDose = sD[1];
+  var sV = useState(1); var volte = sV[0]; var setVolte = sV[1];
+  var sQ = useState(""); var quando = sQ[0]; var setQuando = sQ[1];
+
+  var selProf = null;
+  vals.forEach(function(p){ if(p.id === selId) selProf = p; });
+  if(!selProf && vals.length) selProf = vals[0];
+  var meds = selProf ? (medicine[selProf.id] || []) : [];
+
+  function updateMeds(pid, fn) {
+    var m = Object.assign({}, medicine);
+    var arr = (m[pid] || []).map(function(x){ return Object.assign({}, x); });
+    fn(arr);
+    m[pid] = arr; setMedicine(m);
+  }
+  function salvaMed() {
+    if(!selProf || !nome.trim()) return;
+    var id = "med_" + Date.now();
+    updateMeds(selProf.id, function(arr){ arr.push({id:id, nome:nome.trim(), dose:dose.trim(), volte:volte, quando:quando.trim(), log:{}}); });
+    setNome(""); setDose(""); setVolte(1); setQuando(""); setAdding(false);
+  }
+  function rimuoviMed(id) { updateMeds(selProf.id, function(arr){ for(var i=0;i<arr.length;i++){ if(arr[i].id===id){ arr.splice(i,1); break; } } }); }
+  function toggleDose(id, idx) {
+    updateMeds(selProf.id, function(arr){
+      arr.forEach(function(md){
+        if(md.id === id){
+          md.log = Object.assign({}, md.log || {});
+          var day = (md.log[oggi] || []).slice();
+          while(day.length < md.volte) day.push(false);
+          day[idx] = !day[idx];
+          md.log[oggi] = day;
+        }
+      });
+    });
+  }
+  function fattoOggi(md) {
+    var day = (md.log && md.log[oggi]) || [];
+    var n = 0; for(var i=0;i<md.volte;i++){ if(day[i]) n++; }
+    return n;
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Medicine</div>
+        <div style={{fontSize:13,color:"#8A949B"}}>Per ogni membro: dose, frequenza e cosa è stato preso oggi.</div>
+      </div>
+
+      {vals.length>0 && (
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
+          {vals.map(function(p){
+            var on = (selProf && p.id === selProf.id);
+            var nMed = (medicine[p.id] || []).length;
+            return (
+              <button key={p.id} onClick={function(){ setSelId(p.id); setAdding(false); }}
+                style={{flexShrink:0,display:"flex",alignItems:"center",gap:7,border:"1.5px solid "+(on?(p.colore||"#2F6586"):"#E3EAEE"),
+                  background:on?(p.colore||"#2F6586"):"#fff",color:on?"#fff":"#2C3338",borderRadius:20,padding:"7px 13px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                {p.nome}{nMed>0?(" · "+nMed):""}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {selProf && meds.map(function(md){
+        var presi = fattoOggi(md);
+        var completo = presi >= md.volte;
+        return (
+          <div key={md.id} className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",alignItems:"flex-start",gap:11}}>
+              <div style={{width:38,height:38,borderRadius:11,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}><i className="ti ti-pill"/></div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:15,fontWeight:700}}>{md.nome}</div>
+                <div style={{fontSize:12,color:"#8A949B"}}>{[md.dose, (md.volte+"×/die"), md.quando].filter(Boolean).join(" · ")}</div>
+              </div>
+              <i className="ti ti-trash" onClick={function(){ rimuoviMed(md.id); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:11,color:"#8A949B",fontWeight:700,marginRight:2}}>Oggi</span>
+              {Array.apply(null, {length:md.volte}).map(function(x, idx){
+                var day = (md.log && md.log[oggi]) || [];
+                var on = !!day[idx];
+                return (
+                  <button key={idx} onClick={function(){ toggleDose(md.id, idx); }}
+                    style={{width:34,height:34,borderRadius:"50%",cursor:"pointer",border:"1.5px solid "+(on?"#2F6586":"#C9D3D9"),
+                      background:on?"#2F6586":"#fff",color:on?"#fff":"#C9D3D9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
+                    <i className={"ti "+(on?"ti-check":"ti-plus")}/>
+                  </button>
+                );
+              })}
+              <span style={{marginLeft:"auto",fontSize:12,fontWeight:800,color:completo?"#2F6586":"#8A949B"}}>{completo?"Fatto":(presi+"/"+md.volte)}</span>
+            </div>
+          </div>
+        );
+      })}
+
+      {selProf && meds.length===0 && !adding && (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Nessuna medicina per {selProf.nome}. Aggiungine una qui sotto.</div>
+      )}
+
+      {adding ? (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div className="cap">Nuova medicina</div>
+          <input value={nome} onChange={function(e){ setNome(e.target.value); }} placeholder="Nome (es. Tachipirina)"
+            style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <input value={dose} onChange={function(e){ setDose(e.target.value); }} placeholder="Dose / quantità (es. 1 compressa, 8 gocce, 5 ml)"
+            style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <div>
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Quante volte al giorno</div>
+            <div style={{display:"flex",gap:7}}>
+              {[1,2,3,4].map(function(n){
+                var on = volte === n;
+                return <button key={n} onClick={function(){ setVolte(n); }}
+                  style={{flex:1,border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2C3338",
+                    borderRadius:11,padding:"9px 0",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{n}</button>;
+              })}
+            </div>
+          </div>
+          <input value={quando} onChange={function(e){ setQuando(e.target.value); }} placeholder="Quando (facoltativo, es. colazione e cena)"
+            style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){ setAdding(false); }} style={{flex:1,border:"1.5px solid #E3EAEE",background:"#fff",color:"#8A949B",borderRadius:12,padding:"11px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Annulla</button>
+            <button onClick={salvaMed} style={{flex:2,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Salva medicina</button>
+          </div>
+        </div>
+      ) : selProf ? (
+        <button onClick={function(){ setAdding(true); }}
+          style={{padding:"12px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+          <i className="ti ti-plus" style={{fontSize:17}}/>Aggiungi una medicina
+        </button>
+      ) : (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Configura prima la famiglia in Impostazioni.</div>
+      )}
+
+      <div className="mf-card warn" style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:12}}>
+        <i className="ti ti-info-circle" style={{fontSize:18,flexShrink:0,marginTop:1}}/>
+        <div>Promemoria personale, non è una prescrizione. Segui sempre le indicazioni del medico.</div>
+      </div>
+    </div>
+  );
+}
+
 function SaluteView(props) {
   var profili = props.profili || {};
   var setTab = props.setTab || function(){};
@@ -8210,6 +8362,7 @@ function MenuCondiviso(props) {
         if(r.chiave==="feedbackPasti" && r.dati) setFeedback(r.dati);
         if(r.chiave==="ospiti" && r.dati) setOspiti(r.dati);
         if(r.chiave==="piani" && r.dati) setPiani(r.dati);
+        if(r.chiave==="medicine" && r.dati) setMedicine(r.dati);
       });
       setLoading(false);
     }, function(){ setLoading(false); });
@@ -8642,7 +8795,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -8747,6 +8900,7 @@ export default function App() {
   const [feedbackPasti, setFeedbackPasti] = useState(loadLS("feedbackPasti", {}));
   const [ospiti, setOspiti] = useState(loadLS("ospiti", {}));
   const [piani, setPiani] = useState(loadLS("piani", {}));
+  const [medicine, setMedicine] = useState(loadLS("medicine", {}));
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -8795,6 +8949,7 @@ export default function App() {
     {id:"salute",      l:"Salute",        ic:"ti-heart-rate-monitor", s:"Profili e obiettivi"},
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
+    {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
     {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
@@ -8861,6 +9016,7 @@ export default function App() {
   var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
   var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
   var setPianiLS              = mkSetterSync("piani", setPiani);
+  var setMedicineLS           = mkSetterSync("medicine", setMedicine);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -9137,6 +9293,9 @@ export default function App() {
         )}
         {tab==="amici" && (
           <AmiciView userId={userId} familyId={familyId}/>
+        )}
+        {tab==="medicine" && (
+          <MedicineView profili={profili} medicine={medicine} setMedicine={setMedicineLS}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase}/>
