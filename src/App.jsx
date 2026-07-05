@@ -9062,12 +9062,6 @@ export default function App() {
     {id:"impostazioni",l:"Impostazioni",  ic:"ti-settings",           s:"Famiglia e PIN"}
   ];
   var MORE_TABS = SHEET_ITEMS.map(function(x){ return x.id; });
-  var SHEET_GROUPS = [
-    {t:"Cucina e menu", ids:["mensa","idee","mealprep","dispensa","spesa"]},
-    {t:"Salute",        ids:["salute","medicine","piramide","calorie"]},
-    {t:"Famiglia e app",ids:["amici","ai","impostazioni"]}
-  ];
-  function sheetItemById(id){ return SHEET_ITEMS.find(function(x){ return x.id===id; }); }
 
 
   // ── Salvataggio automatico localStorage ────────────────────
