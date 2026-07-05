@@ -887,7 +887,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
                         {isCompl&&<span style={{fontSize:11,fontWeight:600,color:"#2C3338"}}>
                           {(""+s.piattoUnico.nome).trim()}
                         </span>}
-                        {isCompl&&<span style={{fontSize:9,color:"#8A949B",marginLeft:6,fontWeight:600}}>pasto completo</span>}
+                        {isCompl&&<span style={{fontSize:9,color:"#8A949B",marginLeft:6,fontWeight:600}}>pasto completo{s.piattoUnico.altri&&s.piattoUnico.altri.length>0?(" · +"+s.piattoUnico.altri.length+" piatt"+(s.piattoUnico.altri.length>1?"i":"o")):""}</span>}
                         {!isCompl&&principale&&<span style={{fontSize:11,fontWeight:600,color:"#2C3338"}}>
                           {principale.nome}
                         </span>}
@@ -4242,12 +4242,28 @@ function tipoRic(it) {
   if(VERDURE.some(function(x){ return x.id===it.id; })) return "verdura";
   return "frutta";
 }
+var PIATTI_COMPOSTI = {
+  parmigiana:["melanzane","mozzarella"], carbonara:["spaghetti","uova"], amatriciana:["spaghetti","pomodori"],
+  bolognese:["tagliatelle","manzo"], caprese:["mozzarella","pomodori"], insalatona:["insalata","uova"],
+  minestrone:["patate","carote","zucchine"], passato:["patate","carote","zucchine"], vellutata:["zucca"],
+  spezzatino:["manzo","patate"], arrosto:["manzo","patate"], spiedini:["pollo_f"], polpette:["manzo"],
+  hamburger:["manzo","pane_b"], cotoletta:["pollo_f"], milanese:["pollo_f"], paella:["riso_b","gamberetti","pollo_f"],
+  poke:["riso_b","salmone"], caesar:["insalata","pollo_f"], frittata:["uova"], omelette:["uova"]
+};
 function riconosciPasto(testo) {
   var t = (""+(testo||"")).toLowerCase();
   if(!t.trim()) return {kcal:0, prot:0, items:[]};
   var db = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
   var byWord = {};
   var chosen = {};
+  Object.keys(PIATTI_COMPOSTI).forEach(function(k){
+    if(t.indexOf(k) >= 0) {
+      PIATTI_COMPOSTI[k].forEach(function(id){
+        var it = db.find(function(x){ return x.id === id; });
+        if(it && !chosen[it.id]) { byWord["_c_"+id] = it; chosen[it.id] = true; }
+      });
+    }
+  });
   Object.keys(SINONIMI_PASTO).forEach(function(k){
     if(t.indexOf(k) >= 0 && !byWord[k]) {
       var it = db.find(function(x){ return x.id === SINONIMI_PASTO[k]; });
@@ -4354,6 +4370,37 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     var s = Object.assign({}, scelteAttive[keyG]||{});
     if(id===null) delete s[campo]; else s[campo]=id;
     salvaScelta(s);
+  }
+  function completaAuto() {
+    var prots = PROTEINE.filter(function(p){ return !ingredienteVietato(p, famVietati); });
+    var carbs = CARBOIDRATI.filter(function(c){ return c.cat !== "colazione" && !ingredienteVietato(c, famVietati); });
+    var verds = VERDURE.filter(function(v){ return inStagione(v) && !ingredienteVietato(v, famVietati); });
+    if(!verds.length) verds = VERDURE.filter(function(v){ return !ingredienteVietato(v, famVietati); });
+    if(!prots.length || !carbs.length || !verds.length) {
+      setMsgB("Non trovo abbastanza alimenti compatibili con le restrizioni della famiglia.");
+      setTimeout(function(){ setMsgB(""); }, 3500); return;
+    }
+    var next = Object.assign({}, scelteAttive);
+    var cambiati = [];
+    GIORNI_B.forEach(function(g, idx){
+      var key = g + "-" + pastoSel;
+      var s = next[key];
+      var pieno = s && ((s.piattoUnico && s.piattoUnico.nome) || s.proteina || s.carbo);
+      if(pieno) return;
+      var p = prots[idx % prots.length];
+      var c = carbs[idx % carbs.length];
+      var v = verds[idx % verds.length];
+      next[key] = Object.assign({}, s || {}, {proteina:p.id, carbo:c.id, verdura:v.id});
+      cambiati.push(key);
+    });
+    if(!cambiati.length) {
+      setMsgB("I giorni sono già tutti compilati. Cambia a mano quello che vuoi.");
+      setTimeout(function(){ setMsgB(""); }, 3500); return;
+    }
+    setScelteAttive(next);
+    if(onSavePasto) cambiati.forEach(function(key){ var gp = key.split("-"); onSavePasto(settB, gp[0], gp[1], next[key]); });
+    setMsgB("Fatto! Ho riempito " + cambiati.length + " giorni vuoti (equilibrati e di stagione). Ritocca quello che vuoi.");
+    setTimeout(function(){ setMsgB(""); }, 4000);
   }
   function attivaCompleto() {
     var s = Object.assign({}, scelteAttive[keyG]||{});
@@ -4658,7 +4705,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 {compl ? (
                   <div style={{display:"flex",alignItems:"center",gap:10,background:"#F2F6F8",borderRadius:11,padding:"11px 13px"}}>
                     <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}><i className="ti ti-tools-kitchen-2"/></div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sc.piattoUnico.nome}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{sc.piattoUnico.nome}</div>
+                      {sc.piattoUnico.altri&&sc.piattoUnico.altri.length>0&&<div style={{fontSize:10,color:"#2F6586",fontWeight:700}}>+{sc.piattoUnico.altri.length} piatt{sc.piattoUnico.altri.length>1?"i":"o"} per la famiglia</div>}
+                    </div>
                   </div>
                 ) : (
                 <div style={{display:"flex",gap:7}}>
@@ -4692,7 +4742,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             </div>
           </div>
 
-          <button onClick={function(){ setMsgB("La compilazione automatica arriva a breve. Per ora tocca un giorno per costruirlo."); setTimeout(function(){ setMsgB(""); }, 3500); }}
+          <button onClick={function(){ completaAuto(); }}
             style={{width:"100%",padding:"14px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",
               fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             <i className="ti ti-wand" style={{fontSize:17}}/>Completa in automatico
