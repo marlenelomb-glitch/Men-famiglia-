@@ -2733,8 +2733,11 @@ const ORI_IMP    = ["07:00","08:00","09:00","10:00","17:00","18:00","19:00","20:
 
 function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione,
                           pesoLog, setPesoLog, pin, setPin, onModificaFamiglia,
-                          familyId, userId, isAdmin, onIscritti, onJoinedFamiglia}) {
+                          familyId, userId, isAdmin, onIscritti, onJoinedFamiglia,
+                          utenteEmail, onSincronizza}) {
   const [sezione, setSezione] = useState("");
+  var sSync = useState(""); var syncMsg = sSync[0]; var setSyncMsg = sSync[1];
+  var sSyncL = useState(false); var syncLoad = sSyncL[0]; var setSyncLoad = sSyncL[1];
   const [nuovoPin, setNuovoPin] = useState("");
   const [confPin, setConfPin] = useState("");
   const [pinErr, setPinErr] = useState("");
@@ -2762,6 +2765,7 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
 
   const SEZIONI = [
     {id:"famiglia",    l:"La tua famiglia",     s:"Profili e restrizioni",       ic:"ti-users"},
+    {id:"sync",        l:"Sincronizza sul cloud",s:"Salva i dati per altri dispositivi", ic:"ti-cloud-up"},
     {id:"condivisa",   l:"Famiglia condivisa",  s:"Invita altri con un codice",  ic:"ti-users-group"},
     {id:"nutrizionale",l:"Valori nutrizionali", s:"Kcal e proteine per membro",  ic:"ti-flame"},
     {id:"pesi",        l:"Pesi e misure",       s:"Peso, altezza, eta",          ic:"ti-scale"},
@@ -2811,6 +2815,25 @@ function TabImpostazioni({profili, setProfili, pianificazione, setPianificazione
 
       {sezione==="condivisa" && (
         <FamigliaCondivisa familyId={familyId} userId={userId} onJoined={onJoinedFamiglia}/>
+      )}
+
+      {sezione==="sync" && (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:13,color:"#8A949B"}}>Invia i dati del telefono al cloud, così li ritrovi su un altro accesso o su un altro dispositivo (es. telefono di tuo marito).</div>
+          <div style={{background:"#F2F6F8",borderRadius:12,padding:"10px 12px",fontSize:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span style={{color:"#8A949B"}}>Account</span><span style={{fontWeight:700}}>{utenteEmail || "—"}</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}><span style={{color:"#8A949B"}}>Famiglia collegata</span><span style={{fontWeight:700,color:familyId?"#2F6586":"#C2355A"}}>{familyId ? "Sì" : "No"}</span></div>
+          </div>
+          <button disabled={syncLoad} onClick={function(){
+              setSyncLoad(true); setSyncMsg("");
+              if(onSincronizza) onSincronizza(function(msg){ setSyncMsg(msg); setSyncLoad(false); });
+              else { setSyncLoad(false); }
+            }}
+            style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"13px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:syncLoad?0.7:1}}>
+            <i className="ti ti-cloud-up" style={{fontSize:18}}/>{syncLoad ? "Sincronizzo…" : "Sincronizza tutto sul cloud"}
+          </button>
+          {syncMsg && <div style={{fontSize:12,color:"#2F6586",fontWeight:600,lineHeight:1.4}}>{syncMsg}</div>}
+        </div>
       )}
 
       {/* ── FAMILIARI ── */}
@@ -8956,6 +8979,18 @@ export default function App() {
     supabase.from("peso_log").upsert({family_id:familyId,profile_nome:nome,data:data,valore:valore});
   }
 
+  function sincronizzaTutto(cb) {
+    if(!familyId){ cb("Nessuna famiglia collegata: chiudi e riapri l'app una volta, poi riprova."); return; }
+    var stamp = new Date().toISOString();
+    var nP=0, nB=0, nS=0;
+    Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:familyId, profile_id:pid, dati:profili[pid], updated_at:stamp}); } });
+    Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:familyId, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}); });
+    Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:familyId, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}); });
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine};
+    Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:familyId, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
+    setTimeout(function(){ cb("Fatto! Inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1400);
+  }
+
   function doLogin() {
     setAuthErr("");setAuthMsg("");setNeedConfirm(false);setLoading(true);
     supabase.signIn(emailInput,pwdInput).then(function(res){
@@ -9450,6 +9485,8 @@ export default function App() {
               pesoLog={pesoLog} setPesoLog={setPesoLogLS}
               pin={pin} setPin={setPinLS}
               familyId={familyId} userId={userId} isAdmin={isAdmin}
+              utenteEmail={utente ? utente.email : ""}
+              onSincronizza={sincronizzaTutto}
               onIscritti={function(){ handleSetTab("iscritti"); }}
               onJoinedFamiglia={function(fid){ setFamilyId(fid); saveLS("family_id", fid); loadFromSupabase(fid); handleSetTab("home"); }}
               onModificaFamiglia={function(){ setModificaFam(true); }}/>
