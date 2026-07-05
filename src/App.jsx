@@ -9062,6 +9062,12 @@ export default function App() {
     {id:"impostazioni",l:"Impostazioni",  ic:"ti-settings",           s:"Famiglia e PIN"}
   ];
   var MORE_TABS = SHEET_ITEMS.map(function(x){ return x.id; });
+  var SHEET_GROUPS = [
+    {t:"Cucina e menu", ids:["mensa","idee","mealprep","dispensa","spesa"]},
+    {t:"Salute",        ids:["salute","medicine","piramide","calorie"]},
+    {t:"Famiglia e app",ids:["amici","ai","impostazioni"]}
+  ];
+  function sheetItemById(id){ return SHEET_ITEMS.find(function(x){ return x.id===id; }); }
 
 
   // ── Salvataggio automatico localStorage ────────────────────
@@ -9481,22 +9487,30 @@ export default function App() {
         <div className="sheet-back" onClick={function(e){ if(e.target===e.currentTarget) setSheetOpen(false); }}>
           <div className="sheet">
             <div className="grab"/>
-            <h3 style={{fontSize:16,fontWeight:700,marginBottom:6}}>Altro</h3>
-            <div className="mf-card flush" style={{border:"none"}}>
-              {SHEET_ITEMS.map(function(it){
-                return (
-                  <div key={it.id} className="mf-row" style={{cursor:"pointer"}}
-                    onClick={function(){ setSheetOpen(false); handleSetTab(it.id); }}>
-                    <div className="mf-ic"><i className={"ti "+it.ic}/></div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:14,fontWeight:600}}>{it.l}</div>
-                      <div style={{fontSize:11,color:"#8A949B"}}>{it.s}</div>
-                    </div>
-                    <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+            <h3 style={{fontSize:16,fontWeight:700,marginBottom:10}}>Altro</h3>
+            {SHEET_GROUPS.map(function(gr){
+              return (
+                <div key={gr.t} style={{marginBottom:14}}>
+                  <div style={{fontSize:11,letterSpacing:"0.04em",textTransform:"uppercase",fontWeight:800,color:"#8A949B",marginBottom:7,paddingLeft:2}}>{gr.t}</div>
+                  <div className="mf-card flush" style={{border:"none"}}>
+                    {gr.ids.map(function(id){
+                      var it = sheetItemById(id); if(!it) return null;
+                      return (
+                        <div key={it.id} className="mf-row" style={{cursor:"pointer"}}
+                          onClick={function(){ setSheetOpen(false); handleSetTab(it.id); }}>
+                          <div className="mf-ic"><i className={"ti "+it.ic}/></div>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:14,fontWeight:600}}>{it.l}</div>
+                            <div style={{fontSize:11,color:"#8A949B"}}>{it.s}</div>
+                          </div>
+                          <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
