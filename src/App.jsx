@@ -353,6 +353,7 @@ function getParametriEta(dataNascita, sesso) {
 }
 
 function getParametriFinali(profilo) {
+  if(!profilo) profilo = {};
   var base = getParametriEta(profilo.dataNascita, profilo.sesso);
   var res = {kcal: base.kcal, prot: base.prot, carb: base.carb,
     prot_max: null, carb_max: null, sodio_max: null, grassi_sat_max: null, phe_max: null, vietati: []};
@@ -4324,7 +4325,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
 
-  var scelte=builderScelte; var setScelte=setBuilderScelte;
+  var scelte=builderScelte||{}; var setScelte=setBuilderScelte;
   var s1=useState(0); var giornoSel=s1[0]; var setGiornoSel=s1[1];
   var s2=useState("Pranzo"); var pastoSel=s2[0]; var setPastoSel=s2[1];
   var s3=useState(1); var stepCorrente=s3[0]; var setStepCorrente=s3[1];
@@ -4335,7 +4336,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var s8=useState(null); var popup=s8[0]; var setPopup=s8[1];
   var s9=useState([]); var customIng=s9[0]; var setCustomIng=s9[1];
   var s10=useState(0); var settB=s10[0]; var setSettB=s10[1]; // 0=questa sett, 1=prossima
-  var scelteProssima=builderScelteProssima; var setScelteProssima=setBuilderScelteProssima;
+  var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
   var sVP=useState(false); var vediPiatto=sVP[0]; var setVediPiatto=sVP[1];
@@ -4391,7 +4392,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     ];
   }
   function salvaScelta(s) {
-    var n = Object.assign({}, scelteAttive); n[keyG]=s; setScelteAttive(n);
+    setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[keyG]=s; return n; });
     if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, s);
   }
   function setCampoG(campo, id) {
@@ -4425,7 +4426,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
       setMsgB("I giorni sono già tutti compilati. Cambia a mano quello che vuoi.");
       setTimeout(function(){ setMsgB(""); }, 3500); return;
     }
-    setScelteAttive(next);
+    setScelteAttive(function(prev){ var base = Object.assign({}, prev||{}); cambiati.forEach(function(key){ base[key] = next[key]; }); return base; });
     if(onSavePasto) cambiati.forEach(function(key){ var gp = key.split("-"); onSavePasto(settB, gp[0], gp[1], next[key]); });
     setMsgB("Fatto! Ho riempito " + cambiati.length + " giorni vuoti (equilibrati e di stagione). Ritocca quello che vuoi.");
     setTimeout(function(){ setMsgB(""); }, 4000);
@@ -4481,6 +4482,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     var fuoriList = (pu && pu.fuori) ? pu.fuori : [];
     Object.keys(profili||{}).forEach(function(pid){
       var p = profili[pid];
+      if(!p) return;
       if(fuoriList.indexOf(pid) >= 0) {
         var fv = (pu && pu.fuoriVal && pu.fuoriVal[pid]) || {};
         var fk = parseInt(fv.kcal, 10) || 0; var fp = parseInt(fv.prot, 10) || 0;
@@ -4606,7 +4608,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   Object.keys(profili||{}).forEach(function(pid){ var fin=getParametriFinali(profili[pid]); (fin.vietati||[]).forEach(function(v){ if(famVietati.indexOf(v)<0) famVietati.push(v); }); });
 
   // Scelte attive in base alla settimana selezionata
-  var scelteAttive = settB===0 ? scelte : scelteProssima;
+  var scelteAttive = (settB===0 ? scelte : scelteProssima) || {};
   var setScelteAttive = settB===0 ? setScelte : setScelteProssima;
   var sceltaG = scelteAttive[keyG] || {};
 
@@ -4620,9 +4622,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   function cambiaPasto(p){setPastoSel(p);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[giornoSel]+"-"+p]||{});}
 
   function salva(dati) {
-    var n=Object.assign({},scelteAttive);
-    n[key]=dati;
-    setScelteAttive(n);
+    setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=dati; return n; });
     if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, dati);
     setStep2Done(true);
     setStepCorrente(1);
@@ -5228,9 +5228,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                       </div>
                       <div style={{display:"flex",gap:4}}>
                         <button onClick={function(){
-                          var n=Object.assign({},scelteAttive);
-                          n[key]=Object.assign({},r.pasto);
-                          setScelteAttive(n);
+                          setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=Object.assign({},r.pasto); return n; });
                           setShowRicette(null);
                         }} style={{padding:"4px 10px",borderRadius:20,border:"none",
                           background:"#2F6586",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:700}}>
@@ -8446,7 +8444,7 @@ function MenuCondiviso(props) {
   useEffect(function(){
     var t = setTimeout(function(){ setLoading(false); }, 8000);
     supabase.from("profiles").select("*").eq("family_id", familyId).then(function(rows){
-      var pf = {}; (rows||[]).forEach(function(r){ pf[r.profile_id] = r.dati; }); setProfili(pf);
+      var pf = {}; (rows||[]).forEach(function(r){ if(r.dati) pf[r.profile_id] = r.dati; }); setProfili(pf);
     }, function(){});
     supabase.from("builder_scelte").select("*").eq("family_id", familyId).then(function(rows){
       var q = {}; (rows||[]).forEach(function(r){ if(r.settimana===0) q[r.giorno+"-"+r.pasto] = r.dati; }); setBuilder(q);
@@ -8880,7 +8878,7 @@ export default function App() {
     supabase.from("profiles").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
         var pf={};
-        rows.forEach(function(r){ pf[r.profile_id]=r.dati; });
+        rows.forEach(function(r){ if(r.dati) pf[r.profile_id]=r.dati; });
         setProfili(pf); saveLS("profili", pf);
       } else {
         var locP = loadLS("profili", {});
