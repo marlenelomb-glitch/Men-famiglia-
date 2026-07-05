@@ -5385,6 +5385,9 @@ function OnboardingFamiglia(props) {
     var base = getParametriEta(m.dataNascita, m.sesso);
     var anni = calcolaEta(m.dataNascita).anni;
     var pe = parseFloat(m.peso); var al = parseFloat(m.altezza);
+    if((isNaN(al) || al <= 0) && !isNaN(pe) && pe > 0 && anni >= 14) {
+      al = (m.sesso === "maschio") ? 175 : 162;
+    }
     var usaMifflin = !isNaN(pe) && pe > 0 && !isNaN(al) && al > 0 && anni >= 14;
     var baseKcal = usaMifflin ? kcalMifflin(pe, al, anni, m.sesso, fattoreAttivita(m.attivita)) : base.kcal;
     var kcal;
@@ -5399,6 +5402,7 @@ function OnboardingFamiglia(props) {
       }
       kcal = kcalObiettivo(baseKcal, ob);
       if(pats.indexOf("allattamento") >= 0) kcal += 500;
+      if(anni >= 18) { var minK = (m.sesso === "maschio") ? 1500 : 1200; if(kcal < minK) kcal = minK; }
     }
     return {kcal:kcal, prot:base.prot, carb:base.carb,
       prot_max:fin.prot_max, carb_max:fin.carb_max, phe_max:fin.phe_max, mifflin:usaMifflin};
