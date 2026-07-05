@@ -48,11 +48,13 @@ export default function LoadingScreen() {
           animation: "mf-pulse 1.6s ease-in-out infinite"
         }}
       >
-        <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
           <path fill="#fff"
-            d="M6.4 8.9C7.1 6.4 9.3 4.6 12 4.6s4.9 1.8 5.6 4.3c1.7.2 3 1.7 3 3.5 0 1.6-1 2.9-2.5 3.4v-.1H6c-1.5-.5-2.6-1.9-2.6-3.4 0-1.8 1.3-3.3 3-3.4Z" />
+            d="M6.3 13.9C4 13.9 2.2 12.1 2.2 9.9c0-1.9 1.4-3.6 3.3-4C6 3.7 7.9 2.2 10.2 2.2c1.6 0 3 .7 4 1.9.5-.2 1.1-.4 1.7-.4 2.1 0 3.9 1.7 3.9 3.9 0 .3 0 .6-.1.8 1 .7 1.7 1.8 1.7 3.1 0 2.1-1.8 3.9-3.9 3.9-.1 0-.1 0-.2-.1H6.3Z" />
           <path fill="#fff"
-            d="M7.4 16.3h9.2v2.6c0 .8-.6 1.4-1.4 1.4H8.8c-.8 0-1.4-.6-1.4-1.4z" />
+            d="M6.8 15.3h10.4v3.4c0 1-.8 1.8-1.8 1.8H8.6c-1 0-1.8-.8-1.8-1.8z" />
+          <path stroke="#6BA6C9" strokeWidth="1" strokeLinecap="round"
+            d="M10 15.8v4.6M14 15.8v4.6" />
         </svg>
       </div>
 
