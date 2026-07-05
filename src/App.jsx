@@ -9048,7 +9048,6 @@ export default function App() {
   const TABS_ROW2 = TABS.slice(5);
   var s_sheet = useState(false); var sheetOpen = s_sheet[0]; var setSheetOpen = s_sheet[1];
   var SHEET_ITEMS = [
-    {id:"calorie",     l:"Calorie",       ic:"ti-flame",              s:"Consumo e andamento"},
     {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
     {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
     {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
@@ -9416,9 +9415,6 @@ export default function App() {
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
             profili={profili}/>
-        )}
-        {tab==="calorie" && (
-          <CalorieView menu={menu} builder={builderScelte} profili={profili}/>
         )}
         {tab==="impostazioni" && (
           <div>
