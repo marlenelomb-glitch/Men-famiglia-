@@ -4656,6 +4656,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var scelteAttive = (settB===0 ? scelte : scelteProssima) || {};
   var setScelteAttive = settB===0 ? setScelte : setScelteProssima;
   var sceltaG = scelteAttive[keyG] || {};
+  var puG = sceltaG.piattoUnico || {nome:"",kcal:"",prot:""};
 
   var key=GIORNI_B[giornoSel]+"-"+pastoSel;
   var sceltaCorrente=scelteAttive[key]||null;
@@ -4701,7 +4702,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         </button>
         <button onClick={function(){
           if(window.confirm("Copia il menu di questa settimana nella prossima?")) {
-            setScelteProssima(Object.assign({},scelte));
+            var copia = Object.assign({}, scelte);
+            setScelteProssima(copia);
+            if(onSavePasto) Object.keys(copia).forEach(function(k){ var gp=k.split("-"); onSavePasto(1, gp[0], gp.slice(1).join("-"), copia[k]); });
           }
         }} title="Copia questa sett. nella prossima"
           style={{padding:"9px 11px",borderRadius:12,border:"none",
@@ -4836,7 +4839,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>{GIORNI_B[giornoSel]}</div>
           <div style={{fontSize:13,color:"#8A949B"}}>{(function(){var d=new Date(lunediSettimana().getTime()); if(settB===1)d.setDate(d.getDate()+7); d.setDate(d.getDate()+giornoSel); return d.getDate()+" "+MESI_ABBR[d.getMonth()];})()} · rifinisci il pasto</div>
         </div>
-        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2F6586":"#8A949B"}}>{sceltaG.piattoUnico ? (pastoCompl(sceltaG)?"Completo":"Da compilare") : (campiPasto().filter(function(c){ return !c.opt && sceltaG[c.campo]; }).length+"/"+campiPasto().filter(function(c){ return !c.opt; }).length)}</span>
+        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2F6586":"#8A949B"}}>{isCompleto(GIORNI_B[giornoSel],pastoSel)?"Completo":"Da compilare"}</span>
       </div>
 
       <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
@@ -4853,61 +4856,89 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         })}
       </div>
 
-      <div style={{display:"flex",background:"#E2EEF5",borderRadius:12,padding:4,marginBottom:12}}>
-        {[{id:"ingredienti",l:"A ingredienti"},{id:"completo",l:"Pasto completo"}].map(function(mo){
-          var on=(mo.id==="completo")===(!!sceltaG.piattoUnico);
-          return <button key={mo.id} onClick={function(){ if(mo.id==="completo") attivaCompleto(); else disattivaCompleto(); }}
-            style={{flex:1,border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",
-              fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,padding:"8px 0",borderRadius:9,cursor:"pointer",
-              boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>{mo.l}</button>;
-        })}
-      </div>
-
-      {sceltaG.piattoUnico ? (
-        <div className="mf-card" style={{padding:"14px 15px",marginBottom:10,display:"flex",flexDirection:"column",gap:10}}>
-          <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Scrivi il pasto così com'è</div>
-          <input value={sceltaG.piattoUnico.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
+      {true ? (
+        <div className="mf-card" style={{padding:"14px 15px",marginBottom:11,display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-pencil" style={{fontSize:16,color:"#2F6586"}}/>Scrivi il piatto</div>
+          <input value={puG.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
             onBlur={function(){ riconosciCompleto(); }}
             onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
             placeholder="Es. Pollo e patate, Lasagne, Pasta al pomodoro..."
             style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
 
-          {sceltaG.piattoUnico.riconosciuti && sceltaG.piattoUnico.riconosciuti.length>0 && (
-            <div style={{background:"#E2EEF5",borderRadius:12,padding:"10px 12px"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:7,display:"flex",alignItems:"center",gap:6}}>
-                <i className="ti ti-sparkles" style={{fontSize:14}}/>Riconosciuti (proteine stimate in automatico)
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {sceltaG.piattoUnico.riconosciuti.map(function(r){
-                  return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#fff",border:"1px solid #CADCE8",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
-                    <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2F6586"}}/>{r.nome}
-                  </span>;
-                })}
-              </div>
+          {puG.riconosciuti && puG.riconosciuti.length>0 ? (
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+              {puG.riconosciuti.map(function(r){
+                return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#E2EEF5",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                  <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2F6586"}}/>{r.nome}
+                </span>;
+              })}
+              {(parseInt(puG.kcal,10)>0) ? <span style={{fontSize:12,color:"#8A949B"}}>~{puG.kcal} kcal · {puG.prot||0}g prot</span> : null}
             </div>
-          )}
+          ) : ((""+(puG.nome||"")).trim() ? null : (
+            <div style={{fontSize:11,color:"#B4BEC4"}}>L'app riconosce ingredienti e calorie da sola</div>
+          ))}
 
-          <button onClick={function(){ riconosciCompleto(); }}
-            style={{padding:"10px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
-              display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-            <i className="ti ti-wand" style={{fontSize:16}}/>Riconosci alimenti e proteine
-          </button>
-
+          {(""+(puG.nome||"")).trim() ? (
           <div style={{display:"flex",gap:8}}>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · {sceltaG.piattoUnico.autofill?"stimate":"facolt."}</div>
-              <input inputMode="numeric" value={sceltaG.piattoUnico.kcal||""} onChange={function(e){ setPiattoUnicoField("kcal", e.target.value.replace(/[^0-9]/g,"")); }}
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · {puG.autofill?"stimate":"facolt."}</div>
+              <input inputMode="numeric" value={puG.kcal||""} onChange={function(e){ setPiattoUnicoField("kcal", e.target.value.replace(/[^0-9]/g,"")); }}
                 placeholder="es. 550" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · {sceltaG.piattoUnico.autofill?"stimate":"facolt."}</div>
-              <input inputMode="numeric" value={sceltaG.piattoUnico.prot||""} onChange={function(e){ setPiattoUnicoField("prot", e.target.value.replace(/[^0-9]/g,"")); }}
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · {puG.autofill?"stimate":"facolt."}</div>
+              <input inputMode="numeric" value={puG.prot||""} onChange={function(e){ setPiattoUnicoField("prot", e.target.value.replace(/[^0-9]/g,"")); }}
                 placeholder="es. 20" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
             </div>
           </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#B4BEC4",letterSpacing:"0.06em",margin:"2px 0 11px"}}>— OPPURE SCEGLI GLI INGREDIENTI —</div>
+
+      <div>
+      {campiPasto().map(function(c){
+        var id=sceltaG[c.campo];
+        var it=ingById(id);
+        var gv=grammiField(sceltaG, c.campo, it, c.def);
+        return (
+          <div key={c.campo} className="mf-card" style={{padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
+            <div onClick={function(){ apriPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
+                background:id?"#E2EEF5":"transparent",border:id?"none":"1.5px dashed #C4D2DA",color:id?"#2F6586":"#8A949B"}}>
+                <i className={"ti "+(id?iconaGruppo(c.tipo,id):"ti-plus")}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>{c.label}</div>
+                <div style={{fontSize:14,fontWeight:700,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{id?nomeGruppo(id):("Aggiungi "+c.label.toLowerCase().replace(" · facoltativa",""))}</div>
+              </div>
+            </div>
+            {id ? (
+              <div style={{display:"flex",alignItems:"center",gap:6,background:"#F2F6F8",borderRadius:20,padding:4}}>
+                <button onClick={function(){ setGrammiG(c.campo, gv-10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>−</button>
+                <span style={{fontSize:12,fontWeight:800,minWidth:40,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{gv} g</span>
+                <button onClick={function(){ setGrammiG(c.campo, gv+10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>+</button>
+              </div>
+            ) : (
+              <i className="ti ti-chevron-right" onClick={function(){ apriPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{marginTop:5,marginBottom:11}}>
+        <NutriPanel carbo={sceltaG.carbo} prot={sceltaG.proteina} verd={sceltaG.verdura} verd2={sceltaG.verdura2}
+          frutta={sceltaG.frutta} lattic={sceltaG.latticino} pasto={pastoSel} profili={profili}
+          grammi={sceltaG.grammi||{}} onGrammi={function(field,val){ setGrammiG(field, parseInt(val,10)||0); }}/>
+      </div>
+      </div>
+
+      {true ? (
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:11}}>
 
           {(function(){
-            var pu = sceltaG.piattoUnico;
+            var pu = puG;
             var membri = Object.keys(profili||{}).length;
             if(membri===0) return null;
             var kb = parseInt(pu.kcal, 10) || 0; var pb = parseInt(pu.prot, 10) || 0;
@@ -4934,7 +4965,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
           {mostraOpzFam && (<>
           {(function(){
-            var pu = sceltaG.piattoUnico;
+            var pu = puG;
             var kb = parseInt(pu.kcal, 10) || 0;
             var pb = parseInt(pu.prot, 10) || 0;
             var membri = Object.keys(profili||{}).length;
@@ -4988,7 +5019,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           })()}
 
           {(function(){
-            var pu = sceltaG.piattoUnico;
+            var pu = puG;
             var profIds = Object.keys(profili||{});
             if(profIds.length===0) return null;
             var righe = stimaFamiglia(pu);
@@ -5081,51 +5112,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           </>)}
 
           <button onClick={function(){ setPickRic(true); }}
-            style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+            style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
               display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-            <i className="ti ti-book" style={{fontSize:16}}/>Scegli da una ricetta
+            <i className="ti ti-book" style={{fontSize:16}}/>Scegli da una ricetta salvata
           </button>
-          <div style={{fontSize:11,color:"#8A949B"}}>Tuo marito scrive il pasto, l'app riconosce gli alimenti e stima le proteine. Puoi correggere i numeri a mano.</div>
         </div>
-      ) : (
-      <div>
-      <div className="cap" style={{marginBottom:8}}>Cosa mangi · tocca per scegliere</div>
-      {campiPasto().map(function(c){
-        var id=sceltaG[c.campo];
-        var it=ingById(id);
-        var gv=grammiField(sceltaG, c.campo, it, c.def);
-        return (
-          <div key={c.campo} className="mf-card" style={{padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
-            <div onClick={function(){ apriPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
-              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
-                background:id?"#E2EEF5":"transparent",border:id?"none":"1.5px dashed #C4D2DA",color:id?"#2F6586":"#8A949B"}}>
-                <i className={"ti "+(id?iconaGruppo(c.tipo,id):"ti-plus")}/>
-              </div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>{c.label}</div>
-                <div style={{fontSize:14,fontWeight:700,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{id?nomeGruppo(id):("Aggiungi "+c.label.toLowerCase().replace(" · facoltativa",""))}</div>
-              </div>
-            </div>
-            {id ? (
-              <div style={{display:"flex",alignItems:"center",gap:6,background:"#F2F6F8",borderRadius:20,padding:4}}>
-                <button onClick={function(){ setGrammiG(c.campo, gv-10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>−</button>
-                <span style={{fontSize:12,fontWeight:800,minWidth:40,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{gv} g</span>
-                <button onClick={function(){ setGrammiG(c.campo, gv+10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>+</button>
-              </div>
-            ) : (
-              <i className="ti ti-chevron-right" onClick={function(){ apriPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
-            )}
-          </div>
-        );
-      })}
-
-      <div style={{marginTop:5}}>
-        <NutriPanel carbo={sceltaG.carbo} prot={sceltaG.proteina} verd={sceltaG.verdura} verd2={sceltaG.verdura2}
-          frutta={sceltaG.frutta} lattic={sceltaG.latticino} pasto={pastoSel} profili={profili}
-          grammi={sceltaG.grammi||{}} onGrammi={function(field,val){ setGrammiG(field, parseInt(val,10)||0); }}/>
-      </div>
-      </div>
-      )}
+      ) : null}
 
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={function(){setShowSpesa(true);}}
@@ -5135,7 +5127,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         <button onClick={function(){ setVista("settimana"); }}
           style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",
             display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <i className="ti ti-check" style={{fontSize:18}}/>Salva giorno
+          <i className="ti ti-check" style={{fontSize:18}}/>Fatto
         </button>
       </div>
 
@@ -5302,6 +5294,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                       <div style={{display:"flex",gap:4}}>
                         <button onClick={function(){
                           setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=Object.assign({},r.pasto); return n; });
+                          if(onSavePasto){ var gp=key.split("-"); onSavePasto(settB, gp[0], gp.slice(1).join("-"), Object.assign({},r.pasto)); }
                           setShowRicette(null);
                         }} style={{padding:"4px 10px",borderRadius:20,border:"none",
                           background:"#2F6586",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:700}}>
@@ -8992,7 +8985,7 @@ export default function App() {
 
   function savePastoToSupabase(sett,giorno,pasto,dati) {
     if(!familyId)return;
-    supabase.from("builder_scelte").upsert({family_id:familyId,settimana:sett,giorno:giorno,pasto:pasto,dati:dati,updated_at:new Date().toISOString()});
+    supabase.from("builder_scelte").upsert({family_id:familyId,settimana:sett,giorno:giorno,pasto:pasto,dati:dati,updated_at:new Date().toISOString()}, {onConflict:"family_id,settimana,giorno,pasto"});
   }
 
   function savePesoToSupabase(nome,data,valore) {
@@ -9004,8 +8997,8 @@ export default function App() {
     var stamp = new Date().toISOString();
     var nP=0, nB=0, nS=0;
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
-    Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}); });
-    Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}); });
+    Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
+    Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
