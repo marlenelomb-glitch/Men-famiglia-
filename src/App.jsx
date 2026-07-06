@@ -4365,7 +4365,7 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, onSavePasto}) {
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, onSavePasto}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
 
@@ -4692,6 +4692,17 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     {campo:"verdura",label:"Verdura",tipo:"verdura",def:150,db:VERDURE}
   ];
 
+  function scadenzaEntro(scad, giorni) {
+    if(!scad) return false;
+    var oggi = new Date(); oggi.setHours(0,0,0,0);
+    var d = new Date(scad+"T00:00:00");
+    if(isNaN(d.getTime())) return false;
+    var diff = (d.getTime() - oggi.getTime()) / 86400000;
+    return diff <= giorni;
+  }
+  var mealPrepScad = (mealPrep||[]).filter(function(p){ return p && p.porzioniRimaste>0 && scadenzaEntro(p.scadenza, 3); });
+  var dispensaScad = (dispensa||[]).filter(function(d){ return d && scadenzaEntro(d.scadenza, 3); });
+
   return (
     <div style={{minHeight:"60vh"}}>
       <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
@@ -4745,6 +4756,15 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
         return (
         <div>
           <div style={{fontSize:20,fontWeight:800,color:"#2C3338",margin:"2px 0 8px"}}>Builder</div>
+
+          {(mealPrepScad.length>0 || dispensaScad.length>0)?(
+            <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"9px 12px",marginBottom:9,display:"flex",alignItems:"center",gap:9}}>
+              <i className="ti ti-clock-exclamation" style={{fontSize:18,color:"#8A5A12",flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0,fontSize:11,color:"#8A5A12",fontWeight:700}}>
+                Da usare presto: {mealPrepScad.map(function(p){return p.nome;}).concat(dispensaScad.map(function(d){return d.nome;})).slice(0,3).join(", ")}{(mealPrepScad.length+dispensaScad.length)>3?"…":""}
+              </div>
+            </div>
+          ):null}
 
           <div style={{display:"grid",gridTemplateColumns:"16px repeat(7,1fr)",gap:5,alignItems:"stretch",marginBottom:8}}>
             {(function(){
@@ -5344,7 +5364,43 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   ):(
                     <div style={{fontSize:11,color:"#B4BEC4"}}>L'app riconosce ingredienti e calorie da sola</div>
                   )}
+                  {(""+(puG.nome||"")).trim()?(
+                    <button onClick={function(){ riconosciCompleto(); setPicker(null); }}
+                      style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"13px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                      <i className="ti ti-check" style={{fontSize:18}}/>Aggiungi il piatto
+                    </button>
+                  ):null}
                 </div>
+
+                {(mealPrepScad.length>0 || dispensaScad.length>0)?(
+                  <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:14,padding:"12px 13px",display:"flex",flexDirection:"column",gap:9}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"#8A5A12",display:"flex",alignItems:"center",gap:6,textTransform:"uppercase",letterSpacing:".03em"}}><i className="ti ti-clock-exclamation" style={{fontSize:15}}/>Da usare presto</div>
+                    {mealPrepScad.map(function(mp){
+                      return (
+                        <div key={mp.id} onClick={function(){ setPiattoUnicoField("nome", mp.nome); riconosciCompleto(); setPicker(null); }}
+                          style={{display:"flex",alignItems:"center",gap:10,background:"#fff",borderRadius:11,padding:"9px 11px",cursor:"pointer"}}>
+                          <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mp.nome}</div>
+                            <div style={{fontSize:10,color:"#8A5A12",fontWeight:700}}>Meal prep · {mp.porzioniRimaste} porz. · scade {mp.scadenza}</div>
+                          </div>
+                          <span style={{fontSize:11,fontWeight:800,color:"#2F6586"}}>Usa</span>
+                        </div>
+                      );
+                    })}
+                    {dispensaScad.length>0?(
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {dispensaScad.map(function(d,di){
+                          return <button key={"ds"+di} onClick={function(){ var base=(""+(puG.nome||"")).trim(); setPiattoUnicoField("nome", base?(base+", "+d.nome):d.nome); }}
+                            style={{border:"1px solid #E8D5AE",background:"#fff",color:"#8A5A12",borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:5}}>
+                            {d.emoji?<span>{d.emoji}</span>:<i className="ti ti-basket" style={{fontSize:13}}/>}{d.nome}</button>;
+                        })}
+                      </div>
+                    ):null}
+                    <div style={{fontSize:10,color:"#8A5A12",fontWeight:600}}>Tocca un meal prep per usarlo, o un ingrediente per aggiungerlo al piatto.</div>
+                  </div>
+                ):null}
+
                 <div style={{fontSize:11,fontWeight:800,color:"#B4BEC4",letterSpacing:".06em",padding:"0 2px"}}>OPPURE DA UNA RICETTA SALVATA</div>
                 {DB_RICETTE.filter(function(rc){ var q=pickS.trim().toLowerCase(); return !q || rc.titolo.toLowerCase().indexOf(q)>=0; }).map(function(rc){
                   var por = rc.porzioni && (rc.porzioni.adulto || rc.porzioni.adulta || {});
@@ -9686,6 +9742,7 @@ export default function App() {
           <TabBuilder menu={menu} setMenuOverride={setMenuOverrideLS} profili={profili}
             builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
+            mealPrep={mealPrep} dispensa={dispensa} setMealPrep={setMealPrepLS}
             onSavePasto={savePastoToSupabase}/>
         )}
         {tab==="ai" && (
