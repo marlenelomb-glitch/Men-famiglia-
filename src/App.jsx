@@ -663,7 +663,7 @@ function BadgeCompletezza({pasto, meal, profili}) {
 function TabCalorie({menu, profili, builderScelte}) {
   var GIORNI_C = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_C  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
-  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
   var PORZ = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,verdura:150,frutta:120};
 
@@ -803,7 +803,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
                   builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima}) {
   var GIORNI_M = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_M  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
-  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
   var s0=useState(0); var settSel=s0[0]; var setSettSel=s0[1];
   var s1=useState(null); var popup=s1[0]; var setPopup=s1[1];
   var s2=useState(null); var giornoAperto=s2[0]; var setGiornoAperto=s2[1];
@@ -968,7 +968,7 @@ function TabMenu({menu, setMenuOverride, profili, settimana, setSettimana,
 function TabDiario({menu, profili, regolaApro, setRegolaApro, builderScelte}) {
   var GIORNI_D = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_D  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
-  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
   var PORZ     = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,verdura:150,frutta:120};
   var oggi=new Date().getDay(); var todayIdx=oggi===0?6:oggi-1;
@@ -1734,7 +1734,7 @@ const PIRAMIDE_GRUPPI = [
 ];
 
 function TabPiramide({menu, builderScelte}) {
-  var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+  var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
   var SETTIMANE = ["Questa settimana","Settimana prossima"];
   var s0=useState(0); var settSel=s0[0]; var setSettSel=s0[1];
 
@@ -2525,7 +2525,7 @@ const ORDINE_PASTI = ["Colazione","Spuntino","Pranzo","Merenda","Cena","Extra"];
 function TabHome({menu, profili, dispensa, mealPrep, giorniFuori, setTab, builderScelte}) {
   var GIORNI_H = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_H  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
-  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+  var allDB    = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
   var PORZ     = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,verdura:150,frutta:120};
 
@@ -3553,7 +3553,7 @@ function coloreSemaforo(stato) {
 }
 function NutriPanel(props) {
   var sExp = useState(false); var exp = sExp[0]; var setExp = sExp[1];
-  var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+  var allDB = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
   var PORZ = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
     "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,
     verdura:150,frutta:120};
@@ -3753,7 +3753,7 @@ function CostruttorePasto(props) {
   }
 
   function nomeIng(id) {
-    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
     var f = all.find(function(x){ return x.id === id; });
     return f ? f.nome : "";
   }
@@ -3963,7 +3963,7 @@ function CostruttorePasto(props) {
           </div>
 
           {[{id:carbo,tipo:"carbo"},{id:prot,tipo:"proteina"},{id:verd,tipo:"verdura"},{id:frutta,tipo:"frutta"},{id:lattic,tipo:"latticino"}].filter(function(x){return x.id;}).map(function(x){
-            var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+            var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
             var ing=allIt.find(function(a){return a.id===x.id;});
             if(!ing) return null;
             var pl=getPrep(x.id,x.tipo);
@@ -4024,7 +4024,7 @@ function GrigliaSettimana(props) {
   var giornoSel=props.giornoSel, pastoSel=props.pastoSel;
   var cambiaGiorno=props.cambiaGiorno, cambiaPasto=props.cambiaPasto;
   var setPopup=props.setPopup;
-  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
   var pasti5=["Colazione","Spuntino","Pranzo","Merenda","Cena"];
   var rows=[];
 
@@ -4084,7 +4084,7 @@ function PopupPasto(props) {
   var GIORNI=props.GIORNI, PASTI=props.PASTI;
   var giorno=data.giorno, pasto=data.pasto, s=data.s, gi=data.gi;
   var copyState=useState(false); var showCopia=copyState[0]; var setShowCopia=copyState[1];
-  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
   function find2(id){return allIt.find(function(x){return x.id===id;});}
   var ings=[
     {label:"Carbo",item:find2(s.carbo)},{label:"Proteina",item:find2(s.proteina)},
@@ -4326,7 +4326,7 @@ var PIATTI_COMPOSTI = {
 function riconosciPasto(testo) {
   var t = (""+(testo||"")).toLowerCase();
   if(!t.trim()) return {kcal:0, prot:0, items:[]};
-  var db = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA);
+  var db = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
   var byWord = {};
   var chosen = {};
   Object.keys(PIATTI_COMPOSTI).forEach(function(k){
@@ -5560,7 +5560,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 </div>
               )}
               {ricette.map(function(r,ri){
-                var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE);
+                var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
                 return (
                   <div key={r.id} style={{background:"#F5F8FC",borderRadius:12,padding:"12px",marginBottom:10}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
