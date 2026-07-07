@@ -4836,6 +4836,54 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             <i className="ti ti-wand" style={{fontSize:16}}/>Completa in automatico
           </button>
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+
+          <div style={{marginTop:16}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
+            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
+              {GIORNI_B.map(function(g,i){
+                var dataG=new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
+                var oggiSel=i===giornoSel;
+                return (
+                  <div key={"det-"+g} style={{flex:"0 0 168px",display:"flex",flexDirection:"column",gap:8}}>
+                    <div style={{background:oggiSel?"#2F6586":"#fff",color:oggiSel?"#fff":"#2C3338",border:"1px solid "+(oggiSel?"#2F6586":"#E3EAEE"),borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"baseline",gap:7}}>
+                      <span style={{fontSize:15,fontWeight:800}}>{g.slice(0,3)}</span>
+                      <span style={{fontSize:11,fontWeight:700,opacity:.75}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
+                    </div>
+                    {["Pranzo","Cena"].map(function(m){
+                      var s=scelteAttive[g+"-"+m]||{};
+                      var compl=s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+                      return (
+                        <div key={m} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"10px 11px",display:"flex",flexDirection:"column",gap:7}}>
+                          <div style={{fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",color:"#8A949B",display:"flex",alignItems:"center",gap:6}}><i className={"ti "+(m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:13,color:"#6BA6C9"}}/>{m}</div>
+                          {compl?(
+                            <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                              style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",borderRadius:10,padding:"8px 10px",cursor:"pointer"}}>
+                              <div style={{width:26,height:26,borderRadius:8,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                              <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.piattoUnico.nome}</div>
+                            </div>
+                          ):(
+                            GRUPPI_BOARD.map(function(gr){
+                              var id=s[gr.campo];
+                              return (
+                                <div key={gr.campo} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(gr); }}
+                                  style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+                                  <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,
+                                    background:id?"#E2EEF5":"#fff",border:id?"none":"1.5px dashed #CADCE8",color:id?"#2F6586":"#B4BEC4"}}>
+                                    <i className={"ti "+(id?iconaGruppo(gr.tipo,id):"ti-plus")}/>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:id?700:600,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{id?nomeGruppo(id):gr.label}</div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
         );
       })()}
