@@ -4365,7 +4365,7 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, onSavePasto}) {
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, onSavePasto}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
 
@@ -4413,6 +4413,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var sFGlut=useState(false); var fGlut=sFGlut[0]; var setFGlut=sFGlut[1];
   var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
   var scS=useState("componi"); var sheetTab=scS[0]; var setSheetTab=scS[1];
+  var sNA=useState(null); var nuovoAl=sNA[0]; var setNuovoAl=sNA[1];
   var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
   function usoSettIng(id) {
     var n=0;
@@ -4686,11 +4687,30 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var completati=GIORNI_B.reduce(function(n,g){return n+PASTI_B.filter(function(p){return isCompleto(g,p);}).length;},0);
   var totale=GIORNI_B.length*PASTI_B.length;
 
+  var custProt = (alimentiCustom||[]).filter(function(x){return x.tipo==="proteina";});
+  var custCarb = (alimentiCustom||[]).filter(function(x){return x.tipo==="carbo";});
+  var custVerd = (alimentiCustom||[]).filter(function(x){return x.tipo==="verdura";});
   var GRUPPI_BOARD=[
-    {campo:"proteina",label:"Proteina",tipo:"proteina",def:150,db:PROTEINE},
-    {campo:"carbo",label:"Carboidrato",tipo:"carbo",def:80,db:CARBOIDRATI.filter(function(c){return ["pasta","riso","cereali","tuberi"].indexOf(c.cat)>=0;})},
-    {campo:"verdura",label:"Verdura",tipo:"verdura",def:150,db:VERDURE}
+    {campo:"proteina",label:"Proteina",tipo:"proteina",def:150,db:PROTEINE.concat(custProt)},
+    {campo:"carbo",label:"Carboidrato",tipo:"carbo",def:80,db:CARBOIDRATI.filter(function(c){return ["pasta","riso","cereali","tuberi"].indexOf(c.cat)>=0;}).concat(custCarb)},
+    {campo:"verdura",label:"Verdura",tipo:"verdura",def:150,db:VERDURE.concat(custVerd)}
   ];
+
+  function creaAlimento() {
+    if(!picker || !nuovoAl) return;
+    var nome = (nuovoAl.nome||"").trim();
+    if(!nome) return;
+    var tipo = picker.tipo;
+    var cat = tipo==="proteina" ? (nuovoAl.cat||"carne") : (tipo==="carbo" ? "cereali" : "tutto");
+    var nuovo = {id:"custom_"+new Date().getTime(), nome:nome, tipo:tipo, cat:cat, custom:true, stagione:"tutto",
+      kcal_p: (parseInt(nuovoAl.kcal,10)||0) || (tipo==="proteina"?150:(tipo==="carbo"?300:25)),
+      prot_p: (parseInt(nuovoAl.prot,10)||0) || (tipo==="proteina"?20:(tipo==="carbo"?8:2)),
+      carb_p:0, phe_p:0, gsat_p:0, na_p:0};
+    if(setAlimentiCustom) setAlimentiCustom((alimentiCustom||[]).concat([nuovo]));
+    setCampoG(picker.campo, nuovo.id);
+    setNuovoAl(null);
+    setPicker(null);
+  }
 
   function scadenzaEntro(scad, giorni) {
     if(!scad) return false;
@@ -5353,6 +5373,38 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
                       style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#C2355A",fontWeight:700,fontSize:14}}>
                       <i className="ti ti-trash" style={{fontSize:18}}/>Togli {picker.label.toLowerCase().replace(" · facoltativa","")}
+                    </div>
+                  )}
+                  {nuovoAl?(
+                    <div style={{border:"1.5px solid #6BA6C9",background:"#EBF3FA",borderRadius:13,padding:"12px",display:"flex",flexDirection:"column",gap:9,marginBottom:8}}>
+                      <div style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>Nuovo alimento</div>
+                      <input value={nuovoAl.nome||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{nome:e.target.value})); }} placeholder="Nome (es. Seitan)"
+                        style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #CADCE8",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                      {picker.tipo==="proteina"?(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {[{k:"carne",l:"Carne"},{k:"pesce",l:"Pesce"},{k:"legumi",l:"Legumi"},{k:"uova",l:"Uova"},{k:"latticini",l:"Latticini"}].map(function(ct){
+                            var on=(nuovoAl.cat||"carne")===ct.k;
+                            return <button key={ct.k} onClick={function(){ setNuovoAl(Object.assign({},nuovoAl,{cat:ct.k})); }}
+                              style={{border:"1.5px solid "+(on?"#2F6586":"#CADCE8"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2F6586",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{ct.l}</button>;
+                          })}
+                        </div>
+                      ):null}
+                      <div style={{display:"flex",gap:8}}>
+                        <input inputMode="numeric" value={nuovoAl.kcal||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{kcal:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="kcal/100g"
+                          style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                        <input inputMode="numeric" value={nuovoAl.prot||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{prot:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="proteine/100g"
+                          style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                      </div>
+                      <div style={{fontSize:10,color:"#8A949B"}}>kcal e proteine per 100g (facoltativi)</div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={function(){ setNuovoAl(null); }} style={{flex:1,border:"1.5px solid #E3EAEE",background:"#fff",color:"#8A949B",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Annulla</button>
+                        <button onClick={function(){ creaAlimento(); }} style={{flex:2,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer"}}>Crea e usa</button>
+                      </div>
+                    </div>
+                  ):(
+                    <div onClick={function(){ setNuovoAl({nome:(pickS||"").trim(), cat:"carne", kcal:"", prot:""}); }}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#2F6586",fontWeight:800,fontSize:14,borderTop:"1px solid #EEF2F5"}}>
+                      <i className="ti ti-plus" style={{fontSize:18}}/>Crea un nuovo alimento{(pickS||"").trim()?(" «"+pickS.trim()+"»"):""}
                     </div>
                   )}
                   {(function(){
@@ -6369,8 +6421,9 @@ function grammiField(scelta, field, it, fallback) {
   return porzioneStdIng(it, fallback);
 }
 
+var ALIMENTI_CUSTOM = [];
 function ingById(id) {
-  var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI);
+  var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
   return all.find(function(x){ return x.id === id; });
 }
 
@@ -9190,7 +9243,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, alimentiCustom:setAlimentiCustom};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -9224,7 +9277,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, alimentiCustom:alimentiCustom};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -9349,6 +9402,8 @@ export default function App() {
   const [ospiti, setOspiti] = useState(loadLS("ospiti", {}));
   const [piani, setPiani] = useState(loadLS("piani", {}));
   const [medicine, setMedicine] = useState(loadLS("medicine", {}));
+  const [alimentiCustom, setAlimentiCustom] = useState(loadLS("alimentiCustom", []));
+  ALIMENTI_CUSTOM = alimentiCustom;
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
@@ -9458,6 +9513,7 @@ export default function App() {
   var setDispensaLS           = mkSetterSync("dispensa", setDispensa);
   var setSpesaLS              = mkSetterSync("spesa", setSpesa);
   var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
+  var setAlimentiCustomLS     = mkSetterSync("alimentiCustom", setAlimentiCustom);
   var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
   var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
   var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
@@ -9791,6 +9847,7 @@ export default function App() {
             builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
             mealPrep={mealPrep} dispensa={dispensa} setMealPrep={setMealPrepLS}
+            alimentiCustom={alimentiCustom} setAlimentiCustom={setAlimentiCustomLS}
             onSavePasto={savePastoToSupabase}/>
         )}
         {tab==="ai" && (
