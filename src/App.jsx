@@ -5688,6 +5688,9 @@ function OnboardingFamiglia(props) {
   var onComplete = props.onComplete;
   var onExit = props.onExit;
   var modifica = !!props.profiliIniziali;
+  var pianif = props.pianificazione || {giorno:4, ora:"09:00", attiva:false};
+  var setPianif = props.setPianificazione || function(){};
+  var GIORNI_PLAN = ["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
   var s_lista = useState(function(){
     if(props.profiliIniziali) {
       return Object.keys(props.profiliIniziali).map(function(k){ return profiloToMembro(props.profiliIniziali[k]); });
@@ -6087,6 +6090,20 @@ function OnboardingFamiglia(props) {
             cursor:canAdd?"pointer":"default"}}>
           <i className="ti ti-user-plus" style={{fontSize:16}}/>Aggiungi un altro familiare
         </button>
+        {!modifica&&(lista.length>0||canAdd)&&(
+          <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"14px 15px",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#2C3338",display:"flex",alignItems:"center",gap:8,marginBottom:4}}><i className="ti ti-calendar" style={{fontSize:17,color:"#2F6586"}}/>Che giorno pianifichi il menu?</div>
+            <div style={{fontSize:11,color:"#8A949B",marginBottom:11}}>Ti aiuta a ricordarti di preparare la settimana. Puoi cambiarlo dopo.</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {GIORNI_PLAN.map(function(g,i){
+                var on=pianif.giorno===i;
+                return <button key={g} onClick={function(){ setPianif(Object.assign({}, pianif, {giorno:i, attiva:true})); }}
+                  style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2C3338",
+                    borderRadius:20,padding:"8px 13px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g}</button>;
+              })}
+            </div>
+          </div>
+        )}
         <button onClick={inizia} disabled={lista.length===0&&!canAdd}
           style={{width:"100%",padding:"14px",borderRadius:14,border:"none",
             background:modifica?((lista.length===0&&!canAdd)?"#ccc":"#2F6586"):"transparent",
@@ -9181,9 +9198,9 @@ export default function App() {
     Colazione:"07:30", Spuntino:"10:30", Pranzo:"12:30",
     Merenda:"16:00", Cena:"19:00", Extra:"21:00"
   });
-  const [pianificazione, setPianificazione] = useState({
+  const [pianificazione, setPianificazione] = useState(loadLS("pianificazione", {
     giorno: 4, ora: "09:00", attiva: false
-  });
+  }));
   const [pin, setPin] = useState(loadLS("pin", {attivo:false, codice:"", sbloccato:true}));
   // Reset auto-genera dopo che TabMenu lo ha usato
   const [autoGeneraMenu, setAutoGeneraMenu] = useState(false);
@@ -9243,7 +9260,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, alimentiCustom:setAlimentiCustom};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -9277,7 +9294,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, alimentiCustom:alimentiCustom};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -9514,6 +9531,7 @@ export default function App() {
   var setSpesaLS              = mkSetterSync("spesa", setSpesa);
   var setMealPrepLS           = mkSetterSync("mealPrep", setMealPrep);
   var setAlimentiCustomLS     = mkSetterSync("alimentiCustom", setAlimentiCustom);
+  var setPianificazioneLS     = mkSetterSync("pianificazione", setPianificazione);
   var setDiarioLogLS          = mkSetterSync("diarioLog", setDiarioLog);
   var setFeedbackPastiLS      = mkSetterSync("feedbackPasti", setFeedbackPasti);
   var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
@@ -9752,7 +9770,7 @@ export default function App() {
 
       {/* Onboarding nuovo account */}
       {!loading&&utente&&Object.keys(profili).length===0&&(
-        <OnboardingFamiglia onComplete={setProfiliLS}/>
+        <OnboardingFamiglia onComplete={setProfiliLS} pianificazione={pianificazione} setPianificazione={setPianificazioneLS}/>
       )}
 
       {!loading&&utente&&Object.keys(profili).length>0&&modificaFam&&(
@@ -9817,7 +9835,7 @@ export default function App() {
           <div>
             <TabImpostazioni
               profili={profili} setProfili={setProfiliLS}
-              pianificazione={pianificazione} setPianificazione={setPianificazione}
+              pianificazione={pianificazione} setPianificazione={setPianificazioneLS}
               pesoLog={pesoLog} setPesoLog={setPesoLogLS}
               pin={pin} setPin={setPinLS}
               familyId={familyId} userId={userId} isAdmin={isAdmin}
