@@ -8798,6 +8798,12 @@ function HomeView(props) {
   var setTab = props.setTab || function(){};
   var setSpesa = props.setSpesa || function(){};
   var toggleFuori = props.toggleFuori || function(){};
+  var medicine = props.medicine || {};
+  var setMedicine = props.setMedicine || function(){};
+  var noteGiorno = props.noteGiorno || {};
+  var setNoteGiorno = props.setNoteGiorno || function(){};
+  var oggiIso = isoDay(new Date());
+  var sNoteDraft = useState({}); var noteDraft = sNoteDraft[0]; var setNoteDraft = sNoteDraft[1];
 
   var GIORNI_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var GIORNI_SHORT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -8944,6 +8950,46 @@ function HomeView(props) {
 
   var membriPid = Object.keys(profili);
 
+  function toggleDoseHome(pid, medId, idx) {
+    setMedicine(function(prev){
+      var m = Object.assign({}, prev || {});
+      var arr = (m[pid] || []).map(function(x){ return Object.assign({}, x); });
+      arr.forEach(function(md){
+        if(md.id === medId){
+          md.log = Object.assign({}, md.log || {});
+          var day = (md.log[oggiIso] || []).slice();
+          while(day.length < md.volte) day.push(false);
+          day[idx] = !day[idx];
+          md.log[oggiIso] = day;
+        }
+      });
+      m[pid] = arr;
+      return m;
+    });
+  }
+  function presiOggi(md) {
+    var day = (md.log && md.log[oggiIso]) || [];
+    var n = 0; for(var i=0;i<md.volte;i++){ if(day[i]) n++; }
+    return n;
+  }
+  var membriMed = membriPid.map(function(pid){
+    return {pid:pid, p:profili[pid] || {}, meds:(medicine[pid] || [])};
+  }).filter(function(x){ return x.meds.length > 0; });
+
+  function notaSalvata(pid) { var pn = noteGiorno[pid] || {}; return pn[oggiIso] || ""; }
+  function notaVal(pid) { return (noteDraft[pid] !== undefined) ? noteDraft[pid] : notaSalvata(pid); }
+  function onNotaChange(pid, v) { setNoteDraft(function(prev){ var n = Object.assign({}, prev); n[pid] = v; return n; }); }
+  function commitNota(pid) {
+    var v = notaVal(pid);
+    setNoteGiorno(function(prev){
+      var m = Object.assign({}, prev || {});
+      var pn = Object.assign({}, m[pid] || {});
+      if(v && v.trim()) pn[oggiIso] = v; else delete pn[oggiIso];
+      m[pid] = pn;
+      return m;
+    });
+  }
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{paddingTop:8}}>
@@ -8993,6 +9039,75 @@ function HomeView(props) {
           <div style={{fontSize:10,color:"#8A949B",marginTop:9}}>Tocca un membro per l'eccezione di oggi (es. oggi mangia fuori)</div>
         )}
       </div>
+
+      {membriMed.length > 0 && (
+        <div style={cardStyle}>
+          <div style={ctStyle}><i className="ti ti-pill" style={{color:"#2F6586",fontSize:15}}/>Medicine di oggi</div>
+          {membriMed.map(function(mm, mi){
+            var p = mm.p; var col = p.colore || "#2F6586";
+            var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
+            return (
+              <div key={mm.pid} style={{paddingTop:mi>0?10:0,marginTop:mi>0?10:0,borderTop:mi>0?"1px solid #F1F4F6":"none"}}>
+                <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</div>
+                  <div style={{fontSize:13,fontWeight:800}}>{p.nome || "—"}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                  {mm.meds.map(function(md){
+                    var presi = presiOggi(md);
+                    var completo = presi >= md.volte;
+                    return (
+                      <div key={md.id} style={{display:"flex",alignItems:"center",gap:9}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:13,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{md.nome}</div>
+                          {(md.dose || md.quando) ? (
+                            <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{[md.dose, md.quando].filter(Boolean).join(" · ")}</div>
+                          ) : null}
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                          {Array.apply(null, {length:md.volte}).map(function(x, idx){
+                            var day = (md.log && md.log[oggiIso]) || [];
+                            var on = !!day[idx];
+                            return (
+                              <button key={idx} onClick={function(){ toggleDoseHome(mm.pid, md.id, idx); }}
+                                style={{width:30,height:30,borderRadius:"50%",cursor:"pointer",border:"1.5px solid "+(on?"#2F6586":"#CADCE8"),background:on?"#2F6586":"#fff",color:on?"#fff":"#CADCE8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                                <i className={"ti "+(on?"ti-check":"ti-plus")}/>
+                              </button>
+                            );
+                          })}
+                          <span style={{fontSize:11,fontWeight:800,color:completo?"#2F6586":"#8A949B",minWidth:34,textAlign:"right"}}>{completo?"Fatto":(presi+"/"+md.volte)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {membriPid.length > 0 && (
+        <div style={cardStyle}>
+          <div style={ctStyle}><i className="ti ti-note" style={{color:"#2F6586",fontSize:15}}/>Nota di oggi</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {membriPid.map(function(pid){
+              var p = profili[pid] || {};
+              var col = p.colore || "#2F6586";
+              var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
+              return (
+                <div key={pid} style={{display:"flex",alignItems:"center",gap:9}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</div>
+                  <input value={notaVal(pid)} onChange={function(e){ onNotaChange(pid, e.target.value); }} onBlur={function(){ commitNota(pid); }}
+                    placeholder={"Nota per "+(p.nome||"")+"…"}
+                    style={{flex:1,minWidth:0,padding:"9px 11px",borderRadius:11,border:"1px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{fontSize:10,color:"#8A949B",marginTop:9}}>Le note si salvano da sole. Ne tengo lo storico per ogni giorno.</div>
+        </div>
+      )}
 
       {mancantiOggi.length > 0 && (
         <div style={warmCardStyle}>
@@ -9574,7 +9689,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -9608,7 +9723,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -9733,6 +9848,7 @@ export default function App() {
   const [ospiti, setOspiti] = useState(loadLS("ospiti", {}));
   const [piani, setPiani] = useState(loadLS("piani", {}));
   const [medicine, setMedicine] = useState(loadLS("medicine", {}));
+  const [noteGiorno, setNoteGiorno] = useState(loadLS("noteGiorno", {}));
   const [alimentiCustom, setAlimentiCustom] = useState(loadLS("alimentiCustom", []));
   ALIMENTI_CUSTOM = alimentiCustom;
   const [regolaApro, setRegolaApro] = useState({
@@ -9855,6 +9971,7 @@ export default function App() {
   var setOspitiLS             = mkSetterSync("ospiti", setOspiti);
   var setPianiLS              = mkSetterSync("piani", setPiani);
   var setMedicineLS           = mkSetterSync("medicine", setMedicine);
+  var setNoteGiornoLS         = mkSetterSync("noteGiorno", setNoteGiorno);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -10116,7 +10233,8 @@ export default function App() {
         <ErrorBoundary key={tab}>
         {tab==="home" && (
           <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}
-            mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}/>
+            mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}
+            medicine={medicine} setMedicine={setMedicineLS} noteGiorno={noteGiorno} setNoteGiorno={setNoteGiornoLS}/>
         )}
         {tab==="menu" && (
           <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
