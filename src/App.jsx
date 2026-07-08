@@ -9933,15 +9933,15 @@ export default function App() {
               <rect x="150" y="38" width="52" height="7" fill="#2F6586"/>
               <circle cx="163" cy="30" r="2.5" fill="#2F6586"/><circle cx="189" cy="30" r="2.5" fill="#2F6586"/>
               <path d="M163 62 l7 7 l13 -14" fill="none" stroke="#6BA6C9" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-              <ellipse cx="64" cy="58" rx="13" ry="8" fill="#6BA6C9" transform="rotate(-35 64 58)"/>
-              <path d="M58 63 q6 -7 12 -11" fill="none" stroke="#2F6586" strokeWidth="1.6" strokeLinecap="round"/>
+              <ellipse cx="64" cy="58" rx="13" ry="8" fill="#9FC79A" transform="rotate(-35 64 58)"/>
+              <path d="M58 63 q6 -7 12 -11" fill="none" stroke="#5E8C57" strokeWidth="1.6" strokeLinecap="round"/>
               <circle cx="120" cy="118" r="56" fill="#FFFFFF" stroke="#DDE7EC" strokeWidth="1.5"/>
               <circle cx="120" cy="118" r="44" fill="#EAF1F6"/>
-              <ellipse cx="108" cy="110" rx="18" ry="13" fill="#6BA6C9"/>
-              <path d="M99 110 q9 -10 19 -3" fill="none" stroke="#2F6586" strokeWidth="1.6" strokeLinecap="round"/>
+              <ellipse cx="108" cy="110" rx="18" ry="13" fill="#9FC79A"/>
+              <path d="M99 110 q9 -10 19 -3" fill="none" stroke="#5E8C57" strokeWidth="1.6" strokeLinecap="round"/>
               <ellipse cx="134" cy="124" rx="15" ry="11" fill="#AFCDDD"/>
-              <circle cx="120" cy="132" r="7" fill="#6BA6C9"/>
-              <circle cx="128" cy="106" r="5" fill="#6BA6C9"/>
+              <circle cx="120" cy="132" r="7" fill="#E2A98C"/>
+              <circle cx="128" cy="106" r="5" fill="#E2A98C"/>
             </svg>
           </div>
 
