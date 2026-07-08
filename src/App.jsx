@@ -4269,7 +4269,7 @@ function catSpesa(item) {
 
 function SpesaItemsB(props) {
   var scelte=props.scelte, spesaCheck=props.spesaCheck, setSpesaCheck=props.setSpesaCheck;
-  var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI);
+  var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
   var cats={}; CATS_SPESA.forEach(function(c){cats[c.id]=[];});
   var seen={};
   function tryAdd(id){
@@ -8327,6 +8327,32 @@ function DispensaView(props) {
       .map(function(it){ return {nome:it.nome, cat:"dispensa", fatto:false}; });
     if(nuovi.length) setSpesa(attuali.concat(nuovi));
   }
+  var oggiDisp = new Date().toISOString().split("T")[0];
+  function giorniDopoApertoDef(n) {
+    var s = (n||"").toLowerCase();
+    if(s.indexOf("yogurt")>=0) return 2;
+    if(s.indexOf("latte")>=0 || s.indexOf("panna")>=0) return 3;
+    if(s.indexOf("prosciutto")>=0 || s.indexOf("salame")>=0 || s.indexOf("affettat")>=0 || s.indexOf("mortadella")>=0 || s.indexOf("wurstel")>=0) return 3;
+    if(s.indexOf("formaggio")>=0 || s.indexOf("mozzarella")>=0 || s.indexOf("ricotta")>=0 || s.indexOf("stracchino")>=0) return 4;
+    if(s.indexOf("succo")>=0 || s.indexOf("passata")>=0 || s.indexOf("pomodoro")>=0 || s.indexOf("salsa")>=0 || s.indexOf("sugo")>=0) return 4;
+    return 3;
+  }
+  function addGiorniD(dstr, n) { var d = new Date(dstr+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; }
+  function effAp(orig, apData, dur) { var apEnd = addGiorniD(apData||oggiDisp, dur); return (!orig || apEnd < orig) ? apEnd : orig; }
+  function giorniRestanoD(dstr) { if(!dstr) return null; return Math.round((new Date(dstr+"T00:00:00") - new Date(oggiDisp+"T00:00:00"))/86400000); }
+  function apriIdx(idx) { setDispensa(dispensa.map(function(x, i){
+    if(i!==idx) return x;
+    var dur = (x.durataAperto!=null ? x.durataAperto : giorniDopoApertoDef(x.nome));
+    var orig = (x.scadenzaOrig!=null ? x.scadenzaOrig : (x.scadenza||""));
+    return Object.assign({}, x, {aperto:true, apertoData:oggiDisp, durataAperto:dur, scadenzaOrig:orig, scadenza:effAp(orig, oggiDisp, dur)});
+  })); }
+  function chiudiIdx(idx) { setDispensa(dispensa.map(function(x, i){ if(i!==idx) return x; return Object.assign({}, x, {aperto:false, scadenza:(x.scadenzaOrig!=null?x.scadenzaOrig:x.scadenza)}); })); }
+  function setDurIdx(idx, d) { setDispensa(dispensa.map(function(x, i){
+    if(i!==idx) return x;
+    var dur = Math.max(1, d);
+    var orig = (x.scadenzaOrig!=null ? x.scadenzaOrig : (x.scadenza||""));
+    return Object.assign({}, x, {durataAperto:dur, scadenza:effAp(orig, x.apertoData||oggiDisp, dur)});
+  })); }
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -8444,18 +8470,28 @@ function DispensaView(props) {
           var low = dispensaLow(it);
           var ss = scadStato(it.scadenza);
           var cott = tempoCottura(it.nome);
+          var dur = (it.durataAperto!=null ? it.durataAperto : giorniDopoApertoDef(it.nome));
+          var rem = giorniRestanoD(it.scadenza);
           return (
             <div key={i} className="mf-row">
               <div className="mf-ic" style={{fontSize:20}}>{alimentoEmoji(it.nome)}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:500}}>{it.nome}</div>
+                <div style={{fontSize:14,fontWeight:500,display:"flex",alignItems:"center",gap:6}}>{it.nome}{it.aperto&&<span onClick={function(){ chiudiIdx(i); }} style={{fontSize:9,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"2px 7px",cursor:"pointer"}}>Aperto</span>}</div>
                 <div style={{fontSize:11,color:"#8A949B",display:"flex",gap:8,flexWrap:"wrap"}}>
                   <span>{(it.qty||"")+" "+(it.unita||"")}</span>
                   {cott !== null && cott > 0 && <span style={{color:"#9A6B2F",fontWeight:700}}>⏱ {cott} min</span>}
-                  {ss && <span style={{color:ss.c,fontWeight:700}}>{ss.t==="OK"?"Scade "+it.scadenza:ss.t}</span>}
+                  {it.aperto ? <span style={{color:(rem!=null&&rem<=1)?"#C2355A":"#8A5A12",fontWeight:700}}>{rem<0?"Scaduto":(rem===0?"Da finire oggi":("Restano "+rem+(rem===1?" giorno":" giorni")))}</span> : (ss && <span style={{color:ss.c,fontWeight:700}}>{ss.t==="OK"?"Scade "+it.scadenza:ss.t}</span>)}
                 </div>
               </div>
-              <span className={"pill "+(low?"low":"ok")}>{low?"In esaurimento":"OK"}</span>
+              {it.aperto ? (
+                <div style={{display:"flex",alignItems:"center",gap:3,background:"#F2F6F8",borderRadius:20,padding:3,marginLeft:6}}>
+                  <button onClick={function(){ setDurIdx(i,dur-1); }} style={{width:21,height:21,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>−</button>
+                  <span style={{fontSize:9,fontWeight:800,color:"#2F6586",minWidth:30,textAlign:"center"}}>{dur} gg</span>
+                  <button onClick={function(){ setDurIdx(i,dur+1); }} style={{width:21,height:21,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>+</button>
+                </div>
+              ) : (
+                <button onClick={function(){ apriIdx(i); }} style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:20,padding:"5px 10px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:4,marginLeft:6}}><i className="ti ti-lock-open" style={{fontSize:12}}/>Apri</button>
+              )}
               <i className="ti ti-x" onClick={function(){ rimuoviItem(i); }}
                 style={{fontSize:16,color:"#B4BEC4",cursor:"pointer",marginLeft:8}}/>
             </div>
