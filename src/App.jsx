@@ -6462,8 +6462,8 @@ function MenuView(props) {
                       return (
                         <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }}
                           style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",
-                            border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#FBE7EC":"#fff",
-                            color:on?"#C2355A":"#8A949B",fontWeight:on?700:500}}>
+                            border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",
+                            color:on?"#2F6586":"#8A949B",fontWeight:on?700:500}}>
                           {rz.l}
                         </button>
                       );
@@ -9241,7 +9241,7 @@ function MenuCondiviso(props) {
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:8}}>
                       {GUEST_RESTR.map(function(rz){
                         var on = osp.restr.indexOf(rz.id)>=0;
-                        return <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }} style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#FBE7EC":"#fff",color:on?"#C2355A":"#8A949B",fontWeight:on?700:500}}>{rz.l}</button>;
+                        return <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }} style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",fontWeight:on?700:500}}>{rz.l}</button>;
                       })}
                     </div>
                   )}
