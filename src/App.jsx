@@ -8656,105 +8656,286 @@ function HomeView(props) {
   var menu = props.menu || {};
   var builder = props.builder || {};
   var dispensa = props.dispensa || [];
-  var spesa = props.spesa || [];
+  var mealPrep = props.mealPrep || [];
+  var giorniFuori = props.giorniFuori || {};
+  var pianiObj = props.piani || {};
+  var pianiLista = (pianiObj && pianiObj.lista) ? pianiObj.lista : [];
   var setTab = props.setTab || function(){};
-  var vals = Object.values(profili);
-  var iniziali = vals.map(function(p){ return p.nome ? p.nome.slice(0,1) : ""; }).join("").slice(0,2).toUpperCase() || "MF";
-  var mesiIt = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
-  var giorniIt = ["domenica","lunedi","martedi","mercoledi","giovedi","venerdi","sabato"];
+  var setSpesa = props.setSpesa || function(){};
+  var toggleFuori = props.toggleFuori || function(){};
+
+  var GIORNI_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
+  var GIORNI_SHORT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+  var mesiAbbr = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+  var giorniLabel = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
   var now = new Date();
-  var dataLabel = giorniIt[now.getDay()] + " " + now.getDate() + " " + mesiIt[now.getMonth()];
-  var oggiApp = DAYS[(now.getDay()+6)%7];
-  function pastoInfo(m) {
-    return pastoUnificato(builder, menu, oggiApp, m);
+  var todayIdx = (now.getDay()+6)%7;
+  var gOggi = GIORNI_FULL[todayIdx];
+  var gShort = GIORNI_SHORT[todayIdx];
+  var isWeekday = todayIdx <= 4;
+  var dataLabel = "Oggi · " + giorniLabel[now.getDay()] + " " + now.getDate() + " " + mesiAbbr[now.getMonth()];
+
+  var cardStyle = {background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"14px 15px"};
+  var warmCardStyle = {background:"#FDF9F0",border:"1px solid #E8D5AE",borderRadius:16,padding:"14px 15px"};
+  var ctStyle = {fontSize:11,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",color:"#8A949B",marginBottom:11,display:"flex",alignItems:"center",gap:7};
+  var ctWarm = {fontSize:11,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",color:"#8A5A12",marginBottom:11,display:"flex",alignItems:"center",gap:7};
+  var warnRow = {background:"#F6ECD9",borderRadius:11,padding:"10px 12px",color:"#8A5A12",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8};
+
+  function pastoInfo(m) { return pastoUnificato(builder, menu, gOggi, m); }
+  var pranzoInfo = pastoInfo("Pranzo");
+  var cenaInfo = pastoInfo("Cena");
+
+  function catEmoji(cat) {
+    if(cat === "pesce") return "🐟";
+    if(cat === "legumi") return "🫘";
+    if(cat === "uova") return "🥚";
+    if(cat === "latticini") return "🧀";
+    if(cat === "affettati") return "🥓";
+    if(cat === "carne" || cat === "carne bianca" || cat === "carne rossa") return "🍗";
+    return "";
   }
-  var pasti = [
-    {m:"Colazione", ic:"ti-coffee"},
-    {m:"Pranzo", ic:"ti-tools-kitchen-2"},
-    {m:"Cena", ic:"ti-soup"}
+  function mealEmoji(pasto) {
+    var s = builder[gOggi+"-"+pasto];
+    if(s && s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) return "🍲";
+    if(s && s.proteina) { var it = ingById(s.proteina); if(it) { var e = catEmoji(it.cat); if(e) return e; } }
+    return pasto === "Pranzo" ? "🍝" : "🍽";
+  }
+
+  function isFuori(pid) {
+    var sf = giorniFuori[gOggi];
+    if(!sf) return false;
+    if(typeof sf.has === "function") return sf.has(pid);
+    if(Array.isArray(sf)) return sf.indexOf(pid) >= 0;
+    return false;
+  }
+  function dovePid(pid) {
+    if(isFuori(pid)) return "fuori";
+    var mensa = false; var dieta = false;
+    pianiLista.forEach(function(pl){
+      if(!pl || pl.membroId !== pid) return;
+      var wk = settimanaPianoNum(pl, now);
+      var w = (pl.settimane || {})[wk];
+      var d = (w && w.giorni) ? w.giorni[gShort] : null;
+      if(!d) return;
+      if(pl.tipo === "mensa") { if(isWeekday && d.pranzo && (""+d.pranzo).trim()) mensa = true; }
+      else if(pl.tipo === "membro") {
+        var qualcosa = Object.keys(d).some(function(k){ return d[k] && (""+d[k]).trim(); });
+        if(qualcosa) dieta = true;
+      }
+    });
+    if(mensa) return "mensa";
+    if(dieta) return "dieta";
+    return "casa";
+  }
+  function badgeInfo(stato) {
+    if(stato === "fuori") return {bg:"#FBE7EC",tx:"#C2355A",ic:"ti-door-exit",label:"Fuori"};
+    if(stato === "mensa") return {bg:"#F6ECD9",tx:"#8A5A12",ic:"ti-school",label:"Mensa"};
+    if(stato === "dieta") return {bg:"#E2EEF5",tx:"#2F6586",ic:"ti-salad",label:"Dieta"};
+    return {bg:"#E2EEF5",tx:"#2F6586",ic:"ti-home",label:"Casa"};
+  }
+
+  function scadenzaEntro(scad, giorni) {
+    if(!scad) return false;
+    var o = new Date(); o.setHours(0,0,0,0);
+    var d = new Date(scad+"T00:00:00");
+    if(isNaN(d.getTime())) return false;
+    return (d.getTime() - o.getTime()) / 86400000 <= giorni;
+  }
+  function giorniA(scad) {
+    var o = new Date(); o.setHours(0,0,0,0);
+    var d = new Date(scad+"T00:00:00");
+    if(isNaN(d.getTime())) return "";
+    var n = Math.round((d.getTime() - o.getTime()) / 86400000);
+    if(n <= 0) return "oggi";
+    if(n === 1) return "domani";
+    return "tra " + n + " giorni";
+  }
+
+  var mancantiOggi = [];
+  [{m:"Pranzo",l:"il pranzo"},{m:"Cena",l:"la cena"}].forEach(function(pp){
+    var s = builder[gOggi+"-"+pp.m]; if(!s) return;
+    var nomi = [];
+    if(s.piattoUnico && s.piattoUnico.riconosciuti && s.piattoUnico.riconosciuti.length) {
+      s.piattoUnico.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); });
+    }
+    ["proteina","carbo","verdura","verdura2"].forEach(function(k){
+      var id = s[k]; if(!id) return; var it = ingById(id); if(it && it.nome) nomi.push(it.nome);
+    });
+    nomi.forEach(function(nome){
+      var low = (""+nome).toLowerCase();
+      var inDisp = dispensa.some(function(d){
+        if(!d || !d.nome) return false;
+        var dn = (""+d.nome).toLowerCase();
+        return dn.indexOf(low) >= 0 || low.indexOf(dn) >= 0;
+      });
+      var gia = mancantiOggi.some(function(x){ return x.nome === nome; });
+      if(!inDisp && !gia) mancantiOggi.push({nome:nome, pasto:pp.l});
+    });
+  });
+  mancantiOggi = mancantiOggi.slice(0,5);
+
+  function aggiungiSpesa() {
+    setSpesa(function(prev){
+      var arr = normSpesa(prev);
+      mancantiOggi.forEach(function(mm){
+        var low = mm.nome.toLowerCase();
+        var gia = arr.some(function(x){ return (""+x.nome).toLowerCase() === low; });
+        if(!gia) arr.push({nome:mm.nome, cat:catDaParola(mm.nome), fatto:false});
+      });
+      return arr;
+    });
+    setTab("spesa");
+  }
+
+  var protCount = {pesce:0,carne:0,legumi:0,uova:0};
+  GIORNI_FULL.forEach(function(g){
+    ["Pranzo","Cena"].forEach(function(m){
+      var s = builder[g+"-"+m]; if(!s || !s.proteina) return;
+      var it = ingById(s.proteina); if(!it) return;
+      if(it.cat === "pesce") protCount.pesce++;
+      else if(it.cat === "legumi") protCount.legumi++;
+      else if(it.cat === "uova") protCount.uova++;
+      else protCount.carne++;
+    });
+  });
+  var protCats = [
+    {key:"pesce",label:"Pesce",ic:"ti-fish"},
+    {key:"carne",label:"Carne",ic:"ti-meat"},
+    {key:"legumi",label:"Legumi",ic:"ti-plant-2"},
+    {key:"uova",label:"Uova",ic:"ti-egg"}
   ];
-  var pianificati = pasti.filter(function(x){ return pastoInfo(x.m); }).length;
-  var pct = Math.round(pianificati / pasti.length * 100);
-  var inEsaurimento = dispensa.filter(function(it){
-    if(!it || !it.scadenza) return false;
-    var d = new Date(it.scadenza);
-    return !isNaN(d.getTime()) && (d.getTime() - now.getTime()) < 3*86400000;
-  }).length;
+  var zeroCats = protCats.filter(function(c){ return protCount[c.key] === 0; });
+
+  var prepScad = mealPrep.filter(function(p){ return p && p.porzioniRimaste > 0 && scadenzaEntro(p.scadenza, 3); });
+  var dispScad = dispensa.filter(function(d){ return d && scadenzaEntro(d.scadenza, 3); });
+
+  var membriPid = Object.keys(profili);
 
   return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
-        <div>
-          <div style={{fontSize:12,color:"#8A949B",textTransform:"capitalize"}}>{dataLabel}</div>
-          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",marginTop:2}}>Buongiorno</div>
-          <div style={{fontSize:13,color:"#8A949B"}}>La tua famiglia - {vals.length} persone</div>
-        </div>
-        <div style={{width:42,height:42,borderRadius:"50%",background:"#E2EEF5",color:"#2F6586",
-          display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:14}}>{iniziali}</div>
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{paddingTop:8}}>
+        <div style={{fontSize:13,color:"#8A949B",fontWeight:700}}>Buongiorno 👋</div>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",marginTop:2}}>{dataLabel}</div>
       </div>
 
-      <div className="mf-card" style={{display:"flex",alignItems:"center",gap:16}}>
-        <div style={{position:"relative",width:72,height:72,flexShrink:0}}>
-          <svg viewBox="0 0 36 36" width="72" height="72">
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E3EAEE" strokeWidth="3.4"/>
-            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#6BA6C9" strokeWidth="3.4"
-              pathLength="100" strokeDasharray={pct+" "+(100-pct)} strokeLinecap="round" transform="rotate(-90 18 18)"/>
-          </svg>
-          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-            <span style={{fontSize:16,fontWeight:700}}>{pianificati}</span>
-            <span style={{fontSize:10,color:"#8A949B"}}>/ {pasti.length} pasti</span>
-          </div>
-        </div>
-        <div style={{flex:1}}>
-          <div className="cap" style={{marginBottom:8}}>Menu di oggi</div>
-          <div style={{fontSize:13,color:"#8A949B",lineHeight:1.5}}>
-            {pianificati>0 ? (pianificati + " pasti su " + pasti.length + " pianificati") : "Nessun pasto pianificato"}
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
-          <span className="cap">Il menu di oggi</span>
-          <span onClick={function(){ setTab("builder"); }} style={{fontSize:13,color:"#2F6586",fontWeight:700,cursor:"pointer"}}>Modifica</span>
-        </div>
-        <div className="mf-card flush">
-          {pasti.map(function(p){
-            var info = pastoInfo(p.m);
-            return (
-              <div key={p.m} className="mf-row">
-                <div className="mf-ic"><i className={"ti "+p.ic}/></div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:11,color:"#8A949B"}}>{p.m}</div>
-                  <div style={{fontSize:14,fontWeight:500,lineHeight:1.35,marginTop:1,color:info?"#2C3338":"#8A949B"}}>
-                    {info ? info.nome : "Da pianificare"}
-                  </div>
-                </div>
-                {info&&info.kcal>0&&<span className="kc" style={{fontSize:13,color:"#8A949B"}}>{info.kcal} kcal</span>}
+      <div style={cardStyle}>
+        <div style={ctStyle}><i className="ti ti-tools-kitchen-2" style={{color:"#2F6586",fontSize:15}}/>Oggi si mangia</div>
+        {[{m:"Pranzo",info:pranzoInfo},{m:"Cena",info:cenaInfo}].map(function(row, idx){
+          var info = row.info;
+          return (
+            <div key={row.m} style={{display:"flex",alignItems:"center",gap:11,padding:"8px 0",borderTop:idx>0?"1px solid #F1F4F6":"none"}}>
+              <div style={{width:36,height:36,borderRadius:11,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{mealEmoji(row.m)}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:14,fontWeight:800}}>{row.m}</div>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{info ? info.nome : "Da pianificare"}</div>
               </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={cardStyle}>
+        <div style={ctStyle}><i className="ti ti-users" style={{color:"#2F6586",fontSize:15}}/>La famiglia oggi</div>
+        {membriPid.length === 0 && (
+          <div style={{fontSize:13,color:"#8A949B"}}>Nessun membro configurato.</div>
+        )}
+        {membriPid.map(function(pid, idx){
+          var p = profili[pid] || {};
+          var stato = dovePid(pid);
+          var b = badgeInfo(stato);
+          var col = p.colore || "#2F6586";
+          var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
+          return (
+            <div key={pid} onClick={function(){ toggleFuori(gOggi, pid); }}
+              style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:idx>0?"1px solid #F1F4F6":"none",cursor:"pointer"}}>
+              <div style={{width:26,height:26,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</div>
+              <div style={{fontSize:14,fontWeight:700}}>{p.nome || "—"}</div>
+              <span style={{marginLeft:"auto",fontSize:11,fontWeight:800,padding:"4px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:5,background:b.bg,color:b.tx}}>
+                <i className={"ti "+b.ic} style={{fontSize:12}}/>{b.label}
+              </span>
+            </div>
+          );
+        })}
+        {membriPid.length > 0 && (
+          <div style={{fontSize:10,color:"#8A949B",marginTop:9}}>Tocca un membro per l'eccezione di oggi (es. oggi mangia fuori)</div>
+        )}
+      </div>
+
+      {mancantiOggi.length > 0 && (
+        <div style={warmCardStyle}>
+          <div style={ctWarm}><i className="ti ti-shopping-cart" style={{color:"#8A5A12",fontSize:15}}/>Ti serve per oggi</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {mancantiOggi.map(function(mm, i){
+              return (
+                <div key={i} style={warnRow}>
+                  <i className="ti ti-basket"/>
+                  <span>Manca <b>{mm.nome}</b> per {mm.pasto}</span>
+                </div>
+              );
+            })}
+          </div>
+          <button onClick={aggiungiSpesa}
+            style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:11,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",marginTop:10,cursor:"pointer"}}>
+            <i className="ti ti-plus"/>Aggiungi alla lista della spesa
+          </button>
+        </div>
+      )}
+
+      <div style={cardStyle}>
+        <div style={ctStyle}><i className="ti ti-leaf" style={{color:"#2F6586",fontSize:15}}/>Questa settimana</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {protCats.map(function(c){
+            var n = protCount[c.key];
+            var zero = n === 0;
+            return (
+              <span key={c.key} style={{display:"inline-flex",alignItems:"center",gap:5,background:zero?"#FBE7EC":"#E2EEF5",color:zero?"#C2355A":"#2F6586",borderRadius:20,padding:"5px 11px",fontSize:12,fontWeight:700}}>
+                <i className={"ti "+c.ic} style={{fontSize:13}}/>{c.label} {n}
+              </span>
             );
           })}
         </div>
+        {zeroCats.length > 0 ? (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {zeroCats.map(function(c){
+              return (
+                <div key={c.key} style={warnRow}>
+                  <i className="ti ti-alert-triangle"/>
+                  <span>Nessuno ha ancora mangiato <b>{c.label.toLowerCase()}</b> questa settimana</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{background:"#E2EEF5",borderRadius:11,padding:"10px 12px",color:"#2F6586",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+            <i className="ti ti-check"/>
+            <span>Ottima varietà proteica questa settimana</span>
+          </div>
+        )}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:11}}>
-        <div className="mf-card" onClick={function(){ setTab("spesa"); }}
-          style={{display:"flex",alignItems:"center",gap:10,padding:13,cursor:"pointer"}}>
-          <i className="ti ti-shopping-bag" style={{fontSize:19,color:"#6BA6C9"}}/>
-          <div>
-            <div style={{fontSize:13,fontWeight:700}}>Lista spesa</div>
-            <div style={{fontSize:11,color:"#8A949B"}}>{spesa.length} articoli</div>
+      {(prepScad.length > 0 || dispScad.length > 0) && (
+        <div style={warmCardStyle}>
+          <div style={ctWarm}><i className="ti ti-clock-exclamation" style={{color:"#8A5A12",fontSize:15}}/>Da usare presto</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {prepScad.map(function(p, i){
+              return (
+                <div key={"mp"+i} style={warnRow}>
+                  <i className="ti ti-tools-kitchen-2"/>
+                  <span>{p.nome} · restano <b>{p.porzioniRimaste} porz.</b> · {giorniA(p.scadenza)}</span>
+                </div>
+              );
+            })}
+            {dispScad.map(function(d, i){
+              return (
+                <div key={"dp"+i} style={warnRow}>
+                  <i className="ti ti-milk"/>
+                  <span>{d.nome} · scade <b>{giorniA(d.scadenza)}</b></span>
+                </div>
+              );
+            })}
           </div>
         </div>
-        <div className="mf-card" onClick={function(){ setTab("dispensa"); }}
-          style={{display:"flex",alignItems:"center",gap:10,padding:13,cursor:"pointer"}}>
-          <i className="ti ti-fridge" style={{fontSize:19,color:"#6BA6C9"}}/>
-          <div>
-            <div style={{fontSize:13,fontWeight:700}}>Dispensa</div>
-            <div style={{fontSize:11,color:"#8A949B"}}>{inEsaurimento} in scadenza</div>
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -9429,10 +9610,14 @@ export default function App() {
   const menu = useMemo(() => ({...menuBase, ...menuOverride}), [menuBase, menuOverride]);
 
   const toggleFuori = useCallback((giorno, pid) => {
-    setGiorniFuori(prev => {
-      const set = new Set(prev[giorno]||[]);
-      set.has(pid) ? set.delete(pid) : set.add(pid);
-      return {...prev, [giorno]: set};
+    setGiorniFuoriLS(prev => {
+      var raw = (prev && prev[giorno]) || [];
+      var arr = Array.isArray(raw) ? raw.slice() : (raw && typeof raw.has === "function" ? Array.from(raw) : []);
+      var i = arr.indexOf(pid);
+      if(i >= 0) arr.splice(i,1); else arr.push(pid);
+      var next = Object.assign({}, prev);
+      next[giorno] = arr;
+      return next;
     });
   }, []);
 
@@ -9797,7 +9982,8 @@ export default function App() {
         )}
         <ErrorBoundary key={tab}>
         {tab==="home" && (
-          <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}/>
+          <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}
+            mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}/>
         )}
         {tab==="menu" && (
           <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
