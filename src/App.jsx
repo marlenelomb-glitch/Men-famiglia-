@@ -5585,7 +5585,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         {dispensaScad.map(function(d,di){
                           return <button key={"ds"+di} onClick={function(){ var base=(""+(puG.nome||"")).trim(); setPiattoUnicoField("nome", base?(base+", "+d.nome):d.nome); }}
                             style={{border:"1px solid #E8D5AE",background:"#fff",color:"#8A5A12",borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:5}}>
-                            {d.emoji?<span>{d.emoji}</span>:<i className="ti ti-basket" style={{fontSize:13}}/>}{d.nome}</button>;
+                            <i className="ti ti-basket" style={{fontSize:13}}/>{d.nome}</button>;
                         })}
                       </div>
                     ):null}
@@ -5599,7 +5599,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   return (
                     <div key={rc.id} onClick={function(){ usaRicetta(rc); setPicker(null); }}
                       style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",cursor:"pointer"}}>
-                      <div style={{fontSize:22,width:34,textAlign:"center"}}>{rc.emoji||"🍽️"}</div>
+                      <div style={{width:34,textAlign:"center",color:"#2F6586"}}><i className="ti ti-tools-kitchen-2" style={{fontSize:20}}/></div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:14,fontWeight:700}}>{rc.titolo}</div>
                         <div style={{fontSize:11,color:"#8A949B"}}>{rc.categoria}{por.kcal?" · "+por.kcal+" kcal":""}{rc.tempo?" · "+rc.tempo:""}</div>
@@ -8820,20 +8820,18 @@ function HomeView(props) {
   var pranzoInfo = pastoInfo("Pranzo");
   var cenaInfo = pastoInfo("Cena");
 
-  function catEmoji(cat) {
-    if(cat === "pesce") return "🐟";
-    if(cat === "legumi") return "🫘";
-    if(cat === "uova") return "🥚";
-    if(cat === "latticini") return "🧀";
-    if(cat === "affettati") return "🥓";
-    if(cat === "carne" || cat === "carne bianca" || cat === "carne rossa") return "🍗";
-    return "";
+  function catIcona(cat) {
+    if(cat === "pesce") return "ti-fish";
+    if(cat === "legumi") return "ti-plant-2";
+    if(cat === "uova") return "ti-egg";
+    if(cat === "latticini") return "ti-cheese";
+    return "ti-meat";
   }
-  function mealEmoji(pasto) {
+  function mealIcona(pasto) {
     var s = builder[gOggi+"-"+pasto];
-    if(s && s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) return "🍲";
-    if(s && s.proteina) { var it = ingById(s.proteina); if(it) { var e = catEmoji(it.cat); if(e) return e; } }
-    return pasto === "Pranzo" ? "🍝" : "🍽";
+    if(s && s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) return "ti-tools-kitchen-2";
+    if(s && s.proteina) { var it = ingById(s.proteina); if(it) return catIcona(it.cat); }
+    return pasto === "Pranzo" ? "ti-sun" : "ti-moon";
   }
 
   function isFuori(pid) {
@@ -8949,7 +8947,7 @@ function HomeView(props) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{paddingTop:8}}>
-        <div style={{fontSize:13,color:"#8A949B",fontWeight:700}}>Buongiorno 👋</div>
+        <div style={{fontSize:13,color:"#8A949B",fontWeight:700}}>Buongiorno</div>
         <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",marginTop:2}}>{dataLabel}</div>
       </div>
 
@@ -8959,7 +8957,7 @@ function HomeView(props) {
           var info = row.info;
           return (
             <div key={row.m} style={{display:"flex",alignItems:"center",gap:11,padding:"8px 0",borderTop:idx>0?"1px solid #F1F4F6":"none"}}>
-              <div style={{width:36,height:36,borderRadius:11,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{mealEmoji(row.m)}</div>
+              <div style={{width:36,height:36,borderRadius:11,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}><i className={"ti "+mealIcona(row.m)}/></div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:800}}>{row.m}</div>
                 <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{info ? info.nome : "Da pianificare"}</div>
