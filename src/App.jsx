@@ -4414,6 +4414,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
   var scS=useState("componi"); var sheetTab=scS[0]; var setSheetTab=scS[1];
   var sNA=useState(null); var nuovoAl=sNA[0]; var setNuovoAl=sNA[1];
+  var sDrag=useState(null); var drag=sDrag[0]; var setDrag=sDrag[1];
   var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
   function usoSettIng(id) {
     var n=0;
@@ -4712,6 +4713,48 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     setPicker(null);
   }
 
+  function pastoPieno(s) { return !!(s && ((s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina || s.carbo || s.verdura)); }
+  function spostaPasto(gSrc, gDst, m) {
+    if(gSrc===gDst) return;
+    var srcKey=gSrc+"-"+m, dstKey=gDst+"-"+m;
+    var a = scelteAttive[srcKey]; var b = scelteAttive[dstKey];
+    setScelteAttive(function(prev){
+      var n=Object.assign({}, prev||{});
+      if(a) n[dstKey]=a; else delete n[dstKey];
+      if(b) n[srcKey]=b; else delete n[srcKey];
+      return n;
+    });
+    if(onSavePasto){ onSavePasto(settB, gDst, m, a||{}); onSavePasto(settB, gSrc, m, b||{}); }
+  }
+  function detCol(x, y) {
+    if(typeof document==="undefined") return null;
+    var el = document.elementFromPoint(x, y);
+    while(el){ if(el.getAttribute && el.getAttribute("data-detcol")!=null) return el.getAttribute("data-detcol"); el=el.parentElement; }
+    return null;
+  }
+  function detDown(e, g, m) {
+    if(!pastoPieno(scelteAttive[g+"-"+m])) return;
+    setDrag({g:g, m:m, sx:e.clientX, sy:e.clientY, x:e.clientX, y:e.clientY, over:null, active:false});
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  function detMove(e) {
+    if(!drag) return;
+    var dx=Math.abs(e.clientX-drag.sx), dy=Math.abs(e.clientY-drag.sy);
+    var active = drag.active || dx>6 || dy>6;
+    if(active && e.cancelable) e.preventDefault();
+    var over = active ? detCol(e.clientX, e.clientY) : null;
+    setDrag(Object.assign({}, drag, {x:e.clientX, y:e.clientY, over:over, active:active}));
+  }
+  function detUp() {
+    if(!drag){ return; }
+    if(drag.active && drag.over!=null){
+      var gi = parseInt(drag.over,10);
+      var gDst = GIORNI_B[gi];
+      if(gDst && gDst!==drag.g){ spostaPasto(drag.g, gDst, drag.m); }
+    }
+    setDrag(null);
+  }
+
   function scadenzaEntro(scad, giorni) {
     if(!scad) return false;
     var oggi = new Date(); oggi.setHours(0,0,0,0);
@@ -4858,13 +4901,14 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
 
           <div style={{marginTop:16}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
+            <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:3,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
+            <div style={{fontSize:10,color:"#8A949B",marginBottom:9,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-hand-move" style={{fontSize:13,color:"#6BA6C9"}}/>Trascina "Pranzo" o "Cena" su un altro giorno per spostarlo</div>
             <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
               {GIORNI_B.map(function(g,i){
                 var dataG=new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
                 var oggiSel=i===giornoSel;
                 return (
-                  <div key={"det-"+g} style={{flex:"0 0 168px",display:"flex",flexDirection:"column",gap:8}}>
+                  <div key={"det-"+g} data-detcol={i} style={{flex:"0 0 168px",display:"flex",flexDirection:"column",gap:8,borderRadius:14,outline:(drag&&drag.active&&drag.over===(""+i)&&drag.g!==g)?"2px dashed #2F6586":"2px dashed transparent",outlineOffset:2,transition:"outline-color .15s"}}>
                     <div style={{background:oggiSel?"#2F6586":"#fff",color:oggiSel?"#fff":"#2C3338",border:"1px solid "+(oggiSel?"#2F6586":"#E3EAEE"),borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"baseline",gap:7}}>
                       <span style={{fontSize:15,fontWeight:800}}>{g.slice(0,3)}</span>
                       <span style={{fontSize:11,fontWeight:700,opacity:.75}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
@@ -4872,9 +4916,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     {["Pranzo","Cena"].map(function(m){
                       var s=scelteAttive[g+"-"+m]||{};
                       var compl=s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+                      var pieno=pastoPieno(s);
+                      var isSrc=drag&&drag.active&&drag.g===g&&drag.m===m;
                       return (
-                        <div key={m} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"10px 11px",display:"flex",flexDirection:"column",gap:7}}>
-                          <div style={{fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",color:"#8A949B",display:"flex",alignItems:"center",gap:6}}><i className={"ti "+(m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:13,color:"#6BA6C9"}}/>{m}</div>
+                        <div key={m} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"10px 11px",display:"flex",flexDirection:"column",gap:7,opacity:isSrc?.4:1}}>
+                          <div onPointerDown={function(e){ detDown(e,g,m); }} onPointerMove={detMove} onPointerUp={detUp} onPointerCancel={detUp}
+                            style={{fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",color:"#8A949B",display:"flex",alignItems:"center",gap:6,touchAction:"none",cursor:pieno?"grab":"default",userSelect:"none"}}><i className={"ti "+(m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:13,color:"#6BA6C9"}}/>{m}{pieno?<i className="ti ti-grip-vertical" style={{fontSize:13,color:"#B4BEC4",marginLeft:"auto"}}/>:null}</div>
                           {compl?(
                             <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                               style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",borderRadius:10,padding:"8px 10px",cursor:"pointer"}}>
@@ -5519,6 +5566,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {drag&&drag.active&&(
+        <div style={{position:"fixed",left:drag.x,top:drag.y,transform:"translate(-50%,-140%)",zIndex:400,pointerEvents:"none",
+          background:"#2F6586",color:"#fff",borderRadius:12,padding:"8px 13px",fontSize:12,fontWeight:800,boxShadow:"0 10px 24px -8px rgba(20,40,55,.6)",display:"flex",alignItems:"center",gap:7}}>
+          <i className={"ti "+(drag.m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:14}}/>Sposta {drag.m} di {drag.g.slice(0,3)}
         </div>
       )}
 
