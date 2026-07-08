@@ -1356,6 +1356,31 @@ function TabDispensa({dispensa, setDispensa, spesa, setSpesa}) {
     if(!s || s < oggi) return false;
     return (new Date(s)-new Date())/(1000*60*60*24) <= 3;
   };
+  const giorniDopoApertoDefault = (nome) => {
+    const n = (nome||"").toLowerCase();
+    if(n.indexOf("yogurt")>=0) return 2;
+    if(n.indexOf("latte")>=0 || n.indexOf("panna")>=0) return 3;
+    if(n.indexOf("prosciutto")>=0 || n.indexOf("salame")>=0 || n.indexOf("affettat")>=0 || n.indexOf("mortadella")>=0 || n.indexOf("wurstel")>=0) return 3;
+    if(n.indexOf("formaggio")>=0 || n.indexOf("mozzarella")>=0 || n.indexOf("ricotta")>=0 || n.indexOf("stracchino")>=0) return 4;
+    if(n.indexOf("succo")>=0 || n.indexOf("passata")>=0 || n.indexOf("pomodoro")>=0 || n.indexOf("salsa")>=0 || n.indexOf("sugo")>=0) return 4;
+    return 3;
+  };
+  const addGiorni = (dstr, n) => { const d = new Date(dstr+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().split("T")[0]; };
+  const effAperto = (orig, apData, dur) => { const apEnd = addGiorni(apData||oggi, dur); return (!orig || apEnd < orig) ? apEnd : orig; };
+  const giorniRestano = (dstr) => { if(!dstr) return null; return Math.round((new Date(dstr+"T00:00:00")-new Date(oggi+"T00:00:00"))/86400000); };
+  const apriItem = (id) => setDispensa(prev=>prev.map(x=>{
+    if(x.id!==id) return x;
+    const dur = (x.durataAperto!=null ? x.durataAperto : giorniDopoApertoDefault(x.nome));
+    const orig = (x.scadenzaOrig!=null ? x.scadenzaOrig : (x.scadenza||""));
+    return {...x, aperto:true, apertoData:oggi, durataAperto:dur, scadenzaOrig:orig, scadenza:effAperto(orig, oggi, dur)};
+  }));
+  const chiudiItem = (id) => setDispensa(prev=>prev.map(x=> x.id!==id?x:{...x,aperto:false,scadenza:(x.scadenzaOrig!=null?x.scadenzaOrig:x.scadenza)}));
+  const setDurAperto = (id,d) => setDispensa(prev=>prev.map(x=>{
+    if(x.id!==id) return x;
+    const dur = Math.max(1,d);
+    const orig = (x.scadenzaOrig!=null ? x.scadenzaOrig : (x.scadenza||""));
+    return {...x, durataAperto:dur, scadenza:effAperto(orig, x.apertoData||oggi, dur)};
+  }));
 
   const aggiungi = () => {
     if(!nuovoItem.nome.trim()) return;
@@ -1386,23 +1411,23 @@ function TabDispensa({dispensa, setDispensa, spesa, setSpesa}) {
       {vista==="dispensa" && (
         <div>
           <div style={{background:"#EBF3FA",borderRadius:14,padding:"12px",marginBottom:12,
-            border:"1.5px solid #C8E6C9"}}>
+            border:"1.5px solid #CADCE8"}}>
             <input placeholder="Nome prodotto" value={nuovoItem.nome}
               onChange={e=>setNuovoItem(p=>({...p,nome:e.target.value}))}
-              style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #C8E6C9",
+              style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #CADCE8",
                 fontSize:12,marginBottom:6,boxSizing:"border-box"}}/>
             <div style={{display:"flex",gap:6,marginBottom:6}}>
               <select value={nuovoItem.cat} onChange={e=>setNuovoItem(p=>({...p,cat:e.target.value}))}
-                style={{flex:2,padding:"6px",borderRadius:8,border:"1.5px solid #C8E6C9",fontSize:11}}>
+                style={{flex:2,padding:"6px",borderRadius:8,border:"1.5px solid #CADCE8",fontSize:11}}>
                 {CATS.map(c=><option key={c.id} value={c.id}>{c.l}</option>)}
               </select>
               <input value={nuovoItem.qty} onChange={e=>setNuovoItem(p=>({...p,qty:e.target.value}))}
                 placeholder="Qty" style={{flex:1,padding:"6px",borderRadius:8,
-                  border:"1.5px solid #C8E6C9",fontSize:11}}/>
+                  border:"1.5px solid #CADCE8",fontSize:11}}/>
             </div>
             <input type="date" value={nuovoItem.scadenza}
               onChange={e=>setNuovoItem(p=>({...p,scadenza:e.target.value}))}
-              style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #C8E6C9",
+              style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #CADCE8",
                 fontSize:11,marginBottom:8,boxSizing:"border-box"}}/>
             <button onClick={aggiungi} disabled={!nuovoItem.nome.trim()}
               style={{width:"100%",padding:"9px",borderRadius:12,border:"none",
@@ -1416,30 +1441,50 @@ function TabDispensa({dispensa, setDispensa, spesa, setSpesa}) {
             <div style={{textAlign:"center",padding:"30px",color:"#8A949B",fontSize:12}}>
               Dispensa vuota
             </div>
-          ) : dispensa.map(item => (
+          ) : dispensa.map(item => {
+            const se = item.scadenza || "";
+            const rem = giorniRestano(se);
+            const dur = (item.durataAperto!=null ? item.durataAperto : giorniDopoApertoDefault(item.nome));
+            return (
             <div key={item.id} style={{background:"#fff",borderRadius:12,padding:"12px 14px",
               marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,.07)",
-              border:isScad(item.scadenza)?"1.5px solid #C0392B":
-                isProxScad(item.scadenza)?"1.5px solid #F4A261":"1px solid transparent"}}>
+              border:isScad(se)?"1.5px solid #C2355A":
+                isProxScad(se)?"1.5px solid #E8D5AE":"1px solid transparent"}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:12,fontWeight:700}}>{item.nome}</div>
+                  <div style={{fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>{item.nome}{item.aperto&&<span style={{fontSize:9,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"2px 7px"}}>Aperto</span>}</div>
                   <div style={{fontSize:9,color:"#8A949B"}}>{item.qty}{item.unita} - {(CATS.find(c=>c.id===item.cat)||{}).l}</div>
-                  {item.scadenza && (
-                    <div style={{fontSize:9,color:isScad(item.scadenza)?"#C0392B":
-                      isProxScad(item.scadenza)?"#E3EAEE":"#8A949B"}}>
-                      Scade: {item.scadenza}
-                      {isScad(item.scadenza)?" - SCADUTO":""}
-                      {isProxScad(item.scadenza)?" - in scadenza":""}
+                  {se && (
+                    <div style={{fontSize:9,color:isScad(se)?"#C2355A":isProxScad(se)?"#8A5A12":"#8A949B"}}>
+                      {item.aperto ? (rem<0?"Scaduto":(rem===0?"Da consumare oggi":("Restano "+rem+(rem===1?" giorno":" giorni")))) : ("Scade: "+se+(isScad(se)?" - SCADUTO":(isProxScad(se)?" - in scadenza":"")))}
                     </div>
                   )}
                 </div>
+                {item.aperto ? (
+                  <div style={{display:"flex",alignItems:"center",gap:5,background:"#F2F6F8",borderRadius:20,padding:3,marginRight:2}}>
+                    <button onClick={()=>setDurAperto(item.id,dur-1)} style={{width:22,height:22,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>−</button>
+                    <span style={{fontSize:10,fontWeight:800,color:"#2F6586",minWidth:38,textAlign:"center"}}>{dur} gg</span>
+                    <button onClick={()=>setDurAperto(item.id,dur+1)} style={{width:22,height:22,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>+</button>
+                  </div>
+                ) : (
+                  <button onClick={()=>apriItem(item.id)}
+                    style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:20,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:4}}>
+                    <i className="ti ti-lock-open" style={{fontSize:13}}/>Apri
+                  </button>
+                )}
                 <button onClick={()=>setDispensa(prev=>prev.filter(x=>x.id!==item.id))}
                   style={{background:"none",border:"none",cursor:"pointer",
-                    fontSize:14,color:"#ddd"}}>x</button>
+                    fontSize:14,color:"#B4BEC4"}}>x</button>
               </div>
+              {item.aperto && (
+                <div style={{marginTop:7,fontSize:9,color:"#8A949B",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span>Aperto il {item.apertoData} · dura {dur} gg dopo aperto</span>
+                  <span onClick={()=>chiudiItem(item.id)} style={{color:"#2F6586",fontWeight:700,cursor:"pointer"}}>Annulla apertura</span>
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -1449,7 +1494,7 @@ function TabDispensa({dispensa, setDispensa, spesa, setSpesa}) {
             <input placeholder="Aggiungi alla spesa..." value={nuovaSpesa}
               onChange={e=>setNuovaSpesa(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter")addSpesa();}}
-              style={{flex:1,padding:"8px",borderRadius:8,border:"1.5px solid #C8E6C9",fontSize:12}}/>
+              style={{flex:1,padding:"8px",borderRadius:8,border:"1.5px solid #CADCE8",fontSize:12}}/>
             <button onClick={addSpesa}
               style={{background:"#2F6586",color:"#fff",border:"none",borderRadius:20,
                 padding:"8px 14px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -1566,14 +1611,14 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
 
       {showForm && (
         <div style={{background:"#EBF3FA",borderRadius:14,padding:"13px",marginBottom:14,
-          border:"1.5px solid #C8E6C9"}}>
+          border:"1.5px solid #CADCE8"}}>
           <div style={{display:"flex",gap:7,marginBottom:8}}>
             <input value={form.emoji} onChange={e=>setForm(p=>({...p,emoji:e.target.value}))}
-              style={{width:46,padding:"7px 4px",borderRadius:8,border:"1.5px solid #C8E6C9",
+              style={{width:46,padding:"7px 4px",borderRadius:8,border:"1.5px solid #CADCE8",
                 fontSize:18,textAlign:"center"}}/>
             <input placeholder="Nome pasto preparato" value={form.nome}
               onChange={e=>setForm(p=>({...p,nome:e.target.value}))}
-              style={{flex:1,padding:"7px",borderRadius:8,border:"1.5px solid #C8E6C9",fontSize:12}}/>
+              style={{flex:1,padding:"7px",borderRadius:8,border:"1.5px solid #CADCE8",fontSize:12}}/>
           </div>
 
           <div style={{marginBottom:8}}>
@@ -1609,7 +1654,7 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
                 <div style={{fontSize:9,color:"#8A949B",marginBottom:2}}>{f.l}</div>
                 <input type="number" value={form[f.k]}
                   onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))}
-                  style={{width:"100%",padding:"5px",borderRadius:8,border:"1.5px solid #C8E6C9",
+                  style={{width:"100%",padding:"5px",borderRadius:8,border:"1.5px solid #CADCE8",
                     fontSize:11,boxSizing:"border-box"}}/>
               </div>
             ))}
@@ -1617,7 +1662,7 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
 
           <input placeholder="Note (es. senza sale, porzioni 80g...)" value={form.note}
             onChange={e=>setForm(p=>({...p,note:e.target.value}))}
-            style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #C8E6C9",
+            style={{width:"100%",padding:"6px",borderRadius:8,border:"1.5px solid #CADCE8",
               fontSize:11,marginBottom:10,boxSizing:"border-box"}}/>
 
           <button onClick={aggiungi} disabled={!form.nome.trim()}
@@ -2470,7 +2515,7 @@ function TabIdee({profili, dispensa}) {
 
               {selIng.length>0&&(
                 <div style={{background:"#EBF3FA",borderRadius:12,padding:"12px 14px",
-                  marginBottom:10,border:"1.5px solid #C8E6C9"}}>
+                  marginBottom:10,border:"1.5px solid #CADCE8"}}>
                   <div style={{fontSize:10,fontWeight:700,color:"#2F6586",marginBottom:5}}>
                     Selezionati: {selIng.join(", ")}
                   </div>
