@@ -9023,13 +9023,22 @@ function CommunityView(props) {
   var profili = props.profili || {};
   var setTab = props.setTab || function(){};
 
-  var PAT = PATOLOGIE_LIST.filter(function(x){ return x.id !== "nessuna"; });
-  function patLabel(id){ var f = PATOLOGIE_LIST.find(function(x){ return x.id === id; }); return f ? f.label : id; }
+  var PAT = [];
+  PATOLOGIE_LIST.forEach(function(x){ if(x.id !== "nessuna") PAT.push({id:x.id, label:x.label}); });
+  (typeof REGIME_LIST !== "undefined" ? REGIME_LIST : []).forEach(function(r){
+    if(r.id !== "onnivoro" && !PAT.some(function(c){ return c.id === r.id; })) PAT.push({id:r.id, label:r.l});
+  });
+  function patLabel(id){ var f = PAT.find(function(x){ return x.id === id; }); return f ? f.label : id; }
+  function normPat(x){ if(x === "dimagrimento") return "dimagrante"; return x; }
   var familyPats = [];
+  function addFam(x){ x = normPat(x); if(x && x !== "nessuna" && x !== "onnivoro" && familyPats.indexOf(x) < 0) familyPats.push(x); }
   Object.keys(profili).forEach(function(pid){
     var p = profili[pid]; if(!p) return;
     var lista = (p.patologie && p.patologie.length) ? p.patologie : (p.patologia ? [p.patologia] : []);
-    lista.forEach(function(x){ if(x && x !== "nessuna" && familyPats.indexOf(x) < 0) familyPats.push(x); });
+    lista.forEach(addFam);
+    if(p.regime) addFam(p.regime);
+    if(p.obiettivo === "dimagrire") addFam("dimagrante");
+    else if(p.obiettivo === "ingrassare") addFam("ingrassante");
   });
   var defPat = familyPats.length ? familyPats[0] : (PAT.length ? PAT[0].id : "celiachia");
 
