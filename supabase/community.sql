@@ -8,13 +8,21 @@ create table if not exists community (
   user_id    uuid default auth.uid(),
   family_id  uuid,
   patologia  text not null,
-  tipo       text not null default 'consiglio',   -- 'ricetta' | 'consiglio'
+  tipo       text not null default 'consiglio',   -- 'ricetta' | 'consiglio' | 'prodotto'
   titolo     text not null,
   testo      text default '',
   autore     text default '',
   pubblica   boolean default true,
+  foto       text,        -- foto (data URL ridimensionata), per ricette e prodotti
+  proteine   text,        -- prodotti: proteine per 100g
+  dove       text,        -- prodotti: dove si compra (negozio o link)
   created_at timestamptz default now()
 );
+
+-- Se la tabella esiste già senza queste colonne, aggiungile.
+alter table community add column if not exists foto text;
+alter table community add column if not exists proteine text;
+alter table community add column if not exists dove text;
 
 alter table community enable row level security;
 

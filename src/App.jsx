@@ -9040,7 +9040,7 @@ function CommunityView(props) {
   var sFTipo = useState("tutte"); var fTipo = sFTipo[0]; var setFTipo = sFTipo[1];
   var sAdd = useState(false); var showAdd = sAdd[0]; var setShowAdd = sAdd[1];
   var sSav = useState(false); var saving = sSav[0]; var setSaving = sSav[1];
-  var sForm = useState({tipo:"consiglio", patologia:defPat, titolo:"", testo:"", pubblica:true});
+  var sForm = useState({tipo:"consiglio", patologia:defPat, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
   var form = sForm[0]; var setForm = sForm[1];
 
   function loadPosts() {
@@ -9057,15 +9057,34 @@ function CommunityView(props) {
   }, []);
 
   function upd(k, v){ setForm(function(prev){ var n = Object.assign({}, prev); n[k] = v; return n; }); }
+  function caricaFoto(file) {
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var max = 800; var w = img.width, h = img.height;
+        if(w > h && w > max){ h = Math.round(h*max/w); w = max; }
+        else if(h >= w && h > max){ w = Math.round(w*max/h); h = max; }
+        var c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        upd("foto", c.toDataURL("image/jpeg", 0.6));
+      };
+      img.onerror = function(){ upd("foto", ev.target.result); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
   function salva() {
     if(!(""+form.titolo).trim()) return;
     setSaving(true);
     var autore = (utente && utente.email) ? utente.email.split("@")[0] : "Anonimo";
     supabase.from("community").insert({
       family_id: familyId, patologia: form.patologia, tipo: form.tipo,
-      titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica
+      titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica,
+      foto: form.foto || null, proteine: form.tipo==="prodotto" ? (""+(form.proteine||"")).trim() : null, dove: form.tipo==="prodotto" ? (""+(form.dove||"")).trim() : null
     }).then(function(){
-      setForm({tipo:"consiglio", patologia:form.patologia, titolo:"", testo:"", pubblica:true});
+      setForm({tipo:form.tipo, patologia:form.patologia, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
       setShowAdd(false); setSaving(false); loadPosts();
     }, function(){ setSaving(false); });
   }
@@ -9087,19 +9106,20 @@ function CommunityView(props) {
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div>
         <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Community</div>
-        <div style={{fontSize:13,color:"#8A949B"}}>Ricette e consigli condivisi, per patologia.</div>
+        <div style={{fontSize:13,color:"#8A949B"}}>Ricette, consigli e prodotti condivisi, per patologia.</div>
       </div>
 
       <button onClick={function(){ setShowAdd(!showAdd); }}
         style={{border:"none",background:showAdd?"#E2EEF5":"#2F6586",color:showAdd?"#2F6586":"#fff",borderRadius:13,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-        <i className={"ti "+(showAdd?"ti-x":"ti-plus")} style={{fontSize:17}}/>{showAdd?"Annulla":"Aggiungi ricetta o consiglio"}
+        <i className={"ti "+(showAdd?"ti-x":"ti-plus")} style={{fontSize:17}}/>{showAdd?"Annulla":"Aggiungi ricetta, consiglio o prodotto"}
       </button>
 
       {showAdd && (
         <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
-          <div style={{display:"flex",gap:8}}>
+          <div style={{display:"flex",gap:6}}>
             <button onClick={function(){ upd("tipo","consiglio"); }} style={segBtn(form.tipo==="consiglio")}>Consiglio</button>
             <button onClick={function(){ upd("tipo","ricetta"); }} style={segBtn(form.tipo==="ricetta")}>Ricetta</button>
+            <button onClick={function(){ upd("tipo","prodotto"); }} style={segBtn(form.tipo==="prodotto")}>Prodotto</button>
           </div>
           <div>
             <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Per quale patologia</div>
@@ -9109,10 +9129,35 @@ function CommunityView(props) {
               })}
             </div>
           </div>
-          <input value={form.titolo} onChange={function(e){ upd("titolo", e.target.value); }} placeholder={form.tipo==="ricetta"?"Nome ricetta":"Titolo del consiglio"}
+          <input value={form.titolo} onChange={function(e){ upd("titolo", e.target.value); }} placeholder={form.tipo==="ricetta"?"Nome ricetta":(form.tipo==="prodotto"?"Nome e marca del prodotto":"Titolo del consiglio")}
             style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-          <textarea value={form.testo} onChange={function(e){ upd("testo", e.target.value); }} rows={4} placeholder={form.tipo==="ricetta"?"Ingredienti e preparazione…":"Scrivi il consiglio…"}
+          {form.tipo==="prodotto" && (
+            <div style={{display:"flex",gap:8}}>
+              <input inputMode="decimal" value={form.proteine} onChange={function(e){ upd("proteine", e.target.value.replace(/[^0-9.,]/g,"")); }} placeholder="Proteine /100g"
+                style={{flex:1,minWidth:0,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              <input value={form.dove} onChange={function(e){ upd("dove", e.target.value); }} placeholder="Dove si compra"
+                style={{flex:1,minWidth:0,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+          )}
+          <textarea value={form.testo} onChange={function(e){ upd("testo", e.target.value); }} rows={form.tipo==="prodotto"?2:4} placeholder={form.tipo==="ricetta"?"Ingredienti e preparazione…":(form.tipo==="prodotto"?"Note (com'è, perché ti piace…)":"Scrivi il consiglio…")}
             style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",resize:"vertical",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          {(form.tipo==="ricetta" || form.tipo==="prodotto") && (
+            <div>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Foto (facoltativa)</div>
+              {form.foto ? (
+                <div style={{position:"relative"}}>
+                  <img src={form.foto} alt="foto" style={{width:"100%",maxHeight:180,objectFit:"cover",borderRadius:12,display:"block"}}/>
+                  <button onClick={function(){ upd("foto", null); }} style={{position:"absolute",top:7,right:7,border:"none",background:"rgba(20,40,55,0.55)",color:"#fff",borderRadius:"50%",width:26,height:26,cursor:"pointer",fontSize:13,fontWeight:800}}>×</button>
+                </div>
+              ) : (
+                <label style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,border:"1.5px dashed #6BA6C9",borderRadius:12,padding:"14px",cursor:"pointer",color:"#2F6586"}}>
+                  <i className="ti ti-camera" style={{fontSize:22}}/>
+                  <span style={{fontSize:12,fontWeight:700}}>Aggiungi una foto</span>
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={function(e){ caricaFoto(e.target.files[0]); }}/>
+                </label>
+              )}
+            </div>
+          )}
           <div>
             <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Chi lo vede</div>
             <div style={{display:"flex",gap:8}}>
@@ -9130,8 +9175,8 @@ function CommunityView(props) {
           return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{pt.label}</button>;
         })}
       </div>
-      <div style={{display:"flex",gap:7}}>
-        {[{k:"tutte",l:"Tutto"},{k:"ricetta",l:"Ricette"},{k:"consiglio",l:"Consigli"}].map(function(t){
+      <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
+        {[{k:"tutte",l:"Tutto"},{k:"ricetta",l:"Ricette"},{k:"consiglio",l:"Consigli"},{k:"prodotto",l:"Prodotti"}].map(function(t){
           return <button key={t.k} onClick={function(){ setFTipo(t.k); }} style={chipStyle(fTipo===t.k)}>{t.l}</button>;
         })}
       </div>
@@ -9146,17 +9191,27 @@ function CommunityView(props) {
         visti.map(function(p){
           var mio = myUid && p.user_id === myUid;
           var isRic = p.tipo === "ricetta";
+          var isProd = p.tipo === "prodotto";
+          var tipoIc = isProd ? "ti-shopping-bag" : (isRic ? "ti-tools-kitchen-2" : "ti-bulb");
+          var tipoL = isProd ? "Prodotto" : (isRic ? "Ricetta" : "Consiglio");
           return (
             <div key={p.id} className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>
-                  <i className={"ti "+(isRic?"ti-tools-kitchen-2":"ti-bulb")} style={{fontSize:13}}/>{isRic?"Ricetta":"Consiglio"}
+                  <i className={"ti "+tipoIc} style={{fontSize:13}}/>{tipoL}
                 </span>
                 <span style={{fontSize:11,fontWeight:700,color:"#8A949B"}}>{patLabel(p.patologia)}</span>
                 {!p.pubblica ? <i className="ti ti-lock" style={{fontSize:13,color:"#B4BEC4"}} title="Solo tua"/> : null}
                 {mio ? <i className="ti ti-trash" onClick={function(){ elimina(p.id); }} style={{marginLeft:"auto",fontSize:15,color:"#B4BEC4",cursor:"pointer"}}/> : null}
               </div>
+              {p.foto ? <img src={p.foto} alt="" style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:12,display:"block"}}/> : null}
               <div style={{fontSize:16,fontWeight:800}}>{p.titolo}</div>
+              {isProd && (p.proteine || p.dove) ? (
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {p.proteine ? <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:800}}><i className="ti ti-flask" style={{fontSize:13}}/>{p.proteine}g prot /100g</span> : null}
+                  {p.dove ? <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#F2F6F8",color:"#2C3338",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:700}}><i className="ti ti-map-pin" style={{fontSize:13}}/>{p.dove}</span> : null}
+                </div>
+              ) : null}
               {p.testo ? <div style={{fontSize:14,color:"#2C3338",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{p.testo}</div> : null}
               <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{(p.autore?("da "+p.autore):"")}{(p.autore&&p.created_at)?" · ":""}{fmtDataC(p.created_at)}{mio?" · tuo":""}</div>
             </div>
