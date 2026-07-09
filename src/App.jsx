@@ -4614,6 +4614,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
     s.piattoUnico = pu;
     salvaScelta(s);
   }
+  function mutaPiu(fn) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var arr = (s.piu||[]).map(function(x){ return Object.assign({}, x); });
+    fn(arr);
+    s.piu = arr;
+    salvaScelta(s);
+  }
+  function addPiu() { mutaPiu(function(a){ a.push({nome:""}); }); }
+  function removePiu(i) { mutaPiu(function(a){ a.splice(i,1); }); }
+  function setPiuNome(i, val) { mutaPiu(function(a){ if(a[i]) a[i].nome = val; }); }
+  function riconosciPiu(i) { mutaPiu(function(a){ if(!a[i]) return; var r = riconosciPasto(a[i].nome); a[i].riconosciuti = r.items.length ? r.items : []; }); }
+  function piuValidi(s) { return ((s&&s.piu)||[]).filter(function(x){ return x && x.nome && (""+x.nome).trim(); }); }
   function addPiatto() { mutaPU(function(pu){ pu.altri.push({nome:"", kcal:"", prot:"", membri:[]}); }); }
   function removeAltro(i) { mutaPU(function(pu){ pu.altri.splice(i,1); }); }
   function setAltroField(i, field, val) { mutaPU(function(pu){ if(!pu.altri[i]) return; pu.altri[i] = Object.assign({}, pu.altri[i]); pu.altri[i][field] = val; }); }
@@ -4928,6 +4940,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                           );
                         })
                       )}
+                      {piuValidi(s).length>0 ? (
+                        <div style={{fontSize:8,fontWeight:800,color:"#2F6586",background:"#E2EEF5",borderRadius:8,padding:"1px 6px",marginTop:1}}>+{piuValidi(s).length}</div>
+                      ) : null}
                     </div>
                   );
                 });
@@ -5009,6 +5024,15 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                               );
                             })
                           )}
+                          {piuValidi(s).map(function(d,pi){
+                            return (
+                              <div key={"piu"+pi} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                                style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+                                <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:"#E2EEF5",color:"#2F6586"}}><i className="ti ti-plus"/></div>
+                                <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{(""+d.nome).trim()}</div>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })}
@@ -5604,6 +5628,26 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                       <i className="ti ti-check" style={{fontSize:18}}/>Aggiungi il piatto
                     </button>
                   ):null}
+                </div>
+
+                <div className="mf-card" style={{padding:"14px 15px",display:"flex",flexDirection:"column",gap:9}}>
+                  <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-tools-kitchen-2" style={{fontSize:16,color:"#2F6586"}}/>Altri piatti del pasto</div>
+                  <div style={{fontSize:11,color:"#8A949B"}}>Un secondo, un contorno, un dolce… per tutta la famiglia.</div>
+                  {((scelteAttive[keyG]||{}).piu||[]).map(function(d,i){
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                        <input value={d.nome||""} onChange={function(e){ setPiuNome(i, e.target.value); }} onBlur={function(){ riconosciPiu(i); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                          placeholder="Es. Petto di pollo, Insalata, Dolce…"
+                          style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                        <i className="ti ti-trash" onClick={function(){ removePiu(i); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer",flexShrink:0}}/>
+                      </div>
+                    );
+                  })}
+                  <button onClick={function(){ addPiu(); }}
+                    style={{padding:"10px",borderRadius:12,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                    <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi un altro piatto
+                  </button>
                 </div>
 
                 {(mealPrepScad.length>0 || dispensaScad.length>0)?(
@@ -9271,6 +9315,10 @@ function HomeView(props) {
     ["proteina","carbo","verdura","verdura2"].forEach(function(k){
       var id = s[k]; if(!id) return; var it = ingById(id); if(it && it.nome) nomi.push(it.nome);
     });
+    ((s.piu)||[]).forEach(function(d){
+      if(d && d.riconosciuti && d.riconosciuti.length) { d.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); }); }
+      else if(d && d.nome && (""+d.nome).trim()) { nomi.push((""+d.nome).trim()); }
+    });
     nomi.forEach(function(nome){
       var low = (""+nome).toLowerCase();
       var inDisp = dispensa.some(function(d){
@@ -9394,12 +9442,16 @@ function HomeView(props) {
         <div style={ctStyle}><i className="ti ti-tools-kitchen-2" style={{color:"#2F6586",fontSize:15}}/>Oggi si mangia</div>
         {[{m:"Pranzo",info:pranzoInfo},{m:"Cena",info:cenaInfo}].map(function(row, idx){
           var info = row.info;
+          var sPiu = builder[gOggi+"-"+row.m];
+          var piuNomi = (((sPiu && sPiu.piu) || []).filter(function(x){ return x && x.nome && (""+x.nome).trim(); })).map(function(x){ return (""+x.nome).trim(); });
+          var desc = info ? info.nome : "Da pianificare";
+          if(piuNomi.length) desc = (info ? info.nome : "") + (info ? " · " : "") + piuNomi.join(" · ");
           return (
             <div key={row.m} style={{display:"flex",alignItems:"center",gap:11,padding:"8px 0",borderTop:idx>0?"1px solid #F1F4F6":"none"}}>
               <div style={{width:36,height:36,borderRadius:11,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}><i className={"ti "+mealIcona(row.m)}/></div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:800}}>{row.m}</div>
-                <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{info ? info.nome : "Da pianificare"}</div>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{desc}</div>
               </div>
             </div>
           );
