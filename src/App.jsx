@@ -7445,12 +7445,14 @@ function SaluteView(props) {
   var pesoLog = props.pesoLog || {};
   var setPesoLog = props.setPesoLog || function(){};
   var onSavePeso = props.onSavePeso || function(){};
+  var onDeletePeso = props.onDeletePeso || function(){};
   var setProfili = props.setProfili || function(){};
   var vals = Object.values(profili);
 
   var sSel = useState(vals.length ? (vals[0].nome || "") : "");
   var selNome = sSel[0]; var setSelNome = sSel[1];
   var sInp = useState(""); var inp = sInp[0]; var setInp = sInp[1];
+  var sHist = useState(false); var showHist = sHist[0]; var setShowHist = sHist[1];
 
   var selProf = null;
   vals.forEach(function(p){ if((p.nome || "") === selNome) selProf = p; });
@@ -7497,6 +7499,24 @@ function SaluteView(props) {
     if(p.length < 3) return s;
     return p[2] + "/" + p[1];
   }
+  function fmtDataFull(s) {
+    if(!s) return "";
+    var p = ("" + s).split("-");
+    if(p.length < 3) return s;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+  function rimuoviPeso(data) {
+    if(!selProf) return;
+    var arr = (pesoLog[selProf.nome] || []).filter(function(d){ return d.data !== data; });
+    var newLog = Object.assign({}, pesoLog);
+    newLog[selProf.nome] = arr;
+    setPesoLog(newLog);
+    saveLS("pesoLog", newLog);
+    onDeletePeso(selProf.nome, data);
+  }
+  var storico = log.map(function(d, i){
+    return {data:d.data, valore:d.valore, delta: i > 0 ? (d.valore - log[i-1].valore) : null};
+  }).reverse();
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -7577,6 +7597,33 @@ function SaluteView(props) {
             </div>
           ) : (
             <div style={{fontSize:12,color:"#8A949B",textAlign:"center",padding:"6px 0"}}>Nessun peso registrato. Aggiungi il primo qui sopra.</div>
+          )}
+
+          {log.length > 0 && (
+            <div>
+              <div onClick={function(){ setShowHist(!showHist); }}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",padding:"2px 0"}}>
+                <span style={{fontSize:12,fontWeight:800,color:"#2F6586",display:"flex",alignItems:"center",gap:7}}>
+                  <i className="ti ti-history" style={{fontSize:16}}/>Storico misure ({log.length})
+                </span>
+                <i className={"ti " + (showHist ? "ti-chevron-up" : "ti-chevron-down")} style={{fontSize:16,color:"#8A949B"}}/>
+              </div>
+              {showHist && (
+                <div style={{display:"flex",flexDirection:"column",marginTop:8,border:"1px solid #EEF2F5",borderRadius:12,overflow:"hidden"}}>
+                  {storico.map(function(r, i){
+                    var col = r.delta == null ? "#8A949B" : (r.delta < 0 ? "#2F6586" : (r.delta > 0 ? "#C2355A" : "#8A949B"));
+                    return (
+                      <div key={r.data} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 11px",borderTop:i>0?"1px solid #F1F4F6":"none"}}>
+                        <span style={{fontSize:12,color:"#8A949B",fontWeight:700,width:74,flexShrink:0}}>{fmtDataFull(r.data)}</span>
+                        <span style={{fontSize:14,fontWeight:800}}>{r.valore} kg</span>
+                        <span style={{fontSize:12,fontWeight:700,color:col,marginLeft:6}}>{r.delta == null ? "prima misura" : ((r.delta > 0 ? "+" : "") + r.delta.toFixed(1) + " kg")}</span>
+                        <i className="ti ti-trash" onClick={function(){ rimuoviPeso(r.data); }} style={{marginLeft:"auto",fontSize:15,color:"#B4BEC4",cursor:"pointer"}}/>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {pctl && (
@@ -9810,6 +9857,11 @@ export default function App() {
     supabase.from("peso_log").upsert({family_id:familyId,profile_nome:nome,data:data,valore:valore});
   }
 
+  function deletePesoFromSupabase(nome,data) {
+    if(!familyId)return;
+    supabase.from("peso_log").delete().eq("family_id",familyId).eq("profile_nome",nome).eq("data",data);
+  }
+
   function pushAll(fid, cb) {
     var stamp = new Date().toISOString();
     var nP=0, nB=0, nS=0;
@@ -10348,7 +10400,7 @@ export default function App() {
           <MedicineView profili={profili} medicine={medicine} setMedicine={setMedicineLS}/>
         )}
         {tab==="salute" && (
-          <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase}/>
+          <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase}/>
         )}
         {tab==="dispensa" && (
           <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
