@@ -9036,7 +9036,7 @@ function CommunityView(props) {
   var sPosts = useState(props.seed || []); var posts = sPosts[0]; var setPosts = sPosts[1];
   var sLoad = useState(!props.seed); var loading = sLoad[0]; var setLoading = sLoad[1];
   var sUid = useState(props.seedUid || ""); var myUid = sUid[0]; var setMyUid = sUid[1];
-  var sFPat = useState("tutte"); var fPat = sFPat[0]; var setFPat = sFPat[1];
+  var sFPat = useState(familyPats.length ? "mie" : "tutte"); var fPat = sFPat[0]; var setFPat = sFPat[1];
   var sFTipo = useState("tutte"); var fTipo = sFTipo[0]; var setFTipo = sFTipo[1];
   var sAdd = useState(false); var showAdd = sAdd[0]; var setShowAdd = sAdd[1];
   var sSav = useState(false); var saving = sSav[0]; var setSaving = sSav[1];
@@ -9093,7 +9093,8 @@ function CommunityView(props) {
   }
 
   var visti = posts.filter(function(p){
-    if(fPat !== "tutte" && p.patologia !== fPat) return false;
+    if(fPat === "mie") { if(familyPats.indexOf(p.patologia) < 0) return false; }
+    else if(fPat !== "tutte" && p.patologia !== fPat) return false;
     if(fTipo !== "tutte" && p.tipo !== fTipo) return false;
     return true;
   });
@@ -9170,9 +9171,15 @@ function CommunityView(props) {
       )}
 
       <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
+        {familyPats.length ? (
+          <button onClick={function(){ setFPat("mie"); }} style={chipStyle(fPat==="mie")}>
+            <i className="ti ti-home" style={{fontSize:12,marginRight:4}}/>La tua famiglia
+          </button>
+        ) : null}
         <button onClick={function(){ setFPat("tutte"); }} style={chipStyle(fPat==="tutte")}>Tutte</button>
-        {PAT.map(function(pt){
-          return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{pt.label}</button>;
+        {PAT.slice().sort(function(a,b){ return (familyPats.indexOf(b.id)>=0?1:0) - (familyPats.indexOf(a.id)>=0?1:0); }).map(function(pt){
+          var fam = familyPats.indexOf(pt.id) >= 0;
+          return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{fam?"★ ":""}{pt.label}</button>;
         })}
       </div>
       <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
