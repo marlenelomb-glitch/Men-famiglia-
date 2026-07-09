@@ -4862,6 +4862,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
 
       {(function(){
         var lunB = lunediSettimana(); if(settB===1) lunB.setDate(lunB.getDate()+7);
+        var oggiIdxB = (new Date().getDay()+6)%7;
         var protCount = {pesce:0,carne:0,legumi:0,uova:0};
         GIORNI_B.forEach(function(g){ var s=scelteAttive[g+"-"+pastoSel]; if(s&&s.proteina){ var it=ingById(s.proteina); if(it){ if(it.cat==="pesce")protCount.pesce++; else if(it.cat==="legumi")protCount.legumi++; else if(it.cat==="uova")protCount.uova++; else protCount.carne++; } } });
         var completiSett = GIORNI_B.filter(function(g){ var s=scelteAttive[g+"-"+pastoSel]; return s&&s.proteina&&s.carbo&&s.verdura; }).length;
@@ -4889,10 +4890,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               items.push(<div key="corner"/>);
               GIORNI_B.forEach(function(g,i){
                 var dataG=new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
+                var isOggi=settB===0 && i===oggiIdxB;
+                var isPass=settB===0 && i<oggiIdxB;
                 items.push(
-                  <div key={"h-"+g} style={{textAlign:"center",padding:"2px 0"}}>
-                    <div style={{fontSize:11,fontWeight:800,color:"#2C3338"}}>{g.slice(0,3)}</div>
-                    <div style={{fontSize:9,fontWeight:700,color:"#8A949B"}}>{dataG.getDate()}</div>
+                  <div key={"h-"+g} style={{textAlign:"center",padding:"2px 0",opacity:isPass?0.45:1}}>
+                    <div style={{fontSize:11,fontWeight:800,color:isOggi?"#2F6586":"#2C3338"}}>{g.slice(0,3)}</div>
+                    <div style={{fontSize:9,fontWeight:700,color:isOggi?"#2F6586":"#8A949B"}}>{dataG.getDate()}</div>
+                    {isOggi ? <div style={{height:3,borderRadius:3,background:"#2F6586",margin:"2px 4px 0"}}/> : null}
                   </div>
                 );
               });
@@ -4903,8 +4907,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 GIORNI_B.forEach(function(g,i){
                   var s=scelteAttive[GIORNI_B[i]+"-"+m]||{};
                   var compl=s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+                  var isPass=settB===0 && i<oggiIdxB;
                   items.push(
-                    <div key={m+"-"+g} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:11,padding:"5px 4px",display:"flex",flexDirection:"column",gap:5,alignItems:"center",justifyContent:"flex-start"}}>
+                    <div key={m+"-"+g} style={{background:"#fff",border:"1px solid "+(settB===0&&i===oggiIdxB?"#6BA6C9":"#E3EAEE"),borderRadius:11,padding:"5px 4px",display:"flex",flexDirection:"column",gap:5,alignItems:"center",justifyContent:"flex-start",opacity:isPass?0.5:1}}>
                       {compl ? (
                         <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                           style={{width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:3,justifyContent:"center",cursor:"pointer"}}>
@@ -4931,7 +4936,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             })()}
           </div>
 
-          <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"2px 4px 8px",fontWeight:600}}>Tocca un quadratino &rarr; scegli l'alimento o il piatto completo</div>
+          {(settB===0 && oggiIdxB>0) ? (
+            <div style={{fontSize:10,color:"#2F6586",textAlign:"center",padding:"2px 4px 8px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <i className="ti ti-calendar-event" style={{fontSize:13}}/>Settimana già iniziata: pianifica da oggi (colonna blu). I giorni passati sono in grigio.
+            </div>
+          ) : (
+            <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"2px 4px 8px",fontWeight:600}}>Tocca un quadratino &rarr; scegli l'alimento o il piatto completo</div>
+          )}
 
           {(function(){
             var pc={pesce:0,carne:0,legumi:0,uova:0};
@@ -4963,9 +4974,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 var oggiSel=i===giornoSel;
                 return (
                   <div key={"det-"+g} data-detcol={i} style={{flex:"0 0 168px",display:"flex",flexDirection:"column",gap:8,borderRadius:14,outline:(drag&&drag.active&&drag.over===(""+i)&&drag.g!==g)?"2px dashed #2F6586":"2px dashed transparent",outlineOffset:2,transition:"outline-color .15s"}}>
-                    <div style={{background:oggiSel?"#2F6586":"#fff",color:oggiSel?"#fff":"#2C3338",border:"1px solid "+(oggiSel?"#2F6586":"#E3EAEE"),borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"baseline",gap:7}}>
+                    <div style={{background:oggiSel?"#2F6586":"#fff",color:oggiSel?"#fff":"#2C3338",border:"1px solid "+(oggiSel?"#2F6586":(settB===0&&i===oggiIdxB?"#6BA6C9":"#E3EAEE")),borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"baseline",gap:7}}>
                       <span style={{fontSize:15,fontWeight:800}}>{g.slice(0,3)}</span>
                       <span style={{fontSize:11,fontWeight:700,opacity:.75}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
+                      {settB===0 && i===oggiIdxB ? <span style={{marginLeft:"auto",fontSize:9,fontWeight:800,color:oggiSel?"#fff":"#2F6586",background:oggiSel?"rgba(255,255,255,0.22)":"#E2EEF5",borderRadius:10,padding:"2px 7px"}}>oggi</span> : null}
                     </div>
                     {["Pranzo","Cena"].map(function(m){
                       var s=scelteAttive[g+"-"+m]||{};
