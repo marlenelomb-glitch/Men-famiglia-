@@ -1932,7 +1932,7 @@ function filtraNotaRicetta(note, hasApro, hasNeo) {
   return out;
 }
 
-function TabIdee({profili, dispensa}) {
+function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}) {
   const [vista, setVista] = useState("live");
   const [ricette, setRicette] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1945,12 +1945,7 @@ function TabIdee({profili, dispensa}) {
   const [ricSvuota, setRicSvuota] = useState(null);
   const [loadSvuota, setLoadSvuota] = useState(false);
 
-  // Instagram
-  const [pagine, setPagine] = useState([
-    {id:"p1", nome:"Giallo Zafferano", handle:"giallozafferano", url:"https://www.instagram.com/giallozafferano/"},
-    {id:"p2", nome:"Fatto in Casa da Benedetta", handle:"fattoincasadabenedetta", url:"https://www.instagram.com/fattoincasadabenedetta/"},
-  ]);
-  const [ricetteIG, setRicetteIG] = useState([]);
+  // Instagram (ricette e pagine sono persistite: props da App)
   const [showAddPagina, setShowAddPagina] = useState(false);
   const [showAddRicetta, setShowAddRicetta] = useState(false);
   const [nuovaPagina, setNuovaPagina] = useState({nome:"", handle:""});
@@ -2369,7 +2364,7 @@ function TabIdee({profili, dispensa}) {
                     <label style={{display:"block",border:"1.5px dashed #FBE7EC",
                       borderRadius:10,padding:"14px",textAlign:"center",cursor:"pointer",
                       background:"#fff"}}>
-                      <div style={{fontSize:20,marginBottom:4}}>📷</div>
+                      <div style={{fontSize:22,marginBottom:4,color:"#C2355A"}}><i className="ti ti-camera"/></div>
                       <div style={{fontSize:10,color:"#C2355A",fontWeight:700}}>
                         Tocca per aggiungere foto
                       </div>
@@ -2382,7 +2377,21 @@ function TabIdee({profili, dispensa}) {
                           const file = e.target.files[0];
                           if(!file) return;
                           const reader = new FileReader();
-                          reader.onload = ev => setNuovaRicetta(p=>({...p,foto:ev.target.result}));
+                          reader.onload = ev => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const max = 900;
+                              let w = img.width, h = img.height;
+                              if(w > h && w > max){ h = Math.round(h*max/w); w = max; }
+                              else if(h >= w && h > max){ w = Math.round(w*max/h); h = max; }
+                              const c = document.createElement("canvas");
+                              c.width = w; c.height = h;
+                              c.getContext("2d").drawImage(img, 0, 0, w, h);
+                              setNuovaRicetta(p=>({...p,foto:c.toDataURL("image/jpeg",0.7)}));
+                            };
+                            img.onerror = () => setNuovaRicetta(p=>({...p,foto:ev.target.result}));
+                            img.src = ev.target.result;
+                          };
                           reader.readAsDataURL(file);
                         }}/>
                     </label>
@@ -9927,7 +9936,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -9974,7 +9983,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -10100,6 +10109,11 @@ export default function App() {
   const [piani, setPiani] = useState(loadLS("piani", {}));
   const [medicine, setMedicine] = useState(loadLS("medicine", {}));
   const [noteGiorno, setNoteGiorno] = useState(loadLS("noteGiorno", {}));
+  const [ricetteIG, setRicetteIG] = useState(loadLS("ricetteIG", []));
+  const [pagineIG, setPagineIG] = useState(loadLS("pagineIG", [
+    {id:"p1", nome:"Giallo Zafferano", handle:"giallozafferano", url:"https://www.instagram.com/giallozafferano/"},
+    {id:"p2", nome:"Fatto in Casa da Benedetta", handle:"fattoincasadabenedetta", url:"https://www.instagram.com/fattoincasadabenedetta/"}
+  ]));
   const [alimentiCustom, setAlimentiCustom] = useState(loadLS("alimentiCustom", []));
   ALIMENTI_CUSTOM = alimentiCustom;
   const [regolaApro, setRegolaApro] = useState({
@@ -10223,6 +10237,8 @@ export default function App() {
   var setPianiLS              = mkSetterSync("piani", setPiani);
   var setMedicineLS           = mkSetterSync("medicine", setMedicine);
   var setNoteGiornoLS         = mkSetterSync("noteGiorno", setNoteGiorno);
+  var setRicetteIGLS          = mkSetterSync("ricetteIG", setRicetteIG);
+  var setPagineIGLS           = mkSetterSync("pagineIG", setPagineIG);
   var setPinLS                = mkSetter("pin", setPin);
   var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
@@ -10546,7 +10562,7 @@ export default function App() {
           <PiramideView/>
         )}
         {tab==="idee" && (
-          <TabIdee profili={profili} dispensa={dispensa}/>
+          <TabIdee profili={profili} dispensa={dispensa} ricetteIG={ricetteIG} setRicetteIG={setRicetteIGLS} pagine={pagineIG} setPagine={setPagineIGLS}/>
         )}
         {tab==="builder" && (
           <TabBuilder menu={menu} setMenuOverride={setMenuOverrideLS} profili={profili}
