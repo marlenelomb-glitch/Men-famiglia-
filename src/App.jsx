@@ -7446,6 +7446,7 @@ function SaluteView(props) {
   var setPesoLog = props.setPesoLog || function(){};
   var onSavePeso = props.onSavePeso || function(){};
   var onDeletePeso = props.onDeletePeso || function(){};
+  var onSaveObiettivo = props.onSaveObiettivo || function(){};
   var setProfili = props.setProfili || function(){};
   var vals = Object.values(profili);
 
@@ -7453,6 +7454,8 @@ function SaluteView(props) {
   var selNome = sSel[0]; var setSelNome = sSel[1];
   var sInp = useState(""); var inp = sInp[0]; var setInp = sInp[1];
   var sHist = useState(false); var showHist = sHist[0]; var setShowHist = sHist[1];
+  var sObj = useState(""); var objInp = sObj[0]; var setObjInp = sObj[1];
+  var sObjEdit = useState(false); var objEdit = sObjEdit[0]; var setObjEdit = sObjEdit[1];
 
   var selProf = null;
   vals.forEach(function(p){ if((p.nome || "") === selNome) selProf = p; });
@@ -7517,6 +7520,47 @@ function SaluteView(props) {
   var storico = log.map(function(d, i){
     return {data:d.data, valore:d.valore, delta: i > 0 ? (d.valore - log[i-1].valore) : null};
   }).reverse();
+
+  var obiettivo = selProf && selProf.obiettivoPeso ? selProf.obiettivoPeso : null;
+  var trendSett = null;
+  if(log.length >= 2) {
+    var recent = log.slice(-4);
+    var a0 = recent[0]; var zN = recent[recent.length-1];
+    var gg = (new Date(zN.data + "T00:00:00").getTime() - new Date(a0.data + "T00:00:00").getTime()) / 86400000;
+    if(gg > 0) trendSett = (zN.valore - a0.valore) / (gg / 7);
+  }
+  var proj = null;
+  if(obiettivo != null && pesoAttuale) {
+    var manca = obiettivo - pesoAttuale;
+    var start = log.length ? log[0].valore : pesoAttuale;
+    var tot = obiettivo - start;
+    var frazione = tot !== 0 ? (pesoAttuale - start) / tot : 1;
+    if(frazione < 0) frazione = 0; if(frazione > 1) frazione = 1;
+    proj = {manca: manca, frazione: frazione};
+    if(Math.abs(manca) < 0.05) proj.stato = "raggiunto";
+    else if(trendSett == null || Math.abs(trendSett) < 0.02) proj.stato = "fermo";
+    else if((manca > 0) === (trendSett > 0)) {
+      var sett = Math.abs(manca / trendSett);
+      proj.stato = "ok"; proj.settimane = Math.ceil(sett); proj.ritmo = Math.abs(trendSett);
+      var dd = new Date(); dd.setDate(dd.getDate() + Math.round(sett * 7)); proj.data = dd;
+    } else { proj.stato = "contrario"; proj.ritmo = Math.abs(trendSett); }
+  }
+  function fmtMeseAnno(d) {
+    var MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+    return MESI[d.getMonth()] + " " + d.getFullYear();
+  }
+  function salvaObiettivo() {
+    if(!selProf) return;
+    var val = parseFloat(("" + objInp).replace(",", "."));
+    if(!val || !(val > 0)) return;
+    onSaveObiettivo(selProf.id, val);
+    setObjInp(""); setObjEdit(false);
+  }
+  function rimuoviObiettivo() {
+    if(!selProf) return;
+    onSaveObiettivo(selProf.id, null);
+    setObjInp(""); setObjEdit(false);
+  }
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -7621,6 +7665,60 @@ function SaluteView(props) {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {log.length > 0 && (
+            <div style={{background:"#F2F6F8",borderRadius:14,padding:"12px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:(obiettivo!=null && !objEdit)?10:8}}>
+                <i className="ti ti-target" style={{color:"#2F6586",fontSize:17}}/>
+                <span style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>Obiettivo di peso</span>
+                {(obiettivo != null && !objEdit) ? (
+                  <span style={{marginLeft:"auto",display:"flex",gap:14}}>
+                    <i className="ti ti-pencil" onClick={function(){ setObjInp("" + obiettivo); setObjEdit(true); }} style={{fontSize:15,color:"#8A949B",cursor:"pointer"}}/>
+                    <i className="ti ti-trash" onClick={rimuoviObiettivo} style={{fontSize:15,color:"#B4BEC4",cursor:"pointer"}}/>
+                  </span>
+                ) : null}
+              </div>
+              {(obiettivo == null || objEdit) ? (
+                <div style={{display:"flex",gap:8}}>
+                  <input inputMode="decimal" placeholder="Peso obiettivo (kg)" value={objInp}
+                    onChange={function(e){ setObjInp(e.target.value.replace(/[^0-9.,]/g, "")); }}
+                    onKeyDown={function(e){ if(e.key === "Enter") salvaObiettivo(); }}
+                    style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1.5px solid #CADCE8",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",boxSizing:"border-box"}}/>
+                  <button onClick={salvaObiettivo} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"0 16px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Salva</button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:8}}>
+                    <span style={{fontSize:24,fontWeight:800,color:"#2C3338"}}>{obiettivo} kg</span>
+                    {(proj && proj.stato !== "raggiunto") ? (
+                      <span style={{fontSize:13,fontWeight:700,color:"#8A949B"}}>
+                        {(proj.manca > 0 ? "+" : "") + proj.manca.toFixed(1)} kg da {proj.manca > 0 ? "mettere su" : "perdere"}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{position:"relative",height:8,borderRadius:6,background:"#E3EAEE",marginBottom:10,overflow:"hidden"}}>
+                    <div style={{position:"absolute",left:0,top:0,bottom:0,width:(Math.round((proj ? proj.frazione : 0) * 100)) + "%",background:"#6BA6C9",borderRadius:6}}/>
+                  </div>
+                  {(proj && proj.stato === "raggiunto") ? (
+                    <div style={{background:"#E2EEF5",borderRadius:11,padding:"9px 11px",color:"#2F6586",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+                      <i className="ti ti-circle-check"/><span>Obiettivo raggiunto! Bravissima.</span>
+                    </div>
+                  ) : (proj && proj.stato === "ok") ? (
+                    <div style={{fontSize:12,color:"#2C3338",fontWeight:600,lineHeight:1.5}}>
+                      Al ritmo attuale (~{proj.ritmo.toFixed(1)} kg a settimana): circa <b>{proj.settimane} settiman{proj.settimane === 1 ? "a" : "e"}</b>, verso <b>{fmtMeseAnno(proj.data)}</b>.
+                    </div>
+                  ) : (proj && proj.stato === "contrario") ? (
+                    <div style={{background:"#F6ECD9",borderRadius:11,padding:"9px 11px",color:"#8A5A12",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+                      <i className="ti ti-alert-triangle"/><span>Al ritmo attuale ti stai allontanando dall'obiettivo.</span>
+                    </div>
+                  ) : (
+                    <div style={{fontSize:12,color:"#8A949B",fontWeight:600}}>Servono più pesate recenti per stimare i tempi.</div>
+                  )}
+                  <div style={{fontSize:10,color:"#8A949B",marginTop:8,lineHeight:1.4}}>Stima indicativa dal tuo andamento. Per obiettivi di salute senti il medico.</div>
                 </div>
               )}
             </div>
@@ -9862,6 +9960,14 @@ export default function App() {
     supabase.from("peso_log").delete().eq("family_id",familyId).eq("profile_nome",nome).eq("data",data);
   }
 
+  function salvaObiettivoPeso(pid, val) {
+    setProfiliLS(function(prev){
+      var n = Object.assign({}, prev);
+      if(n[pid]) n[pid] = Object.assign({}, n[pid], {obiettivoPeso: val});
+      return n;
+    });
+  }
+
   function pushAll(fid, cb) {
     var stamp = new Date().toISOString();
     var nP=0, nB=0, nS=0;
@@ -10400,7 +10506,7 @@ export default function App() {
           <MedicineView profili={profili} medicine={medicine} setMedicine={setMedicineLS}/>
         )}
         {tab==="salute" && (
-          <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase}/>
+          <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}/>
         )}
         {tab==="dispensa" && (
           <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
