@@ -8961,6 +8961,161 @@ function DiarioView(props) {
   );
 }
 
+function CommunityView(props) {
+  var familyId = props.familyId || null;
+  var utente = props.utente || null;
+  var profili = props.profili || {};
+  var setTab = props.setTab || function(){};
+
+  var PAT = PATOLOGIE_LIST.filter(function(x){ return x.id !== "nessuna"; });
+  function patLabel(id){ var f = PATOLOGIE_LIST.find(function(x){ return x.id === id; }); return f ? f.label : id; }
+  var familyPats = [];
+  Object.keys(profili).forEach(function(pid){
+    var p = profili[pid]; if(!p) return;
+    var lista = (p.patologie && p.patologie.length) ? p.patologie : (p.patologia ? [p.patologia] : []);
+    lista.forEach(function(x){ if(x && x !== "nessuna" && familyPats.indexOf(x) < 0) familyPats.push(x); });
+  });
+  var defPat = familyPats.length ? familyPats[0] : (PAT.length ? PAT[0].id : "celiachia");
+
+  var sPosts = useState(props.seed || []); var posts = sPosts[0]; var setPosts = sPosts[1];
+  var sLoad = useState(!props.seed); var loading = sLoad[0]; var setLoading = sLoad[1];
+  var sUid = useState(props.seedUid || ""); var myUid = sUid[0]; var setMyUid = sUid[1];
+  var sFPat = useState("tutte"); var fPat = sFPat[0]; var setFPat = sFPat[1];
+  var sFTipo = useState("tutte"); var fTipo = sFTipo[0]; var setFTipo = sFTipo[1];
+  var sAdd = useState(false); var showAdd = sAdd[0]; var setShowAdd = sAdd[1];
+  var sSav = useState(false); var saving = sSav[0]; var setSaving = sSav[1];
+  var sForm = useState({tipo:"consiglio", patologia:defPat, titolo:"", testo:"", pubblica:true});
+  var form = sForm[0]; var setForm = sForm[1];
+
+  function loadPosts() {
+    setLoading(true);
+    supabase.from("community").select("*").order("created_at",{ascending:false}).then(function(rows){
+      setPosts(Array.isArray(rows) ? rows : []);
+      setLoading(false);
+    }, function(){ setPosts([]); setLoading(false); });
+  }
+  useEffect(function(){
+    if(props.seed) return;
+    supabase.getSession().then(function(u){ if(u && u.id) setMyUid(u.id); });
+    loadPosts();
+  }, []);
+
+  function upd(k, v){ setForm(function(prev){ var n = Object.assign({}, prev); n[k] = v; return n; }); }
+  function salva() {
+    if(!(""+form.titolo).trim()) return;
+    setSaving(true);
+    var autore = (utente && utente.email) ? utente.email.split("@")[0] : "Anonimo";
+    supabase.from("community").insert({
+      family_id: familyId, patologia: form.patologia, tipo: form.tipo,
+      titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica
+    }).then(function(){
+      setForm({tipo:"consiglio", patologia:form.patologia, titolo:"", testo:"", pubblica:true});
+      setShowAdd(false); setSaving(false); loadPosts();
+    }, function(){ setSaving(false); });
+  }
+  function elimina(id) {
+    supabase.from("community").delete().eq("id", id).then(function(){ loadPosts(); }, function(){});
+  }
+
+  var visti = posts.filter(function(p){
+    if(fPat !== "tutte" && p.patologia !== fPat) return false;
+    if(fTipo !== "tutte" && p.tipo !== fTipo) return false;
+    return true;
+  });
+  function fmtDataC(s){ if(!s) return ""; var d = new Date(s); if(isNaN(d.getTime())) return ""; return ("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2)+"/"+d.getFullYear(); }
+
+  var chipStyle = function(on){ return {flexShrink:0,border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}; };
+  var segBtn = function(on){ return {flex:1,border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2C3338",borderRadius:11,padding:"9px 0",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}; };
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Community</div>
+        <div style={{fontSize:13,color:"#8A949B"}}>Ricette e consigli condivisi, per patologia.</div>
+      </div>
+
+      <button onClick={function(){ setShowAdd(!showAdd); }}
+        style={{border:"none",background:showAdd?"#E2EEF5":"#2F6586",color:showAdd?"#2F6586":"#fff",borderRadius:13,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+        <i className={"ti "+(showAdd?"ti-x":"ti-plus")} style={{fontSize:17}}/>{showAdd?"Annulla":"Aggiungi ricetta o consiglio"}
+      </button>
+
+      {showAdd && (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){ upd("tipo","consiglio"); }} style={segBtn(form.tipo==="consiglio")}>Consiglio</button>
+            <button onClick={function(){ upd("tipo","ricetta"); }} style={segBtn(form.tipo==="ricetta")}>Ricetta</button>
+          </div>
+          <div>
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Per quale patologia</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {PAT.map(function(pt){
+                return <button key={pt.id} onClick={function(){ upd("patologia",pt.id); }} style={chipStyle(form.patologia===pt.id)}>{pt.label}</button>;
+              })}
+            </div>
+          </div>
+          <input value={form.titolo} onChange={function(e){ upd("titolo", e.target.value); }} placeholder={form.tipo==="ricetta"?"Nome ricetta":"Titolo del consiglio"}
+            style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <textarea value={form.testo} onChange={function(e){ upd("testo", e.target.value); }} rows={4} placeholder={form.tipo==="ricetta"?"Ingredienti e preparazione…":"Scrivi il consiglio…"}
+            style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",resize:"vertical",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+          <div>
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Chi lo vede</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={function(){ upd("pubblica",true); }} style={segBtn(form.pubblica===true)}><i className="ti ti-world" style={{marginRight:6}}/>Tutti</button>
+              <button onClick={function(){ upd("pubblica",false); }} style={segBtn(form.pubblica===false)}><i className="ti ti-lock" style={{marginRight:6}}/>Solo io</button>
+            </div>
+          </div>
+          <button onClick={salva} disabled={saving} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",opacity:saving?0.6:1,fontFamily:"'Nunito',system-ui,sans-serif"}}>{saving?"Salvo…":"Pubblica"}</button>
+        </div>
+      )}
+
+      <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
+        <button onClick={function(){ setFPat("tutte"); }} style={chipStyle(fPat==="tutte")}>Tutte</button>
+        {PAT.map(function(pt){
+          return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{pt.label}</button>;
+        })}
+      </div>
+      <div style={{display:"flex",gap:7}}>
+        {[{k:"tutte",l:"Tutto"},{k:"ricetta",l:"Ricette"},{k:"consiglio",l:"Consigli"}].map(function(t){
+          return <button key={t.k} onClick={function(){ setFTipo(t.k); }} style={chipStyle(fTipo===t.k)}>{t.l}</button>;
+        })}
+      </div>
+
+      {loading ? (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B",textAlign:"center"}}>Carico la community…</div>
+      ) : visti.length === 0 ? (
+        <div className="mf-card" style={{fontSize:13,color:"#8A949B",textAlign:"center",padding:"18px 12px"}}>
+          Ancora nessun post qui. Aggiungi tu il primo consiglio o la prima ricetta!
+        </div>
+      ) : (
+        visti.map(function(p){
+          var mio = myUid && p.user_id === myUid;
+          var isRic = p.tipo === "ricetta";
+          return (
+            <div key={p.id} className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>
+                  <i className={"ti "+(isRic?"ti-tools-kitchen-2":"ti-bulb")} style={{fontSize:13}}/>{isRic?"Ricetta":"Consiglio"}
+                </span>
+                <span style={{fontSize:11,fontWeight:700,color:"#8A949B"}}>{patLabel(p.patologia)}</span>
+                {!p.pubblica ? <i className="ti ti-lock" style={{fontSize:13,color:"#B4BEC4"}} title="Solo tua"/> : null}
+                {mio ? <i className="ti ti-trash" onClick={function(){ elimina(p.id); }} style={{marginLeft:"auto",fontSize:15,color:"#B4BEC4",cursor:"pointer"}}/> : null}
+              </div>
+              <div style={{fontSize:16,fontWeight:800}}>{p.titolo}</div>
+              {p.testo ? <div style={{fontSize:14,color:"#2C3338",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{p.testo}</div> : null}
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{(p.autore?("da "+p.autore):"")}{(p.autore&&p.created_at)?" · ":""}{fmtDataC(p.created_at)}{mio?" · tuo":""}</div>
+            </div>
+          );
+        })
+      )}
+
+      <div className="mf-card warn" style={{display:"flex",alignItems:"flex-start",gap:10,fontSize:12}}>
+        <i className="ti ti-info-circle" style={{fontSize:18,flexShrink:0,marginTop:1}}/>
+        <div>Consigli scritti da altre famiglie, non pareri medici. Per le patologie segui sempre il tuo medico.</div>
+      </div>
+    </div>
+  );
+}
+
 function HomeView(props) {
   var profili = props.profili || {};
   var menu = props.menu || {};
@@ -10167,6 +10322,7 @@ export default function App() {
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
     {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
+    {id:"community",   l:"Community",      ic:"ti-users-group",        s:"Ricette e consigli per patologia"},
     {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
     {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
     {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
@@ -10520,6 +10676,9 @@ export default function App() {
         )}
         {tab==="medicine" && (
           <MedicineView profili={profili} medicine={medicine} setMedicine={setMedicineLS}/>
+        )}
+        {tab==="community" && (
+          <CommunityView familyId={familyId} utente={utente} profili={profili} setTab={handleSetTab}/>
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}/>
