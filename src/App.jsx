@@ -8159,6 +8159,40 @@ function CommunityView(props) {
   );
 }
 
+function AnelloMacro(props) {
+  var label = props.label || "";
+  var val = props.val || 0;
+  var target = props.target || 0;
+  var unit = props.unit || "";
+  var size = 66;
+  var stroke = 7;
+  var r = (size - stroke) / 2;
+  var circ = 2 * Math.PI * r;
+  var pct = target > 0 ? val / target : 0;
+  if(pct < 0) pct = 0;
+  var over = pct > 1;
+  var pctClamp = over ? 1 : pct;
+  var off = circ * (1 - pctClamp);
+  var col = over ? "#C2355A" : "#2F6586";
+  var track = over ? "#FBE7EC" : "#E2EEF5";
+  return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,minWidth:0}}>
+      <div style={{position:"relative",width:size,height:size}}>
+        <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={track} strokeWidth={stroke}/>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={col} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off}/>
+        </svg>
+        <div style={{position:"absolute",top:0,left:0,width:size,height:size,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+          <div style={{fontSize:14,fontWeight:800,color:over?"#C2355A":"#2C3338",lineHeight:1}}>{Math.round(val)}</div>
+          <div style={{fontSize:9,color:"#8A949B",fontWeight:700,marginTop:1}}>/{Math.round(target)}</div>
+        </div>
+      </div>
+      <div style={{fontSize:10,fontWeight:800,color:"#8A949B",textAlign:"center",textTransform:"uppercase",letterSpacing:"0.02em"}}>{label}</div>
+      <div style={{fontSize:9,color:"#B4BEC4",fontWeight:700,marginTop:-4}}>{unit}</div>
+    </div>
+  );
+}
+
 function HomeView(props) {
   var profili = props.profili || {};
   var menu = props.menu || {};
@@ -8177,6 +8211,7 @@ function HomeView(props) {
   var setNoteGiorno = props.setNoteGiorno || function(){};
   var oggiIso = isoDay(new Date());
   var sNoteDraft = useState({}); var noteDraft = sNoteDraft[0]; var setNoteDraft = sNoteDraft[1];
+  var sMembSel = useState(""); var membSel = sMembSel[0]; var setMembSel = sMembSel[1];
 
   var GIORNI_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var GIORNI_SHORT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -8440,12 +8475,95 @@ function HomeView(props) {
     });
   }
 
+  function macroPasto(scelta) {
+    var res = {kcal:0, prot:0, carb:0, gsat:0};
+    if(!scelta) return res;
+    if(scelta.piattoUnico && scelta.piattoUnico.nome && (""+scelta.piattoUnico.nome).trim()) {
+      res.kcal += parseInt(scelta.piattoUnico.kcal, 10) || 0;
+      res.prot += parseInt(scelta.piattoUnico.prot, 10) || 0;
+    }
+    var campi = [["carbo",0],["proteina",0],["verdura",150],["verdura2",150],["frutta",120],["latticino",100]];
+    campi.forEach(function(c){
+      var id = scelta[c[0]]; if(!id) return;
+      var it = ingById(id); if(!it || !it.kcal_p) return;
+      var g = grammiField(scelta, c[0], it, c[1]);
+      res.kcal += it.kcal_p * g / 100;
+      res.prot += (it.prot_p || 0) * g / 100;
+      res.carb += (it.carb_p || 0) * g / 100;
+      res.gsat += (it.gsat_p || 0) * g / 100;
+    });
+    ((scelta.piu) || []).forEach(function(d){
+      if(!d) return;
+      res.kcal += parseInt(d.kcal, 10) || 0;
+      res.prot += parseInt(d.prot, 10) || 0;
+    });
+    return res;
+  }
+  function macroOggi(pid) {
+    var tot = {kcal:0, prot:0, carb:0, gsat:0};
+    ["Pranzo","Cena"].forEach(function(m){
+      if(pid !== "_tutti" && !mangiaCasaPasto(pid, gOggi, gShort, isWeekday, m)) return;
+      var s = builder[gOggi+"-"+m]; if(!s) return;
+      var r = macroPasto(s);
+      tot.kcal += r.kcal; tot.prot += r.prot; tot.carb += r.carb; tot.gsat += r.gsat;
+    });
+    return tot;
+  }
+  function targetMembro(pid) {
+    var p = profili[pid] || {};
+    var kc = parseInt(p.kcal_target, 10) || 0;
+    var pr = parseInt(p.prot_max, 10) || 0;
+    if(!kc) kc = 1800;
+    if(!pr) pr = Math.round(kc * 0.15 / 4);
+    return {kcal:kc, prot:pr, carb:Math.round(kc * 0.5 / 4), gsat:Math.round(kc * 0.10 / 9)};
+  }
+  var membSelEff = (membSel && profili[membSel]) ? membSel : (membriPid.length ? membriPid[0] : "");
+  var macroSel = membSelEff ? macroOggi(membSelEff) : null;
+  var targetSel = membSelEff ? targetMembro(membSelEff) : null;
+  var pSel = membSelEff ? (profili[membSelEff] || {}) : {};
+
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{paddingTop:8}}>
         <div style={{fontSize:13,color:"#8A949B",fontWeight:700}}>Buongiorno</div>
         <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",marginTop:2}}>{dataLabel}</div>
       </div>
+
+      {membriPid.length > 0 && (
+        <div style={cardStyle}>
+          <div style={ctStyle}><i className="ti ti-target" style={{color:"#2F6586",fontSize:15}}/>Obiettivi di oggi</div>
+          <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,marginBottom:14,WebkitOverflowScrolling:"touch"}}>
+            {membriPid.map(function(pid){
+              var p = profili[pid] || {};
+              var col = p.colore || "#2F6586";
+              var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
+              var sel = pid === membSelEff;
+              return (
+                <button key={pid} onClick={function(){ setMembSel(pid); }}
+                  style={{display:"flex",alignItems:"center",gap:7,padding:"6px 12px 6px 6px",borderRadius:22,cursor:"pointer",flexShrink:0,border:"1.5px solid "+(sel?"#2F6586":"#E3EAEE"),background:sel?"#E2EEF5":"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <span style={{width:26,height:26,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</span>
+                  <span style={{fontSize:13,fontWeight:800,color:sel?"#2F6586":"#2C3338"}}>{p.nome || "—"}</span>
+                </button>
+              );
+            })}
+          </div>
+          {macroSel && targetSel ? (
+            <div>
+              <div style={{display:"flex",justifyContent:"space-around",gap:4}}>
+                <AnelloMacro label="Calorie" val={macroSel.kcal} target={targetSel.kcal} unit="kcal"/>
+                <AnelloMacro label="Proteine" val={macroSel.prot} target={targetSel.prot} unit="g"/>
+                <AnelloMacro label="Carbo" val={macroSel.carb} target={targetSel.carb} unit="g"/>
+                <AnelloMacro label="Grassi" val={macroSel.gsat} target={targetSel.gsat} unit="g sat."/>
+              </div>
+              <div style={{fontSize:10,color:"#8A949B",marginTop:12,lineHeight:1.5}}>
+                Stima dai pasti di oggi a casa (pranzo e cena). Le proteine per «{pSel.nome || "—"}» sono verso il suo limite giornaliero.
+              </div>
+            </div>
+          ) : (
+            <div style={{fontSize:13,color:"#8A949B"}}>Pianifica pranzo e cena di oggi nel Builder per vedere gli obiettivi.</div>
+          )}
+        </div>
+      )}
 
       <div style={cardStyle}>
         <div style={ctStyle}><i className="ti ti-tools-kitchen-2" style={{color:"#2F6586",fontSize:15}}/>Oggi si mangia</div>
