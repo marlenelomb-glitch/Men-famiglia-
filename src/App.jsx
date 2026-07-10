@@ -4933,9 +4933,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                           var id=s[gr.campo];
                           return (
                             <div key={gr.campo} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(gr); }}
-                              style={{width:"100%",maxWidth:34,aspectRatio:"1",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-                                background:id?"#E2EEF5":"#fff",border:id?"none":"1.5px dashed #CADCE8",color:id?"#2F6586":"#B4BEC4",fontSize:id?16:13}}>
-                              <i className={"ti "+(id?iconaGruppo(gr.tipo,id):"ti-plus")}/>
+                              style={{width:"100%",minHeight:18,borderRadius:8,padding:"3px 3px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",cursor:"pointer",
+                                background:id?"#E2EEF5":"#fff",border:id?"none":"1.5px dashed #CADCE8"}}>
+                              {id ? (
+                                <span style={{fontSize:9,fontWeight:700,color:"#2F6586",lineHeight:1.12,wordBreak:"break-word"}}>{nomeGruppo(id)}</span>
+                              ) : (
+                                <i className="ti ti-plus" style={{fontSize:11,color:"#B4BEC4"}}/>
+                              )}
                             </div>
                           );
                         })
