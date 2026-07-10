@@ -2940,6 +2940,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var s10=useState(0); var settB=s10[0]; var setSettB=s10[1]; // 0=questa sett, 1=prossima
   var sMod=useState(false); var showModelli=sMod[0]; var setShowModelli=sMod[1];
   var sModN=useState(""); var modNome=sModN[0]; var setModNome=sModN[1];
+  var sScanNA=useState(false); var showScanNA=sScanNA[0]; var setShowScanNA=sScanNA[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -4100,6 +4101,10 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   {nuovoAl?(
                     <div style={{border:"1.5px solid #6BA6C9",background:"#EBF3FA",borderRadius:13,padding:"12px",display:"flex",flexDirection:"column",gap:9,marginBottom:8}}>
                       <div style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>Nuovo alimento</div>
+                      <button onClick={function(){ setShowScanNA(true); }} style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:11,padding:"9px",fontSize:12,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                        <i className="ti ti-barcode" style={{fontSize:15}}/>Scansiona il codice a barre
+                      </button>
+                      {showScanNA && <ScannerCibo onClose={function(){ setShowScanNA(false); }} onScegli={function(pr){ setNuovoAl(Object.assign({}, nuovoAl||{cat:"carne"}, {nome:(pr.nome||(nuovoAl&&nuovoAl.nome)||""), kcal:(pr.kcal?String(pr.kcal):((nuovoAl&&nuovoAl.kcal)||"")), prot:((pr.prot||pr.prot===0)?String(pr.prot):((nuovoAl&&nuovoAl.prot)||"")), carb:(pr.carb?String(pr.carb):((nuovoAl&&nuovoAl.carb)||""))})); }}/>}
                       <input value={nuovoAl.nome||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{nome:e.target.value})); }} placeholder="Nome (es. Seitan)"
                         style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #CADCE8",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
                       {picker.tipo==="proteina"?(
@@ -7258,8 +7263,10 @@ function ScannerCibo(props) {
     return function(){ stop=true; if(stream) stream.getTracks().forEach(function(t){ t.stop(); }); };
   }, [camOn]);
 
+  var onScegli = props.onScegli || null;
   function aggiungiDispensa(){ if(!res) return; onAggiungi({nome:res.nome||("Prodotto "+res.code), kcal_p:res.kcal, prot_p:res.prot, carb_p:res.carb, marca:res.marca}); onClose(); }
   function aggiungiSpesaBtn(){ if(!res) return; onSpesa({nome:res.nome||("Prodotto "+res.code)}); onClose(); }
+  function scegliBtn(){ if(!res) return; onScegli(res); onClose(); }
 
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -7305,10 +7312,14 @@ function ScannerCibo(props) {
               <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#F2F6F8",color:"#2C3338",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:700}}><i className="ti ti-flame" style={{fontSize:13}}/>{res.kcal} kcal /100g</span>
               <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#F2F6F8",color:"#2C3338",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:700}}>Carbo {res.carb}g</span>
             </div>
-            <div style={{display:"flex",gap:8,marginTop:2}}>
-              <button onClick={aggiungiSpesaBtn} style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla spesa</button>
-              <button onClick={aggiungiDispensa} style={{flex:1,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla dispensa</button>
-            </div>
+            {onScegli ? (
+              <button onClick={scegliBtn} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Usa questi valori</button>
+            ) : (
+              <div style={{display:"flex",gap:8,marginTop:2}}>
+                <button onClick={aggiungiSpesaBtn} style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla spesa</button>
+                <button onClick={aggiungiDispensa} style={{flex:1,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla dispensa</button>
+              </div>
+            )}
           </div>
         )}
         <div style={{fontSize:10,color:"#8A949B",marginTop:14,lineHeight:1.4}}>Dati da Open Food Facts (database aperto). Su iPhone la fotocamera nel browser può non funzionare: usa il codice a mano.</div>
