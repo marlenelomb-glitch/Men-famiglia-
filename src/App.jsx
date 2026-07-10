@@ -2556,6 +2556,1777 @@ function NutriPanel(props) {
   );
 }
 
+function GrigliaSettimana(props) {
+  var scelte=props.scelte, GIORNI=props.GIORNI, PASTI=props.PASTI;
+  var giornoSel=props.giornoSel, pastoSel=props.pastoSel;
+  var cambiaGiorno=props.cambiaGiorno, cambiaPasto=props.cambiaPasto;
+  var setPopup=props.setPopup;
+  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
+  var pasti5=["Colazione","Spuntino","Pranzo","Merenda","Cena"];
+  var rows=[];
+
+  GIORNI.forEach(function(g,gi){
+    var isSel=gi===giornoSel;
+    rows.push(
+      <div key={"g"+gi} onClick={function(){cambiaGiorno(gi);}}
+        style={{fontSize:10,fontWeight:isSel?800:500,color:isSel?"#2F6586":"#666",
+          cursor:"pointer",background:isSel?"#EBF3FA":"transparent",
+          borderRadius:6,padding:"2px 3px",display:"flex",alignItems:"center"}}>
+        {g.slice(0,3)}
+      </div>
+    );
+    pasti5.forEach(function(pasto){
+      var s=scelte[g+"-"+pasto];
+      if(!s){
+        rows.push(<div key={g+pasto} onClick={function(){cambiaGiorno(gi);cambiaPasto(pasto);}} style={{background:"#F2F6F8",borderRadius:6,minHeight:26,cursor:"pointer",border:"1px dashed #eee"}}/>);
+        return;
+      }
+      var protItem=allIt.find(function(x){return x.id===s.proteina;});
+      var carboItem=allIt.find(function(x){return x.id===s.carbo;});
+      var fruttaItem=allIt.find(function(x){return x.id===s.frutta;});
+      var cat=protItem?protItem.cat:"";
+      var bgMap={"pesce":"#EBF3FA","carne rossa":"#FBE7EC","uova":"#F6ECD9","legumi":"#F2F6F8","affettati":"#FBE7EC","carne bianca":"#E2EEF5"};
+      var txMap={"pesce":"#2F6586","carne rossa":"#C2355A","uova":"#8A5A12","legumi":"#2F6586","affettati":"#C2355A"};
+      var bg=bgMap[cat]||(s.frutta?"#F6ECD9":"#F2F6F8");
+      var tx=txMap[cat]||"#555";
+      rows.push(
+        <div key={g+pasto} onClick={function(){setPopup({giorno:g,pasto:pasto,s:s,gi:gi});}}
+          style={{background:bg,borderRadius:6,padding:"3px 3px",cursor:"pointer",position:"relative",minHeight:26,
+            border:isSel&&pastoSel===pasto?"2px solid #2C3338":"1.5px solid transparent"}}>
+          {protItem&&<div style={{fontSize:8,fontWeight:700,color:tx,lineHeight:1.2}}>{protItem.emoji} {protItem.nome.slice(0,10)}</div>}
+          {carboItem&&<div style={{fontSize:7,color:"#8A949B",lineHeight:1.1}}>{carboItem.emoji} {carboItem.nome.slice(0,9)}</div>}
+          {!protItem&&fruttaItem&&<div style={{fontSize:8,color:"#6BA6C9"}}>{fruttaItem.emoji} {fruttaItem.nome.slice(0,10)}</div>}
+        </div>
+      );
+    });
+  });
+
+  return (
+    <div style={{display:"grid",gridTemplateColumns:"44px repeat(5,1fr)",gap:3}}>
+      <div/>
+      <div style={{fontSize:8,color:"#8A949B",textAlign:"center"}}>Col</div>
+      <div style={{fontSize:8,color:"#8A949B",textAlign:"center"}}>Spu</div>
+      <div style={{fontSize:8,color:"#8A949B",textAlign:"center"}}>Pra</div>
+      <div style={{fontSize:8,color:"#8A949B",textAlign:"center"}}>Mer</div>
+      <div style={{fontSize:8,color:"#8A949B",textAlign:"center"}}>Cen</div>
+      {rows}
+    </div>
+  );
+}
+
+function PopupPasto(props) {
+  var data=props.data, scelte=props.scelte;
+  var setScelte=props.setScelte, setPopup=props.setPopup;
+  var cambiaGiorno=props.cambiaGiorno, cambiaPasto=props.cambiaPasto;
+  var GIORNI=props.GIORNI, PASTI=props.PASTI;
+  var giorno=data.giorno, pasto=data.pasto, s=data.s, gi=data.gi;
+  var copyState=useState(false); var showCopia=copyState[0]; var setShowCopia=copyState[1];
+  var allIt=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
+  function find2(id){return allIt.find(function(x){return x.id===id;});}
+  var ings=[
+    {label:"Carbo",item:find2(s.carbo)},{label:"Proteina",item:find2(s.proteina)},
+    {label:"Verdura",item:find2(s.verdura)},{label:"Verdura 2",item:find2(s.verdura2)},
+    {label:"Frutta",item:find2(s.frutta)},{label:"Latticino",item:find2(s.latticino)},
+    {label:"Salsa",item:find2(s.salsa)},
+  ].filter(function(x){return x.item;});
+
+  return (
+    <div onClick={function(){setPopup(null);}}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,
+        display:"flex",alignItems:"center",justifyContent:"center",padding:"0 16px"}}>
+      <div onClick={function(e){e.stopPropagation();}}
+        style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:440,
+          maxHeight:"80vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
+        <div style={{background:"linear-gradient(135deg,#2C3338,#2F6586)",
+          padding:"16px 20px",borderRadius:"20px 20px 0 0",color:"#fff"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div>
+              <div style={{fontSize:11,opacity:0.7,marginBottom:2}}>{giorno} - {pasto}</div>
+              <div style={{fontSize:16,fontWeight:800}}>{s.nomePiatto||pasto}</div>
+              {s.nota&&<div style={{fontSize:11,opacity:0.8,marginTop:4,fontStyle:"italic"}}>{s.nota}</div>}
+            </div>
+            <button onClick={function(){setPopup(null);}}
+              style={{background:"rgba(255,255,255,.2)",border:"none",color:"#fff",
+                width:32,height:32,borderRadius:"50%",fontSize:16,cursor:"pointer"}}>x</button>
+          </div>
+        </div>
+        <div style={{padding:"16px 20px"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+            {ings.map(function(x){
+              return (
+                <div key={x.label} style={{display:"flex",alignItems:"center",gap:10,
+                  padding:"7px 12px",background:"#F5F8FC",borderRadius:10}}>
+                  <span style={{fontSize:18}}>{x.item.emoji}</span>
+                  <div>
+                    <div style={{fontSize:9,color:"#8A949B",fontWeight:600}}>{x.label}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#2C3338"}}>{x.item.nome}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {!showCopia?(
+            <button onClick={function(){setShowCopia(true);}}
+              style={{width:"100%",padding:"9px",borderRadius:12,marginBottom:8,
+                border:"1.5px solid #E3EAEE",background:"#EBF3FA",color:"#2F6586",
+                fontSize:11,fontWeight:700,cursor:"pointer"}}>
+              Copia su altro giorno...
+            </button>
+          ):(
+            <div style={{background:"#EBF3FA",borderRadius:12,padding:"12px",marginBottom:8}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#2F6586",marginBottom:8}}>Copia su:</div>
+              {GIORNI.filter(function(g2){return g2!==giorno;}).map(function(g2){
+                return (
+                  <div key={g2} style={{marginBottom:5}}>
+                    <div style={{fontSize:9,color:"#8A949B",marginBottom:3}}>{g2}</div>
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {PASTI.map(function(p2){
+                        return (
+                          <button key={p2} onClick={function(){
+                            var n=Object.assign({},scelte);
+                            n[g2+"-"+p2]=Object.assign({},s);
+                            setScelte(n);
+                            setPopup(null);
+                          }} style={{padding:"4px 10px",borderRadius:20,fontSize:9,cursor:"pointer",
+                            border:"1.5px solid #E3EAEE",background:"#fff",color:"#2F6586"}}>
+                            {p2.slice(0,3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){cambiaGiorno(gi);cambiaPasto(pasto);setPopup(null);}}
+              style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#2F6586",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              Modifica
+            </button>
+            <button onClick={function(){
+              var n=Object.assign({},scelte);
+              delete n[giorno+"-"+pasto];
+              setScelte(n);
+              setPopup(null);
+            }} style={{padding:"11px 16px",borderRadius:12,border:"1.5px solid #FBE7EC",background:"#fff",color:"#C2355A",fontSize:12,cursor:"pointer"}}>
+              Elimina
+            </button>
+          </div>
+          {props.onSalvaRicetta&&(
+            <button onClick={function(){
+              var nome=window.prompt("Nome ricetta:")||pasto;
+              if(nome) props.onSalvaRicetta({id:"r"+Date.now(),nome:nome,pasto:s,nota:s.nota,note_famiglia:{}});
+              setPopup(null);
+            }} style={{width:"100%",padding:"9px",borderRadius:12,marginTop:6,
+              border:"1.5px solid #FBE7EC",background:"#FBE7EC",
+              color:"#C2355A",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+              Salva come ricetta preferita
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// Categorie supermercato per la spesa
+var CATS_SPESA = [
+  {id:"ortofrutta",  l:"Ortofrutta",      emoji:"?", color:"#6BA6C9"},
+  {id:"carne_pesce", l:"Carne e Pesce",   emoji:"?", color:"#6BA6C9"},
+  {id:"pasta_riso",  l:"Pasta e Riso",    emoji:"?", color:"#8A5A12"},
+  {id:"pane_cereal", l:"Pane e Cereali",  emoji:"?", color:"#E8D5AE"},
+  {id:"latticini",   l:"Latticini e Uova",emoji:"?", color:"#6BA6C9"},
+  {id:"salse_cond",  l:"Salse e Condim.", emoji:"?", color:"#2F6586"},
+  {id:"altro",       l:"Altro",           emoji:"?", color:"#8A949B"},
+];
+
+// Mappa categoria DB -> categoria supermercato
+function catSpesa(item) {
+  var c = item.cat||"";
+  if(["verdura"].indexOf(c)>=0 || VERDURE.some(function(v){return v.id===item.id;})) return "ortofrutta";
+  if(FRUTTA.some(function(f){return f.id===item.id;})) return "ortofrutta";
+  if(["carne bianca","carne rossa","pesce","affettati"].indexOf(c)>=0) return "carne_pesce";
+  if(["uova"].indexOf(c)>=0) return "carne_pesce";
+  if(["pasta","riso","cereali","tuberi"].indexOf(c)>=0) return "pasta_riso";
+  if(["pane","colazione"].indexOf(c)>=0) return "pane_cereal";
+  if(["latticini"].indexOf(c)>=0) return "latticini";
+  if(["legumi"].indexOf(c)>=0) return "pasta_riso";
+  if(SALSE.some(function(s){return s.id===item.id;})) return "salse_cond";
+  if(GRASSI.some(function(g){return g.id===item.id;})) return "salse_cond";
+  return "altro";
+}
+
+function SpesaItemsB(props) {
+  var scelte=props.scelte, spesaCheck=props.spesaCheck, setSpesaCheck=props.setSpesaCheck;
+  var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+  var cats={}; CATS_SPESA.forEach(function(c){cats[c.id]=[];});
+  var seen={};
+  function tryAdd(id){
+    if(!id||seen[id]) return;
+    var it=allDB.find(function(x){return x.id===id;});
+    if(!it) return; seen[id]=true;
+    var c=catSpesa(it);
+    if(cats[c]) cats[c].push(it);
+  }
+  Object.values(scelte).forEach(function(s){
+    if(!s) return;
+    tryAdd(s.carbo); tryAdd(s.proteina); tryAdd(s.verdura);
+    tryAdd(s.verdura2); tryAdd(s.frutta); tryAdd(s.latticino); tryAdd(s.salsa);
+  });
+  return (
+    <div>
+      {CATS_SPESA.map(function(cat){
+        var items=cats[cat.id];
+        if(!items||!items.length) return null;
+        return (
+          <div key={cat.id} style={{marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,
+              paddingBottom:4,borderBottom:"2px solid "+cat.color+"33"}}>
+              <span style={{fontSize:14}}>{cat.emoji}</span>
+              <span style={{fontSize:10,fontWeight:800,color:cat.color}}>{cat.l}</span>
+              <span style={{fontSize:9,color:"#8A949B"}}>({items.length})</span>
+            </div>
+            {items.map(function(it){
+              var chk=spesaCheck[it.id]||false;
+              return (
+                <div key={it.id} onClick={function(){var n=Object.assign({},spesaCheck);n[it.id]=!chk;setSpesaCheck(n);}}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"7px 4px",
+                    borderBottom:"1px solid #F2F6F8",cursor:"pointer",opacity:chk?0.4:1}}>
+                  <div style={{width:20,height:20,borderRadius:5,border:"1.5px solid "+(chk?cat.color:"#ddd"),
+                    background:chk?cat.color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {chk&&<span style={{color:"#fff",fontSize:11,fontWeight:800}}>v</span>}
+                  </div>
+                  <span style={{fontSize:11,flex:1,textDecoration:chk?"line-through":"none"}}>{it.emoji} {it.nome}</span>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+
+var SINONIMI_PASTO = {
+  pollo:"pollo_f", petto:"pollo_f", cosce:"pollo_c", tacchino:"tacchino", fesa:"tacchino",
+  manzo:"manzo", vitello:"manzo", bistecca:"manzo", hamburger:"manzo", agnello:"agnello",
+  salmone:"salmone", merluzzo:"merluzzo", baccala:"merluzzo", nasello:"merluzzo", tonno:"tonno",
+  orata:"orata", branzino:"orata", spigola:"orata", gamber:"gamberetti", pesce:"merluzzo",
+  uova:"uova", uovo:"uova", frittata:"uova", omelette:"uova",
+  ceci:"ceci", hummus:"ceci", lenticchie:"lenticchie", fagioli:"fagioli", legumi:"lenticchie",
+  prosciutto:"prosciutto", bresaola:"bresaola", mortadella:"mortadella", salume:"prosciutto",
+  mozzarella:"mozzarella", ricotta:"ricotta", feta:"feta", yogurt:"yogurt_g",
+  patate:"patate", pure:"patate", pasta:"penne", spaghetti:"spaghetti", maccheroni:"penne",
+  penne:"penne", fusilli:"fusilli", riso:"riso_b", risotto:"risotto", lasagne:"lasagne",
+  lasagna:"lasagne", cannelloni:"lasagne", gnocchi:"gnocchi", ravioli:"ravioli", tortellini:"ravioli",
+  pane:"pane_int", pizza:"pizza", focaccia:"focaccia", piadina:"piadina", farro:"farro",
+  orzo:"orzo", quinoa:"quinoa", cous:"cous", polenta:"polenta", zuppa:"lenticchie",
+  zucchine:"zucchine", spinaci:"spinaci", broccoli:"broccoli", pomodor:"pomodori", insalata:"insalata",
+  carote:"carote", zucca:"zucca", funghi:"funghi", melanzane:"melanzane", parmigiana:"melanzane",
+  peperoni:"peperoni", cavolfiore:"cavolfiore", asparagi:"asparagi", piselli:"piselli_v", verdura:"insalata"
+};
+
+function porzioneRic(it) {
+  if(PROTEINE.some(function(x){ return x.id===it.id; })) {
+    if(it.cat==="affettati") return 60;
+    if(it.cat==="uova") return 120;
+    if(it.cat==="latticini") return 100;
+    if(it.cat==="legumi") return 150;
+    return 150;
+  }
+  if(CARBOIDRATI.some(function(x){ return x.id===it.id; })) {
+    if(it.cat==="tuberi") return 200;
+    if(it.cat==="pane") return 60;
+    return 80;
+  }
+  if(VERDURE.some(function(x){ return x.id===it.id; })) return 150;
+  return 120;
+}
+function tipoRic(it) {
+  if(PROTEINE.some(function(x){ return x.id===it.id; })) return "proteina";
+  if(CARBOIDRATI.some(function(x){ return x.id===it.id; })) return "carbo";
+  if(VERDURE.some(function(x){ return x.id===it.id; })) return "verdura";
+  return "frutta";
+}
+var PIATTI_COMPOSTI = {
+  parmigiana:["melanzane","mozzarella"], carbonara:["spaghetti","uova"], amatriciana:["spaghetti","pomodori"],
+  bolognese:["tagliatelle","manzo"], caprese:["mozzarella","pomodori"], insalatona:["insalata","uova"],
+  minestrone:["patate","carote","zucchine"], passato:["patate","carote","zucchine"], vellutata:["zucca"],
+  spezzatino:["manzo","patate"], arrosto:["manzo","patate"], spiedini:["pollo_f"], polpette:["manzo"],
+  hamburger:["manzo","pane_b"], cotoletta:["pollo_f"], milanese:["pollo_f"], paella:["riso_b","gamberetti","pollo_f"],
+  poke:["riso_b","salmone"], caesar:["insalata","pollo_f"], frittata:["uova"], omelette:["uova"]
+};
+function riconosciPasto(testo) {
+  var t = (""+(testo||"")).toLowerCase();
+  if(!t.trim()) return {kcal:0, prot:0, items:[]};
+  var db = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(ALIMENTI_CUSTOM);
+  var byWord = {};
+  var chosen = {};
+  Object.keys(PIATTI_COMPOSTI).forEach(function(k){
+    if(t.indexOf(k) >= 0) {
+      PIATTI_COMPOSTI[k].forEach(function(id){
+        var it = db.find(function(x){ return x.id === id; });
+        if(it && !chosen[it.id]) { byWord["_c_"+id] = it; chosen[it.id] = true; }
+      });
+    }
+  });
+  Object.keys(SINONIMI_PASTO).forEach(function(k){
+    if(t.indexOf(k) >= 0 && !byWord[k]) {
+      var it = db.find(function(x){ return x.id === SINONIMI_PASTO[k]; });
+      if(it && !chosen[it.id]) { byWord[k] = it; chosen[it.id] = true; }
+    }
+  });
+  db.forEach(function(it){
+    var parole = it.nome.toLowerCase().split(/[^a-zàèéìòùü]+/).filter(function(w){ return w.length > 3; });
+    for(var i=0;i<parole.length;i++){
+      if(t.indexOf(parole[i]) >= 0) {
+        if(!byWord[parole[i]] && !chosen[it.id]) { byWord[parole[i]] = it; chosen[it.id] = true; }
+        break;
+      }
+    }
+  });
+  var kcal = 0, prot = 0, items = [];
+  Object.keys(byWord).forEach(function(w){
+    var it = byWord[w];
+    var g = porzioneRic(it);
+    kcal += it.kcal_p * g / 100;
+    prot += it.prot_p * g / 100;
+    items.push({id:it.id, nome:it.nome, tipo:tipoRic(it)});
+  });
+  var ordine = {proteina:0, carbo:1, verdura:2, frutta:3};
+  items.sort(function(a,b){ return ordine[a.tipo] - ordine[b.tipo]; });
+  return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
+}
+
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, onSavePasto}) {
+  var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
+  var giorniFuoriB = giorniFuori || {};
+  var toggleFuoriB = toggleFuori || function(){};
+  var pianiListaB = (piani && piani.lista) ? piani.lista : [];
+  function presenzaGiornoB(pid, dayFull, dayShort, weekday) {
+    var sf = giorniFuoriB[dayFull];
+    var isF = sf ? (typeof sf.has === "function" ? sf.has(pid) : (Array.isArray(sf) ? sf.indexOf(pid) >= 0 : false)) : false;
+    if(isF) return "fuori";
+    var mensa = false, dieta = false;
+    pianiListaB.forEach(function(pl){
+      if(!pl || pl.membroId !== pid) return;
+      var wk = (typeof settimanaPianoNum === "function") ? settimanaPianoNum(pl, new Date()) : 1;
+      var w = (pl.settimane || {})[wk];
+      var dd = (w && w.giorni) ? w.giorni[dayShort] : null;
+      if(!dd) return;
+      if(pl.tipo === "mensa") { if(weekday && dd.pranzo && (""+dd.pranzo).trim()) mensa = true; }
+      else if(pl.tipo === "membro") { if(Object.keys(dd).some(function(k){ return dd[k] && (""+dd[k]).trim(); })) dieta = true; }
+    });
+    if(mensa) return "mensa";
+    if(dieta) return "dieta";
+    return "casa";
+  }
+  var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
+
+  var scelte=builderScelte||{}; var setScelte=setBuilderScelte;
+  var s1=useState(0); var giornoSel=s1[0]; var setGiornoSel=s1[1];
+  var s2=useState("Pranzo"); var pastoSel=s2[0]; var setPastoSel=s2[1];
+  var s3=useState(1); var stepCorrente=s3[0]; var setStepCorrente=s3[1];
+  var s4=useState(false); var step2Done=s4[0]; var setStep2Done=s4[1];
+  var s5=useState({}); var liveScelta=s5[0]; var setLiveScelta=s5[1];
+  var s6=useState(false); var showSpesa=s6[0]; var setShowSpesa=s6[1];
+  var s7=useState({}); var spesaCheck=s7[0]; var setSpesaCheck=s7[1];
+  var s8=useState(null); var popup=s8[0]; var setPopup=s8[1];
+  var s9=useState([]); var customIng=s9[0]; var setCustomIng=s9[1];
+  var s10=useState(0); var settB=s10[0]; var setSettB=s10[1]; // 0=questa sett, 1=prossima
+  var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
+  var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
+  var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
+  var sVP=useState(false); var vediPiatto=sVP[0]; var setVediPiatto=sVP[1];
+  var sVS=useState(false); var vediSett=sVS[0]; var setVediSett=sVS[1];
+  var sVista=useState("settimana"); var vista=sVista[0]; var setVista=sVista[1];
+  var sMsgB=useState(""); var msgB=sMsgB[0]; var setMsgB=sMsgB[1];
+  var sOpzF=useState(false); var mostraOpzFam=sOpzF[0]; var setMostraOpzFam=sOpzF[1];
+
+  function iconaGruppo(tipo, id) {
+    var it = ingById(id);
+    if(tipo==="proteina" || tipo==="latticino") {
+      if(!it) return tipo==="latticino"?"ti-cheese":"ti-meat";
+      if(it.cat==="pesce") return "ti-fish";
+      if(it.cat==="legumi") return "ti-plant-2";
+      if(it.cat==="uova") return "ti-egg";
+      if(it.cat==="latticini") return "ti-cheese";
+      return "ti-meat";
+    }
+    if(tipo==="carbo") return "ti-baguette";
+    if(tipo==="frutta") return "ti-apple";
+    if(tipo==="salsa") return "ti-droplet";
+    return "ti-salad";
+  }
+  function nomeGruppo(id) { var it = ingById(id); return it ? it.nome : ""; }
+  function apriGiorno(i) { cambiaGiorno(i); setStepCorrente(1); setVista("giorno"); }
+
+  var sPicker=useState(null); var picker=sPicker[0]; var setPicker=sPicker[1];
+  var sPickRic=useState(false); var pickRic=sPickRic[0]; var setPickRic=sPickRic[1];
+  var sPickS=useState(""); var pickS=sPickS[0]; var setPickS=sPickS[1];
+  var sFGlut=useState(false); var fGlut=sFGlut[0]; var setFGlut=sFGlut[1];
+  var sFStag=useState(false); var fStag=sFStag[0]; var setFStag=sFStag[1];
+  var scS=useState("componi"); var sheetTab=scS[0]; var setSheetTab=scS[1];
+  var sNA=useState(null); var nuovoAl=sNA[0]; var setNuovoAl=sNA[1];
+  var sDrag=useState(null); var drag=sDrag[0]; var setDrag=sDrag[1];
+  var keyG = GIORNI_B[giornoSel]+"-"+pastoSel;
+  function usoSettIng(id) {
+    var n=0;
+    GIORNI_B.forEach(function(g){ PASTI_B.forEach(function(pp){ var s=scelteAttive[g+"-"+pp]; if(s){ ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ if(s[f]===id) n++; }); } }); });
+    return n;
+  }
+  function inStagione(it) { var st=getStagione(); return !it.stagione || it.stagione==="tutto" || it.stagione.indexOf(st)>=0; }
+  function apriPicker(c) { setPicker(c); setPickS(""); }
+  function campiPasto() {
+    var t = PASTI_TIPO[pastoSel] || "pranzo";
+    if(t==="colazione" || t==="spuntino") {
+      return [
+        {campo:"frutta",    label:"Frutta",         tipo:"frutta",    def:120, db:FRUTTA},
+        {campo:"latticino", label:"Latticini",      tipo:"latticino", def:100, db:PROTEINE.filter(function(p){return p.cat==="latticini";})},
+        {campo:"carbo",     label:"Cereali e pane", tipo:"carbo",     def:50,  db:CARBOIDRATI.filter(function(c){return c.cat==="colazione"||c.cat==="pane";})}
+      ];
+    }
+    return [
+      {campo:"proteina", label:"Proteina",           tipo:"proteina", def:150, db:PROTEINE},
+      {campo:"carbo",    label:"Carboidrato",        tipo:"carbo",    def:80,  db:CARBOIDRATI.filter(function(c){return ["pasta","riso","cereali","tuberi"].indexOf(c.cat)>=0;})},
+      {campo:"verdura",  label:"Verdura",            tipo:"verdura",  def:150, db:VERDURE},
+      {campo:"salsa",    label:"Salsa · facoltativa",tipo:"salsa",    def:20,  db:SALSE, opt:true}
+    ];
+  }
+  function salvaScelta(s) {
+    setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[keyG]=s; return n; });
+    if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, s);
+  }
+  function setCampoG(campo, id) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    if(id===null) delete s[campo]; else s[campo]=id;
+    salvaScelta(s);
+  }
+  function completaAuto() {
+    var prots = PROTEINE.filter(function(p){ return !ingredienteVietato(p, famVietati); });
+    var carbs = CARBOIDRATI.filter(function(c){ return c.cat !== "colazione" && !ingredienteVietato(c, famVietati); });
+    var verds = VERDURE.filter(function(v){ return inStagione(v) && !ingredienteVietato(v, famVietati); });
+    if(!verds.length) verds = VERDURE.filter(function(v){ return !ingredienteVietato(v, famVietati); });
+    if(!prots.length || !carbs.length || !verds.length) {
+      setMsgB("Non trovo abbastanza alimenti compatibili con le restrizioni della famiglia.");
+      setTimeout(function(){ setMsgB(""); }, 3500); return;
+    }
+    var next = Object.assign({}, scelteAttive);
+    var cambiati = [];
+    GIORNI_B.forEach(function(g, idx){
+      var key = g + "-" + pastoSel;
+      var s = next[key];
+      var pieno = s && ((s.piattoUnico && s.piattoUnico.nome) || s.proteina || s.carbo);
+      if(pieno) return;
+      var p = prots[idx % prots.length];
+      var c = carbs[idx % carbs.length];
+      var v = verds[idx % verds.length];
+      next[key] = Object.assign({}, s || {}, {proteina:p.id, carbo:c.id, verdura:v.id});
+      cambiati.push(key);
+    });
+    if(!cambiati.length) {
+      setMsgB("I giorni sono già tutti compilati. Cambia a mano quello che vuoi.");
+      setTimeout(function(){ setMsgB(""); }, 3500); return;
+    }
+    setScelteAttive(function(prev){ var base = Object.assign({}, prev||{}); cambiati.forEach(function(key){ base[key] = next[key]; }); return base; });
+    if(onSavePasto) cambiati.forEach(function(key){ var gp = key.split("-"); onSavePasto(settB, gp[0], gp[1], next[key]); });
+    setMsgB("Fatto! Ho riempito " + cambiati.length + " giorni vuoti (equilibrati e di stagione). Ritocca quello che vuoi.");
+    setTimeout(function(){ setMsgB(""); }, 4000);
+  }
+  function attivaCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    if(!s.piattoUnico) s.piattoUnico = {nome:"", kcal:"", prot:""};
+    salvaScelta(s);
+  }
+  function disattivaCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    delete s.piattoUnico;
+    salvaScelta(s);
+  }
+  function setPiattoUnicoField(field, val) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    pu[field] = val;
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function riconosciCompleto() {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    var r = riconosciPasto(pu.nome);
+    if(r.items.length){ pu.kcal = String(r.kcal); pu.prot = String(r.prot); pu.riconosciuti = r.items; pu.autofill = true; }
+    else { pu.riconosciuti = []; }
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function altriPiatti(pu) { return pu && pu.altri ? pu.altri : []; }
+  function dishIndexOf(pu, pid) {
+    var a = altriPiatti(pu);
+    for(var i=0;i<a.length;i++){ if((a[i].membri||[]).indexOf(pid) >= 0) return i; }
+    return -1;
+  }
+  function dishBase(pu, pid) {
+    var i = dishIndexOf(pu, pid);
+    if(i >= 0) { var d = pu.altri[i]; return {nome:d.nome, kcal:parseInt(d.kcal,10)||0, prot:parseInt(d.prot,10)||0, ricon:d.riconosciuti||[]}; }
+    return {nome:pu.nome, kcal:parseInt(pu.kcal,10)||0, prot:parseInt(pu.prot,10)||0, ricon:(pu.riconosciuti||[])};
+  }
+  function vietatiDelPiatto(ricon, fin) {
+    var out = [];
+    (ricon||[]).forEach(function(r){
+      var ing = ingById(r.id);
+      var v = ingredienteVietato(ing, (fin && fin.vietati) || []);
+      if(v && out.indexOf(v) < 0) out.push(v);
+    });
+    return out;
+  }
+  function stimaFamiglia(pu) {
+    var out = [];
+    var fuoriList = (pu && pu.fuori) ? pu.fuori : [];
+    Object.keys(profili||{}).forEach(function(pid){
+      var p = profili[pid];
+      if(!p) return;
+      if(fuoriList.indexOf(pid) >= 0) {
+        var fv = (pu && pu.fuoriVal && pu.fuoriVal[pid]) || {};
+        var fk = parseInt(fv.kcal, 10) || 0; var fp = parseInt(fv.prot, 10) || 0;
+        out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", fuori: true, kcal: fk, prot: fp, contato: (fk > 0 || fp > 0)});
+        return;
+      }
+      var fin = getParametriFinali(p);
+      var base = dishBase(pu, pid);
+      var scale = (p.kcal_target || 1600) / 1600;
+      var k = Math.round((base.kcal || 0) * scale);
+      var pr = Math.round((base.prot || 0) * scale);
+      var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
+      var over = limite !== null && !isNaN(limite) && pr > limite;
+      var vietati = vietatiDelPiatto(base.ricon, fin);
+      var motivi = [];
+      vietati.forEach(function(v){ motivi.push(vietatoShort(v)); });
+      if(over) motivi.push("proteine");
+      out.push({pid: pid, nome: p.nome, colore: p.colore || "#6BA6C9", kcal: k, prot: pr, dish: base.nome, altro: dishIndexOf(pu, pid) >= 0, limite: (over ? limite : null), over: over, vietati: vietati, motivi: motivi, problema: (over || vietati.length > 0)});
+    });
+    return out;
+  }
+  function mutaPU(fn) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var pu = Object.assign({nome:"",kcal:"",prot:""}, s.piattoUnico||{});
+    pu.altri = (pu.altri||[]).slice();
+    fn(pu);
+    s.piattoUnico = pu;
+    salvaScelta(s);
+  }
+  function mutaPiu(fn) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var arr = (s.piu||[]).map(function(x){ return Object.assign({}, x); });
+    fn(arr);
+    s.piu = arr;
+    salvaScelta(s);
+  }
+  function addPiu() { mutaPiu(function(a){ a.push({nome:""}); }); }
+  function removePiu(i) { mutaPiu(function(a){ a.splice(i,1); }); }
+  function setPiuNome(i, val) { mutaPiu(function(a){ if(a[i]) a[i].nome = val; }); }
+  function riconosciPiu(i) { mutaPiu(function(a){ if(!a[i]) return; var r = riconosciPasto(a[i].nome); a[i].riconosciuti = r.items.length ? r.items : []; }); }
+  function piuValidi(s) { return ((s&&s.piu)||[]).filter(function(x){ return x && x.nome && (""+x.nome).trim(); }); }
+  function addPiatto() { mutaPU(function(pu){ pu.altri.push({nome:"", kcal:"", prot:"", membri:[]}); }); }
+  function removeAltro(i) { mutaPU(function(pu){ pu.altri.splice(i,1); }); }
+  function setAltroField(i, field, val) { mutaPU(function(pu){ if(!pu.altri[i]) return; pu.altri[i] = Object.assign({}, pu.altri[i]); pu.altri[i][field] = val; }); }
+  function riconosciAltro(i) {
+    mutaPU(function(pu){
+      if(!pu.altri[i]) return;
+      var d = Object.assign({}, pu.altri[i]);
+      var r = riconosciPasto(d.nome);
+      if(r.items.length){ d.kcal = String(r.kcal); d.prot = String(r.prot); d.riconosciuti = r.items; d.autofill = true; }
+      else { d.riconosciuti = []; }
+      pu.altri[i] = d;
+    });
+  }
+  function toggleAltroMembro(i, pid) {
+    mutaPU(function(pu){
+      pu.altri = pu.altri.map(function(d, j){
+        var m = (d.membri||[]).slice();
+        var idx = m.indexOf(pid);
+        if(j === i) { if(idx >= 0) m.splice(idx,1); else m.push(pid); }
+        else if(idx >= 0) m.splice(idx,1);
+        return Object.assign({}, d, {membri:m});
+      });
+      var f = (pu.fuori||[]).slice(); var fi = f.indexOf(pid); if(fi >= 0) { f.splice(fi,1); pu.fuori = f; }
+    });
+  }
+  function toggleFuoriMembro(pid) {
+    mutaPU(function(pu){
+      var f = (pu.fuori||[]).slice();
+      var idx = f.indexOf(pid);
+      if(idx >= 0) { f.splice(idx,1); }
+      else {
+        f.push(pid);
+        pu.altri = pu.altri.map(function(d){ var m = (d.membri||[]).slice(); var mi = m.indexOf(pid); if(mi >= 0) m.splice(mi,1); return Object.assign({}, d, {membri:m}); });
+      }
+      pu.fuori = f;
+    });
+  }
+  function setFuoriVal(pid, field, val) {
+    mutaPU(function(pu){
+      var fv = Object.assign({}, pu.fuoriVal||{});
+      fv[pid] = Object.assign({kcal:"",prot:""}, fv[pid]||{});
+      fv[pid][field] = val;
+      pu.fuoriVal = fv;
+    });
+  }
+  function varianteNome(pu, pid) {
+    var p = profili[pid]; var fin = getParametriFinali(p);
+    var base = dishBase(pu, pid);
+    var scale = (p.kcal_target || 1600) / 1600;
+    var pr = Math.round((base.prot || 0) * scale);
+    var limite = (p.prot_max !== null && p.prot_max !== undefined && p.prot_max !== "") ? parseInt(p.prot_max, 10) : null;
+    var overProt = limite !== null && !isNaN(limite) && pr > limite;
+    var keep = (base.ricon || []).filter(function(r){
+      if(ingredienteVietato(ingById(r.id), fin.vietati)) return false;
+      if(overProt && r.tipo === "proteina") return false;
+      return true;
+    });
+    return keep.length ? keep.map(function(r){ return r.nome; }).join(" e ") : "Porzione ridotta";
+  }
+  function creaVariante() {
+    var pu0 = (scelteAttive[keyG]||{}).piattoUnico || {};
+    var righe = stimaFamiglia(pu0);
+    var gruppi = {};
+    righe.forEach(function(r){
+      if(r.fuori || r.altro || !r.problema) return;
+      var nome = varianteNome(pu0, r.pid);
+      if(!gruppi[nome]) gruppi[nome] = [];
+      gruppi[nome].push(r.pid);
+    });
+    var nomi = Object.keys(gruppi);
+    if(!nomi.length) return;
+    mutaPU(function(pu){
+      nomi.forEach(function(nome){
+        var r = riconosciPasto(nome);
+        pu.altri.push({nome:nome, kcal:String(r.kcal||0), prot:String(r.prot||0), riconosciuti:r.items||[], autofill:true, membri:gruppi[nome]});
+      });
+    });
+  }
+  function usaRicetta(ric) {
+    var por = ric.porzioni && (ric.porzioni.adulto || ric.porzioni.adulta || {});
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    s.piattoUnico = {nome:ric.titolo, kcal:(por.kcal||""), prot:(por.prot||"")};
+    salvaScelta(s);
+    setPickRic(false);
+  }
+  function setGrammiG(campo, val) {
+    var s = Object.assign({}, scelteAttive[keyG]||{});
+    var g = Object.assign({}, s.grammi||{});
+    if(val==="" || val<=0) delete g[campo]; else g[campo]=val;
+    s.grammi = g;
+    salvaScelta(s);
+  }
+  var famVietati = [];
+  Object.keys(profili||{}).forEach(function(pid){ var fin=getParametriFinali(profili[pid]); (fin.vietati||[]).forEach(function(v){ if(famVietati.indexOf(v)<0) famVietati.push(v); }); });
+
+  // Scelte attive in base alla settimana selezionata
+  var scelteAttive = (settB===0 ? scelte : scelteProssima) || {};
+  var setScelteAttive = settB===0 ? setScelte : setScelteProssima;
+  var sceltaG = scelteAttive[keyG] || {};
+  var puG = sceltaG.piattoUnico || {nome:"",kcal:"",prot:""};
+
+  var key=GIORNI_B[giornoSel]+"-"+pastoSel;
+  var sceltaCorrente=scelteAttive[key]||null;
+
+  function pastoCompl(s){ return !!(s && s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()); }
+  function hasSaved(g,p){var s=scelteAttive[g+"-"+p];return !!(s&&(pastoCompl(s)||s.carbo||s.proteina||s.frutta||s.latticino));}
+  function isCompleto(g,p){var s=scelteAttive[g+"-"+p];if(!s)return false;if(pastoCompl(s))return true;var t=PASTI_TIPO[p]||"pranzo";if(t==="pranzo"||t==="cena")return !!(s.carbo&&s.proteina&&s.verdura);return !!(s.carbo||s.frutta||s.latticino);}
+  function cambiaGiorno(i){setGiornoSel(i);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[i]+"-"+pastoSel]||{});}
+  function cambiaPasto(p){setPastoSel(p);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[giornoSel]+"-"+p]||{});}
+
+  function salva(dati) {
+    setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=dati; return n; });
+    if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, dati);
+    setStep2Done(true);
+    setStepCorrente(1);
+    var idx=PASTI_B.indexOf(pastoSel);
+    if(idx<PASTI_B.length-1){
+      setTimeout(function(){cambiaPasto(PASTI_B[idx+1]);setStep2Done(false);},800);
+    } else if(giornoSel<GIORNI_B.length-1){
+      setTimeout(function(){cambiaGiorno(giornoSel+1);setPastoSel(PASTI_B[0]);setStep2Done(false);},800);
+    } else {
+      setTimeout(function(){setStep2Done(false);},1500);
+    }
+  }
+
+  var completati=GIORNI_B.reduce(function(n,g){return n+PASTI_B.filter(function(p){return isCompleto(g,p);}).length;},0);
+  var totale=GIORNI_B.length*PASTI_B.length;
+
+  var custProt = (alimentiCustom||[]).filter(function(x){return x.tipo==="proteina";});
+  var custCarb = (alimentiCustom||[]).filter(function(x){return x.tipo==="carbo";});
+  var custVerd = (alimentiCustom||[]).filter(function(x){return x.tipo==="verdura";});
+  var GRUPPI_BOARD=[
+    {campo:"proteina",label:"Proteina",tipo:"proteina",def:150,db:PROTEINE.concat(custProt)},
+    {campo:"carbo",label:"Carboidrato",tipo:"carbo",def:80,db:CARBOIDRATI.filter(function(c){return ["pasta","riso","cereali","tuberi"].indexOf(c.cat)>=0;}).concat(custCarb)},
+    {campo:"verdura",label:"Verdura",tipo:"verdura",def:150,db:VERDURE.concat(custVerd)}
+  ];
+
+  function creaAlimento() {
+    if(!picker || !nuovoAl) return;
+    var nome = (nuovoAl.nome||"").trim();
+    if(!nome) return;
+    var tipo = picker.tipo;
+    var cat = tipo==="proteina" ? (nuovoAl.cat||"carne") : (tipo==="carbo" ? "cereali" : "tutto");
+    var nuovo = {id:"custom_"+new Date().getTime(), nome:nome, tipo:tipo, cat:cat, custom:true, stagione:"tutto",
+      kcal_p: (parseInt(nuovoAl.kcal,10)||0) || (tipo==="proteina"?150:(tipo==="carbo"?300:25)),
+      prot_p: (parseInt(nuovoAl.prot,10)||0) || (tipo==="proteina"?20:(tipo==="carbo"?8:2)),
+      carb_p: (parseInt(nuovoAl.carb,10)||0), fibra_p: (parseInt(nuovoAl.fibra,10)||0), phe_p: (parseInt(nuovoAl.phe,10)||0), gsat_p:0, na_p:0};
+    if(setAlimentiCustom) setAlimentiCustom((alimentiCustom||[]).concat([nuovo]));
+    setCampoG(picker.campo, nuovo.id);
+    setNuovoAl(null);
+    setPicker(null);
+  }
+
+  function pastoPieno(s) { return !!(s && ((s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina || s.carbo || s.verdura)); }
+  function spostaPasto(gSrc, gDst, m) {
+    if(gSrc===gDst) return;
+    var srcKey=gSrc+"-"+m, dstKey=gDst+"-"+m;
+    var a = scelteAttive[srcKey]; var b = scelteAttive[dstKey];
+    setScelteAttive(function(prev){
+      var n=Object.assign({}, prev||{});
+      if(a) n[dstKey]=a; else delete n[dstKey];
+      if(b) n[srcKey]=b; else delete n[srcKey];
+      return n;
+    });
+    if(onSavePasto){ onSavePasto(settB, gDst, m, a||{}); onSavePasto(settB, gSrc, m, b||{}); }
+  }
+  function detCol(x, y) {
+    if(typeof document==="undefined") return null;
+    var el = document.elementFromPoint(x, y);
+    while(el){ if(el.getAttribute && el.getAttribute("data-detcol")!=null) return el.getAttribute("data-detcol"); el=el.parentElement; }
+    return null;
+  }
+  function detDown(e, g, m) {
+    if(!pastoPieno(scelteAttive[g+"-"+m])) return;
+    setDrag({g:g, m:m, sx:e.clientX, sy:e.clientY, x:e.clientX, y:e.clientY, over:null, active:false});
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  function detMove(e) {
+    if(!drag) return;
+    var dx=Math.abs(e.clientX-drag.sx), dy=Math.abs(e.clientY-drag.sy);
+    var active = drag.active || dx>6 || dy>6;
+    if(active && e.cancelable) e.preventDefault();
+    var over = active ? detCol(e.clientX, e.clientY) : null;
+    setDrag(Object.assign({}, drag, {x:e.clientX, y:e.clientY, over:over, active:active}));
+  }
+  function detUp() {
+    if(!drag){ return; }
+    if(drag.active && drag.over!=null){
+      var gi = parseInt(drag.over,10);
+      var gDst = GIORNI_B[gi];
+      if(gDst && gDst!==drag.g){ spostaPasto(drag.g, gDst, drag.m); }
+    }
+    setDrag(null);
+  }
+
+  function scadenzaEntro(scad, giorni) {
+    if(!scad) return false;
+    var oggi = new Date(); oggi.setHours(0,0,0,0);
+    var d = new Date(scad+"T00:00:00");
+    if(isNaN(d.getTime())) return false;
+    var diff = (d.getTime() - oggi.getTime()) / 86400000;
+    return diff <= giorni;
+  }
+  var mealPrepScad = (mealPrep||[]).filter(function(p){ return p && p.porzioniRimaste>0 && scadenzaEntro(p.scadenza, 3); });
+  var dispensaScad = (dispensa||[]).filter(function(d){ return d && scadenzaEntro(d.scadenza, 3); });
+
+  return (
+    <div style={{minHeight:"60vh"}}>
+      <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
+        <button onClick={function(){setSettB(0);setStepCorrente(1);}}
+          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
+            background:settB===0?"#2F6586":"#fff",color:settB===0?"#fff":"#555",
+            fontSize:12,fontWeight:settB===0?700:500,boxShadow:settB===0?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
+          Questa settimana
+        </button>
+        <button onClick={function(){setSettB(1);setStepCorrente(1);}}
+          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
+            background:settB===1?"#2F6586":"#fff",color:settB===1?"#fff":"#555",
+            fontSize:12,fontWeight:settB===1?700:500,boxShadow:settB===1?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
+          Settimana prossima
+        </button>
+        <button onClick={function(){
+          if(window.confirm("Copia il menu di questa settimana nella prossima?")) {
+            var copia = Object.assign({}, scelte);
+            setScelteProssima(copia);
+            if(onSavePasto) Object.keys(copia).forEach(function(k){ var gp=k.split("-"); onSavePasto(1, gp[0], gp.slice(1).join("-"), copia[k]); });
+          }
+        }} title="Copia questa sett. nella prossima"
+          style={{padding:"9px 11px",borderRadius:12,border:"none",
+            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700}}>
+          Copia
+        </button>
+        <button onClick={function(){setShowRicette(true);}}
+          title="Ricette salvate"
+          style={{padding:"9px 11px",borderRadius:12,border:"none",
+            background:"#FBE7EC",color:"#C2355A",fontSize:12,cursor:"pointer",fontWeight:700}}>
+          Ricette
+        </button>
+      </div>
+
+      {settB===1&&(
+        <div style={{background:"#EBF3FA",borderRadius:8,padding:"6px 10px",marginBottom:8,fontSize:10,color:"#2F6586",fontWeight:600}}>
+          Stai pianificando la settimana prossima
+        </div>
+      )}
+
+      {(function(){
+        var lunB = lunediSettimana(); if(settB===1) lunB.setDate(lunB.getDate()+7);
+        var oggiIdxB = (new Date().getDay()+6)%7;
+        var protCount = {pesce:0,carne:0,legumi:0,uova:0};
+        GIORNI_B.forEach(function(g){ var s=scelteAttive[g+"-"+pastoSel]; if(s&&s.proteina){ var it=ingById(s.proteina); if(it){ if(it.cat==="pesce")protCount.pesce++; else if(it.cat==="legumi")protCount.legumi++; else if(it.cat==="uova")protCount.uova++; else protCount.carne++; } } });
+        var completiSett = GIORNI_B.filter(function(g){ var s=scelteAttive[g+"-"+pastoSel]; return s&&s.proteina&&s.carbo&&s.verdura; }).length;
+        var protParts = [];
+        if(protCount.pesce) protParts.push("pesce ×"+protCount.pesce);
+        if(protCount.legumi) protParts.push("legumi ×"+protCount.legumi);
+        if(protCount.carne) protParts.push("carne ×"+protCount.carne);
+        if(protCount.uova) protParts.push("uova ×"+protCount.uova);
+        return (
+        <div>
+          <div style={{fontSize:20,fontWeight:800,color:"#2C3338",margin:"2px 0 8px"}}>Builder</div>
+
+          {(mealPrepScad.length>0 || dispensaScad.length>0)?(
+            <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"9px 12px",marginBottom:9,display:"flex",alignItems:"center",gap:9}}>
+              <i className="ti ti-clock-exclamation" style={{fontSize:18,color:"#8A5A12",flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0,fontSize:11,color:"#8A5A12",fontWeight:700}}>
+                Da usare presto: {mealPrepScad.map(function(p){return p.nome;}).concat(dispensaScad.map(function(d){return d.nome;})).slice(0,3).join(", ")}{(mealPrepScad.length+dispensaScad.length)>3?"…":""}
+              </div>
+            </div>
+          ):null}
+
+          <div style={{display:"grid",gridTemplateColumns:"16px repeat(7,1fr)",gap:5,alignItems:"stretch",marginBottom:8}}>
+            {(function(){
+              var items=[];
+              items.push(<div key="corner"/>);
+              GIORNI_B.forEach(function(g,i){
+                var dataG=new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
+                var isOggi=settB===0 && i===oggiIdxB;
+                var isPass=settB===0 && i<oggiIdxB;
+                items.push(
+                  <div key={"h-"+g} style={{textAlign:"center",padding:"2px 0",opacity:isPass?0.45:1}}>
+                    <div style={{fontSize:11,fontWeight:800,color:isOggi?"#2F6586":"#2C3338"}}>{g.slice(0,3)}</div>
+                    <div style={{fontSize:9,fontWeight:700,color:isOggi?"#2F6586":"#8A949B"}}>{dataG.getDate()}</div>
+                    {isOggi ? <div style={{height:3,borderRadius:3,background:"#2F6586",margin:"2px 4px 0"}}/> : null}
+                  </div>
+                );
+              });
+              ["Pranzo","Cena"].forEach(function(m){
+                items.push(
+                  <div key={"lab-"+m} style={{writingMode:"vertical-rl",transform:"rotate(180deg)",fontSize:9,fontWeight:800,textTransform:"uppercase",color:"#8A949B",display:"flex",alignItems:"center",justifyContent:"center",letterSpacing:".05em"}}>{m}</div>
+                );
+                GIORNI_B.forEach(function(g,i){
+                  var s=scelteAttive[GIORNI_B[i]+"-"+m]||{};
+                  var compl=s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+                  var isPass=settB===0 && i<oggiIdxB;
+                  items.push(
+                    <div key={m+"-"+g} style={{background:"#fff",border:"1px solid "+(settB===0&&i===oggiIdxB?"#6BA6C9":"#E3EAEE"),borderRadius:11,padding:"5px 4px",display:"flex",flexDirection:"column",gap:5,alignItems:"center",justifyContent:"flex-start",opacity:isPass?0.5:1}}>
+                      {compl ? (
+                        <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                          style={{width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:3,justifyContent:"center",cursor:"pointer"}}>
+                          <div style={{width:"100%",maxWidth:34,aspectRatio:"1",borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}><i className="ti ti-tools-kitchen-2"/></div>
+                          <div style={{fontSize:8,fontWeight:800,color:"#2F6586",textAlign:"center",lineHeight:1.05,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",wordBreak:"break-word"}}>{s.piattoUnico.nome}</div>
+                        </div>
+                      ) : (
+                        GRUPPI_BOARD.map(function(gr){
+                          var id=s[gr.campo];
+                          return (
+                            <div key={gr.campo} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(gr); }}
+                              style={{width:"100%",minHeight:18,borderRadius:8,padding:"3px 3px",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",cursor:"pointer",
+                                background:id?"#E2EEF5":"#fff",border:id?"none":"1.5px dashed #CADCE8"}}>
+                              {id ? (
+                                <span style={{fontSize:9,fontWeight:700,color:"#2F6586",lineHeight:1.12,wordBreak:"break-word"}}>{nomeGruppo(id)}</span>
+                              ) : (
+                                <i className="ti ti-plus" style={{fontSize:11,color:"#B4BEC4"}}/>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                      {piuValidi(s).length>0 ? (
+                        <div style={{fontSize:8,fontWeight:800,color:"#2F6586",background:"#E2EEF5",borderRadius:8,padding:"1px 6px",marginTop:1}}>+{piuValidi(s).length}</div>
+                      ) : null}
+                    </div>
+                  );
+                });
+              });
+              return items;
+            })()}
+          </div>
+
+          {(settB===0 && oggiIdxB>0) ? (
+            <div style={{fontSize:10,color:"#2F6586",textAlign:"center",padding:"2px 4px 8px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+              <i className="ti ti-calendar-event" style={{fontSize:13}}/>Settimana già iniziata: pianifica da oggi (colonna blu). I giorni passati sono in grigio.
+            </div>
+          ) : (
+            <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"2px 4px 8px",fontWeight:600}}>Tocca un quadratino &rarr; scegli l'alimento o il piatto completo</div>
+          )}
+
+          {(function(){
+            var pc={pesce:0,carne:0,legumi:0,uova:0};
+            GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){ var s=scelteAttive[g+"-"+m]; if(s&&s.proteina){ var it=ingById(s.proteina); if(it){ if(it.cat==="pesce")pc.pesce++; else if(it.cat==="legumi")pc.legumi++; else if(it.cat==="uova")pc.uova++; else pc.carne++; } } }); });
+            var cells=[{n:pc.pesce,l:"Pesce"},{n:pc.carne,l:"Carne"},{n:pc.legumi,l:"Legumi"},{n:pc.uova,l:"Uova"}];
+            return (
+              <div style={{background:"#E2EEF5",borderRadius:12,padding:"9px 12px",marginBottom:10,color:"#2F6586",display:"flex",alignItems:"center"}}>
+                <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",marginRight:"auto"}}>Equilibrio</span>
+                {cells.map(function(c){
+                  return <div key={c.l} style={{textAlign:"center",marginLeft:13,color:c.n===0?"#C2355A":"#2F6586"}}><b style={{fontSize:14}}>{c.n}</b><span style={{fontSize:8,display:"block"}}>{c.l}</span></div>;
+                })}
+              </div>
+            );
+          })()}
+
+          <button onClick={function(){ completaAuto(); }}
+            style={{width:"100%",border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
+              fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <i className="ti ti-wand" style={{fontSize:16}}/>Completa in automatico
+          </button>
+          {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+
+          <div style={{marginTop:16}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:3,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
+            <div style={{fontSize:10,color:"#8A949B",marginBottom:9,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-hand-move" style={{fontSize:13,color:"#6BA6C9"}}/>Trascina "Pranzo" o "Cena" su un altro giorno per spostarlo</div>
+            <div style={{display:"flex",gap:10,overflowX:"auto",paddingBottom:6,WebkitOverflowScrolling:"touch"}}>
+              {GIORNI_B.map(function(g,i){
+                var dataG=new Date(lunB.getTime()); dataG.setDate(lunB.getDate()+i);
+                var oggiSel=i===giornoSel;
+                return (
+                  <div key={"det-"+g} data-detcol={i} style={{flex:"0 0 168px",display:"flex",flexDirection:"column",gap:8,borderRadius:14,outline:(drag&&drag.active&&drag.over===(""+i)&&drag.g!==g)?"2px dashed #2F6586":"2px dashed transparent",outlineOffset:2,transition:"outline-color .15s"}}>
+                    <div style={{background:oggiSel?"#2F6586":"#fff",color:oggiSel?"#fff":"#2C3338",border:"1px solid "+(oggiSel?"#2F6586":(settB===0&&i===oggiIdxB?"#6BA6C9":"#E3EAEE")),borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"baseline",gap:7}}>
+                      <span style={{fontSize:15,fontWeight:800}}>{g.slice(0,3)}</span>
+                      <span style={{fontSize:11,fontWeight:700,opacity:.75}}>{dataG.getDate()+" "+MESI_ABBR[dataG.getMonth()]}</span>
+                      {settB===0 && i===oggiIdxB ? <span style={{marginLeft:"auto",fontSize:9,fontWeight:800,color:oggiSel?"#fff":"#2F6586",background:oggiSel?"rgba(255,255,255,0.22)":"#E2EEF5",borderRadius:10,padding:"2px 7px"}}>oggi</span> : null}
+                    </div>
+                    {["Pranzo","Cena"].map(function(m){
+                      var s=scelteAttive[g+"-"+m]||{};
+                      var compl=s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+                      var pieno=pastoPieno(s);
+                      var isSrc=drag&&drag.active&&drag.g===g&&drag.m===m;
+                      return (
+                        <div key={m} style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"10px 11px",display:"flex",flexDirection:"column",gap:7,opacity:isSrc?.4:1}}>
+                          <div onPointerDown={function(e){ detDown(e,g,m); }} onPointerMove={detMove} onPointerUp={detUp} onPointerCancel={detUp}
+                            style={{fontSize:10,fontWeight:800,letterSpacing:".05em",textTransform:"uppercase",color:"#8A949B",display:"flex",alignItems:"center",gap:6,touchAction:"none",cursor:pieno?"grab":"default",userSelect:"none"}}><i className={"ti "+(m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:13,color:"#6BA6C9"}}/>{m}{pieno?<i className="ti ti-grip-vertical" style={{fontSize:13,color:"#B4BEC4",marginLeft:"auto"}}/>:null}</div>
+                          {compl?(
+                            <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                              style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",borderRadius:10,padding:"8px 10px",cursor:"pointer"}}>
+                              <div style={{width:26,height:26,borderRadius:8,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                              <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.piattoUnico.nome}</div>
+                            </div>
+                          ):(
+                            GRUPPI_BOARD.map(function(gr){
+                              var id=s[gr.campo];
+                              return (
+                                <div key={gr.campo} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(gr); }}
+                                  style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+                                  <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,
+                                    background:id?"#E2EEF5":"#fff",border:id?"none":"1.5px dashed #CADCE8",color:id?"#2F6586":"#B4BEC4"}}>
+                                    <i className={"ti "+(id?iconaGruppo(gr.tipo,id):"ti-plus")}/>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:id?700:600,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{id?nomeGruppo(id):gr.label}</div>
+                                </div>
+                              );
+                            })
+                          )}
+                          {piuValidi(s).map(function(d,pi){
+                            return (
+                              <div key={"piu"+pi} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                                style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+                                <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:"#E2EEF5",color:"#2F6586"}}><i className="ti ti-plus"/></div>
+                                <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{(""+d.nome).trim()}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                    {Object.keys(profili||{}).length>0 && (
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
+                        {Object.keys(profili).map(function(pid){
+                          var pp = profili[pid]; if(!pp) return null;
+                          var stt = presenzaGiornoB(pid, g, g.slice(0,3), i<=4);
+                          var isFuori = stt==="fuori";
+                          var isMensa = stt==="mensa" || stt==="dieta";
+                          return (
+                            <button key={pid} onClick={function(){ toggleFuoriB(g, pid); }}
+                              style={{display:"flex",alignItems:"center",gap:4,border:"1.5px solid "+(isFuori?"#C2355A":(isMensa?"#E8D5AE":"#E3EAEE")),background:isFuori?"#FBE7EC":(isMensa?"#F6ECD9":"#fff"),borderRadius:20,padding:"3px 9px 3px 3px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              <span style={{width:18,height:18,borderRadius:"50%",background:pp.colore||"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,flexShrink:0,opacity:isFuori?0.5:1}}>{(pp.nome?pp.nome.slice(0,1):"?").toUpperCase()}</span>
+                              <span style={{fontSize:10,fontWeight:700,color:isFuori?"#C2355A":(isMensa?"#8A5A12":"#2C3338"),textDecoration:isFuori?"line-through":"none"}}>{(""+(pp.nome||"")).split(" ")[0]}{isMensa?" · mensa":""}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {false&&(
+      <div>
+      <button onClick={function(){ setVista("settimana"); }}
+        style={{display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",padding:"0 0 8px"}}>
+        <i className="ti ti-chevron-left" style={{fontSize:18}}/>Settimana
+      </button>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,paddingTop:2}}>
+        <div>
+          <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",color:"#2C3338"}}>{GIORNI_B[giornoSel]}</div>
+          <div style={{fontSize:13,color:"#8A949B"}}>{(function(){var d=new Date(lunediSettimana().getTime()); if(settB===1)d.setDate(d.getDate()+7); d.setDate(d.getDate()+giornoSel); return d.getDate()+" "+MESI_ABBR[d.getMonth()];})()} · rifinisci il pasto</div>
+        </div>
+        <span style={{fontSize:14,fontWeight:800,color:isCompleto(GIORNI_B[giornoSel],pastoSel)?"#2F6586":"#8A949B"}}>{isCompleto(GIORNI_B[giornoSel],pastoSel)?"Completo":"Da compilare"}</span>
+      </div>
+
+      <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
+        {PASTI_B.map(function(p){
+          var comp=isCompleto(GIORNI_B[giornoSel],p); var sel=pastoSel===p;
+          return (
+            <button key={p} onClick={function(){cambiaPasto(p);}}
+              style={{fontSize:13,fontWeight:700,color:sel?"#fff":"#8A949B",background:sel?"#2F6586":"#fff",
+                border:"1.5px solid "+(sel?"#2F6586":"#E3EAEE"),borderRadius:20,padding:"8px 13px",cursor:"pointer",
+                display:"flex",alignItems:"center",gap:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+              {comp&&!sel&&<i className="ti ti-check" style={{fontSize:15,color:"#6BA6C9"}}/>}{p}
+            </button>
+          );
+        })}
+      </div>
+
+      {true ? (
+        <div className="mf-card" style={{padding:"14px 15px",marginBottom:11,display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-pencil" style={{fontSize:16,color:"#2F6586"}}/>Scrivi il piatto</div>
+          <input value={puG.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
+            onBlur={function(){ riconosciCompleto(); }}
+            onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+            placeholder="Es. Pollo e patate, Lasagne, Pasta al pomodoro..."
+            style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+
+          {puG.riconosciuti && puG.riconosciuti.length>0 ? (
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+              {puG.riconosciuti.map(function(r){
+                return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#E2EEF5",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                  <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2F6586"}}/>{r.nome}
+                </span>;
+              })}
+              {(parseInt(puG.kcal,10)>0) ? <span style={{fontSize:12,color:"#8A949B"}}>~{puG.kcal} kcal · {puG.prot||0}g prot</span> : null}
+            </div>
+          ) : ((""+(puG.nome||"")).trim() ? null : (
+            <div style={{fontSize:11,color:"#B4BEC4"}}>L'app riconosce ingredienti e calorie da sola</div>
+          ))}
+
+          {(""+(puG.nome||"")).trim() ? (
+          <div style={{display:"flex",gap:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>kcal · {puG.autofill?"stimate":"facolt."}</div>
+              <input inputMode="numeric" value={puG.kcal||""} onChange={function(e){ setPiattoUnicoField("kcal", e.target.value.replace(/[^0-9]/g,"")); }}
+                placeholder="es. 550" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>proteine g · {puG.autofill?"stimate":"facolt."}</div>
+              <input inputMode="numeric" value={puG.prot||""} onChange={function(e){ setPiattoUnicoField("prot", e.target.value.replace(/[^0-9]/g,"")); }}
+                placeholder="es. 20" style={{width:"100%",padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+            </div>
+          </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      <div style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#B4BEC4",letterSpacing:"0.06em",margin:"2px 0 11px"}}>— OPPURE SCEGLI GLI INGREDIENTI —</div>
+
+      <div>
+      {campiPasto().map(function(c){
+        var id=sceltaG[c.campo];
+        var it=ingById(id);
+        var gv=grammiField(sceltaG, c.campo, it, c.def);
+        return (
+          <div key={c.campo} className="mf-card" style={{padding:"12px 14px",marginBottom:9,display:"flex",alignItems:"center",gap:12}}>
+            <div onClick={function(){ apriPicker(c); }} style={{display:"flex",alignItems:"center",gap:12,flex:1,minWidth:0,cursor:"pointer"}}>
+              <div style={{width:40,height:40,borderRadius:12,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
+                background:id?"#E2EEF5":"transparent",border:id?"none":"1.5px dashed #C4D2DA",color:id?"#2F6586":"#8A949B"}}>
+                <i className={"ti "+(id?iconaGruppo(c.tipo,id):"ti-plus")}/>
+              </div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>{c.label}</div>
+                <div style={{fontSize:14,fontWeight:700,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{id?nomeGruppo(id):("Aggiungi "+c.label.toLowerCase().replace(" · facoltativa",""))}</div>
+              </div>
+            </div>
+            {id ? (
+              <div style={{display:"flex",alignItems:"center",gap:6,background:"#F2F6F8",borderRadius:20,padding:4}}>
+                <button onClick={function(){ setGrammiG(c.campo, gv-10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>−</button>
+                <span style={{fontSize:12,fontWeight:800,minWidth:40,textAlign:"center",fontVariantNumeric:"tabular-nums"}}>{gv} g</span>
+                <button onClick={function(){ setGrammiG(c.campo, gv+10); }} style={{width:26,height:26,borderRadius:"50%",border:"none",background:"#fff",color:"#2F6586",fontSize:15,fontWeight:800,cursor:"pointer"}}>+</button>
+              </div>
+            ) : (
+              <i className="ti ti-chevron-right" onClick={function(){ apriPicker(c); }} style={{color:"#B4BEC4",fontSize:18,cursor:"pointer"}}/>
+            )}
+          </div>
+        );
+      })}
+
+      <div style={{marginTop:5,marginBottom:11}}>
+        <NutriPanel carbo={sceltaG.carbo} prot={sceltaG.proteina} verd={sceltaG.verdura} verd2={sceltaG.verdura2}
+          frutta={sceltaG.frutta} lattic={sceltaG.latticino} pasto={pastoSel} profili={profili}
+          grammi={sceltaG.grammi||{}} onGrammi={function(field,val){ setGrammiG(field, parseInt(val,10)||0); }}/>
+      </div>
+      </div>
+
+      {true ? (
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:11}}>
+
+          {(function(){
+            var pu = puG;
+            var membri = Object.keys(profili||{}).length;
+            if(membri===0) return null;
+            var kb = parseInt(pu.kcal, 10) || 0; var pb = parseInt(pu.prot, 10) || 0;
+            var righe = (kb || pb) ? stimaFamiglia(pu) : [];
+            var problemi = righe.filter(function(x){ return x.problema; }).length;
+            var nAltri = (pu.altri||[]).length; var nFuori = (pu.fuori||[]).length;
+            var sub, subCol;
+            if(problemi > 0) { sub = "Non adatto a " + problemi + " membri — apri e adatta"; subCol = "#8A5A12"; }
+            else if(nAltri || nFuori) { sub = [nAltri?(nAltri+" piatto in più"):"", nFuori?(nFuori+" a mensa/fuori"):""].filter(Boolean).join(" · "); subCol = "#2F6586"; }
+            else { sub = "Chi mangia altro · mensa/fuori · varianti"; subCol = "#8A949B"; }
+            return (
+              <button onClick={function(){ setMostraOpzFam(!mostraOpzFam); }}
+                style={{border:"1.5px solid "+(problemi>0?"#E8D5AE":"#E3EAEE"),background:problemi>0?"#FBF3E2":"#fff",borderRadius:14,padding:"12px 13px",cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:11,fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+                <i className={"ti "+(problemi>0?"ti-alert-triangle":"ti-users")} style={{fontSize:19,color:problemi>0?"#8A5A12":"#2F6586",flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>Opzioni per la famiglia</div>
+                  <div style={{fontSize:11,color:subCol,fontWeight:problemi>0?700:400}}>{sub}</div>
+                </div>
+                <i className={"ti "+(mostraOpzFam?"ti-chevron-up":"ti-chevron-down")} style={{color:"#B4BEC4",fontSize:18}}/>
+              </button>
+            );
+          })()}
+
+          {mostraOpzFam && (<>
+          {(function(){
+            var pu = puG;
+            var kb = parseInt(pu.kcal, 10) || 0;
+            var pb = parseInt(pu.prot, 10) || 0;
+            var membri = Object.keys(profili||{}).length;
+            if((kb===0 && pb===0) || membri===0) return null;
+            var righe = stimaFamiglia(pu);
+            var problemi = righe.filter(function(x){ return x.problema; }).length;
+            return (
+              <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px"}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:9,display:"flex",alignItems:"center",gap:6}}>
+                  <i className="ti ti-users" style={{fontSize:14}}/>Per la famiglia ({membri}) · porzioni indicative
+                </div>
+                {righe.map(function(r,idx){
+                  return (
+                    <div key={idx} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",borderTop: idx===0?"none":"1px solid #F1F4F6"}}>
+                      <span style={{width:9,height:9,borderRadius:"50%",background:r.colore,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</div>
+                        {r.altro && r.dish && <div style={{fontSize:10,color:"#2F6586",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.dish}</div>}
+                      </div>
+                      {r.fuori ? (
+                        r.contato ? (
+                          <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                          <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                            <i className="ti ti-door-exit" style={{fontSize:12}}/>{r.prot}g · fuori
+                          </span></>
+                        ) : (
+                          <span style={{fontSize:11,fontWeight:800,color:"#C2355A",background:"#FBE7EC",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                            <i className="ti ti-door-exit" style={{fontSize:12}}/>A mensa / fuori
+                          </span>
+                        )
+                      ) : r.problema ? (
+                        <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                        <span style={{fontSize:11,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"3px 9px",display:"flex",alignItems:"center",gap:4}}>
+                          <i className="ti ti-alert-triangle" style={{fontSize:12}}/>{r.over ? (r.prot+"g (max "+r.limite+")") : r.motivi.join(" · ")}
+                        </span></>
+                      ) : (
+                        <><span style={{fontSize:12,color:"#8A949B",fontWeight:600}}>~{r.kcal} kcal</span>
+                        <span style={{fontSize:12,fontWeight:700,color:"#2F6586",minWidth:44,textAlign:"right"}}>{r.prot}g prot</span></>
+                      )}
+                    </div>
+                  );
+                })}
+                {problemi>0 && (
+                  <div style={{fontSize:11,color:"#8A5A12",marginTop:9,lineHeight:1.4,display:"flex",gap:6}}>
+                    <i className="ti ti-info-circle" style={{fontSize:14,flexShrink:0,marginTop:1}}/>
+                    <span>Ognuno viene controllato sulle sue esigenze (proteine, lattosio, glutine…). Crea le varianti adatte o assegna un piatto diverso qui sotto.</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {(function(){
+            var pu = puG;
+            var profIds = Object.keys(profili||{});
+            if(profIds.length===0) return null;
+            var righe = stimaFamiglia(pu);
+            var flaggedPrimary = righe.some(function(r){ return r.problema && !r.altro && !r.fuori; });
+            var altri = pu.altri || [];
+            return (
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {flaggedPrimary && (
+                  <button onClick={function(){ creaVariante(); }}
+                    style={{padding:"11px",borderRadius:13,border:"1.5px solid #E8D5AE",background:"#F6ECD9",color:"#8A5A12",fontSize:13,fontWeight:800,cursor:"pointer",
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+                    <i className="ti ti-wand" style={{fontSize:16}}/>Crea le varianti adatte
+                  </button>
+                )}
+
+                {altri.map(function(d,i){
+                  return (
+                    <div key={i} style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px",display:"flex",flexDirection:"column",gap:9}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:11,fontWeight:800,color:"#2F6586",flex:1,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-tools-kitchen-2" style={{fontSize:14}}/>Piatto in più {i+2}</span>
+                        <i className="ti ti-trash" onClick={function(){ removeAltro(i); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                      </div>
+                      <input value={d.nome||""} onChange={function(e){ setAltroField(i, "nome", e.target.value); }}
+                        onBlur={function(){ riconosciAltro(i); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                        placeholder="Es. Pasta al pomodoro, Pappa..."
+                        style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                      {d.kcal && (parseInt(d.kcal,10)>0) ? <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>~{d.kcal} kcal · {d.prot||0}g proteine (per porzione adulto)</div> : null}
+                      <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Chi lo mangia</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {profIds.map(function(pid){
+                          var p = profili[pid];
+                          var on = (d.membri||[]).indexOf(pid) >= 0;
+                          return (
+                            <button key={pid} onClick={function(){ toggleAltroMembro(i, pid); }}
+                              style={{border:"1.5px solid "+(on?(p.colore||"#2F6586"):"#E3EAEE"),background:on?(p.colore||"#2F6586"):"#fff",color:on?"#fff":"#2C3338",
+                                borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              {p.nome}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px",display:"flex",flexDirection:"column",gap:9}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#C2355A",display:"flex",alignItems:"center",gap:6}}><i className="ti ti-door-exit" style={{fontSize:14}}/>A mensa / fuori casa</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {profIds.map(function(pid){
+                      var p = profili[pid];
+                      var on = (pu.fuori||[]).indexOf(pid) >= 0;
+                      return (
+                        <button key={pid} onClick={function(){ toggleFuoriMembro(pid); }}
+                          style={{border:"1.5px solid "+(on?"#C2355A":"#E3EAEE"),background:on?"#C2355A":"#fff",color:on?"#fff":"#2C3338",
+                            borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                          {p.nome}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{fontSize:10,color:"#8A949B"}}>Chi è a mensa o fuori non entra nel cucinato né nella spesa.</div>
+                  {(pu.fuori||[]).length>0 && (
+                    <div style={{borderTop:"1px solid #F1F4F6",paddingTop:9,display:"flex",flexDirection:"column",gap:8}}>
+                      <div style={{fontSize:10,color:"#8A949B",fontWeight:700}}>Vuoi contare il pasto fuori? Aggiungi kcal e proteine (facoltativo).</div>
+                      {(pu.fuori||[]).map(function(pid){
+                        var p = profili[pid]; if(!p) return null;
+                        var fv = (pu.fuoriVal||{})[pid] || {};
+                        return (
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:12,fontWeight:700,color:"#2C3338",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</span>
+                            <input inputMode="numeric" value={fv.kcal||""} onChange={function(e){ setFuoriVal(pid, "kcal", e.target.value.replace(/[^0-9]/g,"")); }}
+                              placeholder="kcal" style={{width:66,padding:"8px 10px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"center"}}/>
+                            <input inputMode="numeric" value={fv.prot||""} onChange={function(e){ setFuoriVal(pid, "prot", e.target.value.replace(/[^0-9]/g,"")); }}
+                              placeholder="prot g" style={{width:66,padding:"8px 10px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"center"}}/>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={function(){ addPiatto(); }}
+                  style={{padding:"11px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+                    display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+                  <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi un altro piatto
+                </button>
+              </div>
+            );
+          })()}
+          </>)}
+
+          <button onClick={function(){ setPickRic(true); }}
+            style={{padding:"11px",borderRadius:13,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+            <i className="ti ti-book" style={{fontSize:16}}/>Scegli da una ricetta salvata
+          </button>
+        </div>
+      ) : null}
+
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={function(){setShowSpesa(true);}}
+          style={{padding:"14px 16px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:7}}>
+          <i className="ti ti-shopping-cart" style={{fontSize:16}}/>Spesa
+        </button>
+        <button onClick={function(){ setVista("settimana"); }}
+          style={{flex:1,padding:"14px",borderRadius:14,border:"none",background:"#2F6586",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",
+            display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <i className="ti ti-check" style={{fontSize:18}}/>Fatto
+        </button>
+      </div>
+
+      {picker&&(
+        <div onClick={function(){ setPicker(null); }}
+          style={{position:"fixed",inset:0,background:"rgba(20,40,55,.4)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){ e.stopPropagation(); }}
+            style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"78vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 18px 10px",borderBottom:"1px solid #E3EAEE",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:16,fontWeight:800}}>Scegli {picker.label.toLowerCase().replace(" · facoltativa","")}</div>
+              <i className="ti ti-x" onClick={function(){ setPicker(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+            </div>
+            <div style={{padding:"10px 16px 0"}}>
+              <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:13,padding:"10px 12px"}}>
+                <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+                <input value={pickS} onChange={function(e){ setPickS(e.target.value); }} placeholder="Cerca un alimento..."
+                  style={{border:"none",outline:"none",background:"none",flex:1,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:600,color:"#2C3338"}}/>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                <button onClick={function(){ setFGlut(!fGlut); }}
+                  style={{border:"1.5px solid "+(fGlut?"#2F6586":"#E3EAEE"),background:fGlut?"#E2EEF5":"#fff",color:fGlut?"#2F6586":"#8A949B",
+                    fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <i className="ti ti-bread-off" style={{fontSize:14}}/>Senza glutine</button>
+                {(picker.tipo==="verdura"||picker.tipo==="frutta")&&(
+                  <button onClick={function(){ setFStag(!fStag); }}
+                    style={{border:"1.5px solid "+(fStag?"#2F6586":"#E3EAEE"),background:fStag?"#E2EEF5":"#fff",color:fStag?"#2F6586":"#8A949B",
+                      fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                    <i className="ti ti-clock" style={{fontSize:14}}/>Di stagione</button>
+                )}
+              </div>
+            </div>
+            <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+              {sceltaG[picker.campo]&&(
+                <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
+                  style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#C2355A",fontWeight:700,fontSize:14}}>
+                  <i className="ti ti-trash" style={{fontSize:18}}/>Togli {picker.label.toLowerCase().replace(" · facoltativa","")}
+                </div>
+              )}
+              {(function(){
+                var q=pickS.trim().toLowerCase();
+                var lista=picker.db.filter(function(o){
+                  if(q && o.nome.toLowerCase().indexOf(q)<0) return false;
+                  if(fGlut && ingredienteVietato(o, ["glutine"])) return false;
+                  if(fStag && (picker.tipo==="verdura"||picker.tipo==="frutta") && !inStagione(o)) return false;
+                  return true;
+                });
+                if(!lista.length) return <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun alimento trovato.</div>;
+                return lista.map(function(o){
+                  var vt=ingredienteVietato(o, famVietati);
+                  var sel=sceltaG[picker.campo]===o.id;
+                  var uso=usoSettIng(o.id);
+                  var stag=(picker.tipo==="verdura"||picker.tipo==="frutta")&&inStagione(o)&&o.stagione!=="tutto"&&o.stagione;
+                  return (
+                    <div key={o.id} onClick={function(){ if(vt) return; setCampoG(picker.campo, o.id); setPicker(null); }}
+                      style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",
+                        cursor:vt?"default":"pointer",opacity:vt?.5:1}}>
+                      <div style={{width:36,height:36,borderRadius:11,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,
+                        background:vt?"#F1F4F6":"#E2EEF5",color:vt?"#B4BEC4":"#2F6586"}}>
+                        <i className={"ti "+(vt?"ti-ban":iconaGruppo(picker.tipo,o.id))}/>
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:700}}>{o.nome}</div>
+                        {vt&&<div style={{fontSize:11,color:"#C2355A",fontWeight:600}}>Non adatto ({vt})</div>}
+                      </div>
+                      {!vt&&uso>=2&&<span style={{fontSize:10,fontWeight:700,background:"#F6ECD9",color:"#8A5A12",padding:"3px 8px",borderRadius:20}}>{uso}× settimana</span>}
+                      {!vt&&uso===0&&stag&&<span style={{fontSize:10,fontWeight:700,background:"#E2EEF5",color:"#2F6586",padding:"3px 8px",borderRadius:20}}>di stagione</span>}
+                      <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                        border:"1.5px solid "+(sel?"#2F6586":"#CADCE8"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                        {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                      </span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pickRic&&(
+        <div onClick={function(){ setPickRic(false); }}
+          style={{position:"fixed",inset:0,background:"rgba(20,40,55,.4)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){ e.stopPropagation(); }}
+            style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"78vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 18px 10px",borderBottom:"1px solid #E3EAEE",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{fontSize:16,fontWeight:800}}>Scegli una ricetta</div>
+              <i className="ti ti-x" onClick={function(){ setPickRic(false); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+            </div>
+            <div style={{padding:"10px 16px 0"}}>
+              <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:13,padding:"10px 12px"}}>
+                <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+                <input value={pickS} onChange={function(e){ setPickS(e.target.value); }} placeholder="Cerca una ricetta..."
+                  style={{border:"none",outline:"none",background:"none",flex:1,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:600,color:"#2C3338"}}/>
+              </div>
+            </div>
+            <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+              {DB_RICETTE.filter(function(rc){ var q=pickS.trim().toLowerCase(); return !q || rc.titolo.toLowerCase().indexOf(q)>=0; }).map(function(rc){
+                var por = rc.porzioni && (rc.porzioni.adulto || rc.porzioni.adulta || {});
+                return (
+                  <div key={rc.id} onClick={function(){ usaRicetta(rc); }}
+                    style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",cursor:"pointer"}}>
+                    <div style={{fontSize:22,width:34,textAlign:"center"}}>{rc.emoji||"🍽️"}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700}}>{rc.titolo}</div>
+                      <div style={{fontSize:11,color:"#8A949B"}}>{rc.categoria}{por.kcal?" · "+por.kcal+" kcal":""}{rc.tempo?" · "+rc.tempo:""}</div>
+                    </div>
+                    <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+      )}
+
+      {picker&&(
+        <div onClick={function(){ setPicker(null); }}
+          style={{position:"fixed",inset:0,background:"rgba(20,40,55,.4)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){ e.stopPropagation(); }}
+            style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"82vh",display:"flex",flexDirection:"column"}}>
+            <div style={{width:38,height:4,background:"#E3EAEE",borderRadius:4,margin:"9px auto 4px"}}/>
+            <div style={{padding:"2px 18px 8px",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:17,fontWeight:800,color:"#2C3338"}}>{sheetTab==="completo"?"Piatto completo":("Scegli "+(picker.tipo==="carbo"?"il carboidrato":(picker.tipo==="verdura"?"la verdura":(picker.tipo==="salsa"?"la salsa":"la proteina"))))}</div>
+                <div style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{GIORNI_B[giornoSel]+" · "+pastoSel}</div>
+              </div>
+              <i className="ti ti-x" onClick={function(){ setPicker(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer",flexShrink:0}}/>
+            </div>
+            <div style={{display:"flex",gap:7,padding:"0 18px 8px"}}>
+              {[{k:"componi",ic:"ti-layout-list",t:"Componi"},{k:"completo",ic:"ti-tools-kitchen-2",t:"Piatto completo"}].map(function(tb){
+                var on=sheetTab===tb.k;
+                return <button key={tb.k} onClick={function(){ setSheetTab(tb.k); }}
+                  style={{flex:1,border:"1.5px solid "+(on?"#E2EEF5":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",
+                    fontSize:12,fontWeight:800,padding:"9px 0",borderRadius:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <i className={"ti "+tb.ic} style={{fontSize:14}}/>{tb.t}</button>;
+              })}
+            </div>
+            {sheetTab==="componi"?(
+              <>
+                <div style={{padding:"2px 16px 0"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:9,background:"#F2F6F8",border:"1.5px solid #E3EAEE",borderRadius:13,padding:"10px 12px"}}>
+                    <i className="ti ti-search" style={{color:"#8A949B",fontSize:18}}/>
+                    <input value={pickS} onChange={function(e){ setPickS(e.target.value); }} placeholder="Cerca un alimento..."
+                      style={{border:"none",outline:"none",background:"none",flex:1,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:600,color:"#2C3338"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                    <button onClick={function(){ setFGlut(!fGlut); }}
+                      style={{border:"1.5px solid "+(fGlut?"#2F6586":"#E3EAEE"),background:fGlut?"#E2EEF5":"#fff",color:fGlut?"#2F6586":"#8A949B",
+                        fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                      <i className="ti ti-bread-off" style={{fontSize:14}}/>Senza glutine</button>
+                    {(picker.tipo==="verdura"||picker.tipo==="frutta")&&(
+                      <button onClick={function(){ setFStag(!fStag); }}
+                        style={{border:"1.5px solid "+(fStag?"#2F6586":"#E3EAEE"),background:fStag?"#E2EEF5":"#fff",color:fStag?"#2F6586":"#8A949B",
+                          fontSize:12,fontWeight:700,borderRadius:20,padding:"7px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                        <i className="ti ti-clock" style={{fontSize:14}}/>Di stagione</button>
+                    )}
+                  </div>
+                </div>
+                <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+                  {sceltaG[picker.campo]&&(
+                    <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#C2355A",fontWeight:700,fontSize:14}}>
+                      <i className="ti ti-trash" style={{fontSize:18}}/>Togli {picker.label.toLowerCase().replace(" · facoltativa","")}
+                    </div>
+                  )}
+                  {nuovoAl?(
+                    <div style={{border:"1.5px solid #6BA6C9",background:"#EBF3FA",borderRadius:13,padding:"12px",display:"flex",flexDirection:"column",gap:9,marginBottom:8}}>
+                      <div style={{fontSize:12,fontWeight:800,color:"#2F6586"}}>Nuovo alimento</div>
+                      <input value={nuovoAl.nome||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{nome:e.target.value})); }} placeholder="Nome (es. Seitan)"
+                        style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #CADCE8",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                      {picker.tipo==="proteina"?(
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {[{k:"carne",l:"Carne"},{k:"pesce",l:"Pesce"},{k:"legumi",l:"Legumi"},{k:"uova",l:"Uova"},{k:"latticini",l:"Latticini"}].map(function(ct){
+                            var on=(nuovoAl.cat||"carne")===ct.k;
+                            return <button key={ct.k} onClick={function(){ setNuovoAl(Object.assign({},nuovoAl,{cat:ct.k})); }}
+                              style={{border:"1.5px solid "+(on?"#2F6586":"#CADCE8"),background:on?"#2F6586":"#fff",color:on?"#fff":"#2F6586",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{ct.l}</button>;
+                          })}
+                        </div>
+                      ):null}
+                      <div style={{display:"flex",gap:8}}>
+                        <input inputMode="numeric" value={nuovoAl.kcal||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{kcal:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="kcal/100g"
+                          style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                        <input inputMode="numeric" value={nuovoAl.prot||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{prot:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="proteine/100g"
+                          style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                      </div>
+                      <div style={{fontSize:10,color:"#8A949B"}}>kcal e proteine per 100g (facoltativi)</div>
+                      {nuovoAl.piu?(
+                        <div style={{display:"flex",flexDirection:"column",gap:8,borderTop:"1px solid #D8E6F0",paddingTop:9}}>
+                          <div style={{display:"flex",gap:8}}>
+                            <input inputMode="numeric" value={nuovoAl.carb||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{carb:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="carboidrati/100g"
+                              style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                            <input inputMode="numeric" value={nuovoAl.fibra||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{fibra:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="fibre/100g"
+                              style={{flex:1,padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                          </div>
+                          <input inputMode="numeric" value={nuovoAl.phe||""} onChange={function(e){ setNuovoAl(Object.assign({},nuovoAl,{phe:e.target.value.replace(/[^0-9]/g,"")})); }} placeholder="fenilalanina mg/100g (bimbo aproteico)"
+                            style={{padding:"10px 11px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                          <div onClick={function(){ setNuovoAl(Object.assign({},nuovoAl,{piu:false})); }}
+                            style={{fontSize:12,color:"#8A949B",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                            <i className="ti ti-minus" style={{fontSize:15}}/>Nascondi altri valori
+                          </div>
+                        </div>
+                      ):(
+                        <div onClick={function(){ setNuovoAl(Object.assign({},nuovoAl,{piu:true})); }}
+                          style={{fontSize:12,color:"#2F6586",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                          <i className="ti ti-plus" style={{fontSize:15}}/>Aggiungi altri valori (carboidrati, fibre, fenilalanina)
+                        </div>
+                      )}
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={function(){ setNuovoAl(null); }} style={{flex:1,border:"1.5px solid #E3EAEE",background:"#fff",color:"#8A949B",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Annulla</button>
+                        <button onClick={function(){ creaAlimento(); }} style={{flex:2,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer"}}>Crea e usa</button>
+                      </div>
+                    </div>
+                  ):(
+                    <div onClick={function(){ setNuovoAl({nome:(pickS||"").trim(), cat:"carne", kcal:"", prot:""}); }}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#2F6586",fontWeight:800,fontSize:14,borderTop:"1px solid #EEF2F5"}}>
+                      <i className="ti ti-plus" style={{fontSize:18}}/>Crea un nuovo alimento{(pickS||"").trim()?(" «"+pickS.trim()+"»"):""}
+                    </div>
+                  )}
+                  {(function(){
+                    var q=pickS.trim().toLowerCase();
+                    var lista=picker.db.filter(function(o){
+                      if(q && o.nome.toLowerCase().indexOf(q)<0) return false;
+                      if(fGlut && ingredienteVietato(o, ["glutine"])) return false;
+                      if(fStag && (picker.tipo==="verdura"||picker.tipo==="frutta") && !inStagione(o)) return false;
+                      return true;
+                    });
+                    if(!lista.length) return <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun alimento trovato.</div>;
+                    return lista.map(function(o){
+                      var vt=ingredienteVietato(o, famVietati);
+                      var sel=sceltaG[picker.campo]===o.id;
+                      var uso=usoSettIng(o.id);
+                      var stag=(picker.tipo==="verdura"||picker.tipo==="frutta")&&inStagione(o)&&o.stagione!=="tutto"&&o.stagione;
+                      return (
+                        <div key={o.id} onClick={function(){ if(vt) return; setCampoG(picker.campo, o.id); setPicker(null); }}
+                          style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",
+                            cursor:vt?"default":"pointer",opacity:vt?.5:1}}>
+                          <div style={{width:36,height:36,borderRadius:11,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,
+                            background:vt?"#F1F4F6":"#E2EEF5",color:vt?"#B4BEC4":"#2F6586"}}>
+                            <i className={"ti "+(vt?"ti-ban":iconaGruppo(picker.tipo,o.id))}/>
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:14,fontWeight:700}}>{o.nome}</div>
+                            {vt&&<div style={{fontSize:11,color:"#C2355A",fontWeight:600}}>Non adatto ({vt})</div>}
+                          </div>
+                          {!vt&&uso>=2&&<span style={{fontSize:10,fontWeight:700,background:"#F6ECD9",color:"#8A5A12",padding:"3px 8px",borderRadius:20}}>{uso}× settimana</span>}
+                          {!vt&&uso===0&&stag&&<span style={{fontSize:10,fontWeight:700,background:"#E2EEF5",color:"#2F6586",padding:"3px 8px",borderRadius:20}}>di stagione</span>}
+                          <span style={{width:22,height:22,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+                            border:"1.5px solid "+(sel?"#2F6586":"#CADCE8"),background:sel?"#2F6586":"#fff",color:"#fff"}}>
+                            {sel&&<i className="ti ti-check" style={{fontSize:14}}/>}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </>
+            ):(
+              <div style={{overflowY:"auto",padding:"4px 16px 24px",display:"flex",flexDirection:"column",gap:12}}>
+                <div className="mf-card" style={{padding:"14px 15px",display:"flex",flexDirection:"column",gap:10}}>
+                  <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-pencil" style={{fontSize:16,color:"#2F6586"}}/>Scrivi il piatto</div>
+                  <input value={puG.nome||""} onChange={function(e){ setPiattoUnicoField("nome", e.target.value); }}
+                    onBlur={function(){ riconosciCompleto(); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                    placeholder="Es. Lasagne, Pollo e patate, Pasta al pomodoro..."
+                    style={{padding:"12px 13px",borderRadius:13,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                  {puG.riconosciuti && puG.riconosciuti.length>0?(
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
+                      {puG.riconosciuti.map(function(r){
+                        return <span key={r.id} style={{fontSize:12,fontWeight:700,color:"#2C3338",background:"#E2EEF5",borderRadius:20,padding:"5px 10px",display:"flex",alignItems:"center",gap:5}}>
+                          <i className={"ti "+iconaGruppo(r.tipo,r.id)} style={{fontSize:13,color:"#2F6586"}}/>{r.nome}</span>;
+                      })}
+                      {(parseInt(puG.kcal,10)>0)?<span style={{fontSize:12,color:"#8A949B"}}>~{puG.kcal} kcal · {puG.prot||0}g prot</span>:null}
+                    </div>
+                  ):(
+                    <div style={{fontSize:11,color:"#B4BEC4"}}>L'app riconosce ingredienti e calorie da sola</div>
+                  )}
+                  {(""+(puG.nome||"")).trim()?(
+                    <button onClick={function(){ riconosciCompleto(); setPicker(null); }}
+                      style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"13px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                      <i className="ti ti-check" style={{fontSize:18}}/>Aggiungi il piatto
+                    </button>
+                  ):null}
+                </div>
+
+                <div className="mf-card" style={{padding:"14px 15px",display:"flex",flexDirection:"column",gap:9}}>
+                  <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-tools-kitchen-2" style={{fontSize:16,color:"#2F6586"}}/>Altri piatti del pasto</div>
+                  <div style={{fontSize:11,color:"#8A949B"}}>Un secondo, un contorno, un dolce… per tutta la famiglia.</div>
+                  {((scelteAttive[keyG]||{}).piu||[]).map(function(d,i){
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                        <input value={d.nome||""} onChange={function(e){ setPiuNome(i, e.target.value); }} onBlur={function(){ riconosciPiu(i); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                          placeholder="Es. Petto di pollo, Insalata, Dolce…"
+                          style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                        <i className="ti ti-trash" onClick={function(){ removePiu(i); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer",flexShrink:0}}/>
+                      </div>
+                    );
+                  })}
+                  <button onClick={function(){ addPiu(); }}
+                    style={{padding:"10px",borderRadius:12,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                    <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi un altro piatto
+                  </button>
+                </div>
+
+                {(mealPrepScad.length>0 || dispensaScad.length>0)?(
+                  <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:14,padding:"12px 13px",display:"flex",flexDirection:"column",gap:9}}>
+                    <div style={{fontSize:11,fontWeight:800,color:"#8A5A12",display:"flex",alignItems:"center",gap:6,textTransform:"uppercase",letterSpacing:".03em"}}><i className="ti ti-clock-exclamation" style={{fontSize:15}}/>Da usare presto</div>
+                    {mealPrepScad.map(function(mp){
+                      return (
+                        <div key={mp.id} onClick={function(){ setPiattoUnicoField("nome", mp.nome); riconosciCompleto(); setPicker(null); }}
+                          style={{display:"flex",alignItems:"center",gap:10,background:"#fff",borderRadius:11,padding:"9px 11px",cursor:"pointer"}}>
+                          <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}><i className="ti ti-tools-kitchen-2"/></div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{mp.nome}</div>
+                            <div style={{fontSize:10,color:"#8A5A12",fontWeight:700}}>Meal prep · {mp.porzioniRimaste} porz. · scade {mp.scadenza}</div>
+                          </div>
+                          <span style={{fontSize:11,fontWeight:800,color:"#2F6586"}}>Usa</span>
+                        </div>
+                      );
+                    })}
+                    {dispensaScad.length>0?(
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {dispensaScad.map(function(d,di){
+                          return <button key={"ds"+di} onClick={function(){ var base=(""+(puG.nome||"")).trim(); setPiattoUnicoField("nome", base?(base+", "+d.nome):d.nome); }}
+                            style={{border:"1px solid #E8D5AE",background:"#fff",color:"#8A5A12",borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:5}}>
+                            <i className="ti ti-basket" style={{fontSize:13}}/>{d.nome}</button>;
+                        })}
+                      </div>
+                    ):null}
+                    <div style={{fontSize:10,color:"#8A5A12",fontWeight:600}}>Tocca un meal prep per usarlo, o un ingrediente per aggiungerlo al piatto.</div>
+                  </div>
+                ):null}
+
+                <div style={{fontSize:11,fontWeight:800,color:"#B4BEC4",letterSpacing:".06em",padding:"0 2px"}}>OPPURE DA UNA RICETTA SALVATA</div>
+                {DB_RICETTE.filter(function(rc){ var q=pickS.trim().toLowerCase(); return !q || rc.titolo.toLowerCase().indexOf(q)>=0; }).map(function(rc){
+                  var por = rc.porzioni && (rc.porzioni.adulto || rc.porzioni.adulta || {});
+                  return (
+                    <div key={rc.id} onClick={function(){ usaRicetta(rc); setPicker(null); }}
+                      style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",cursor:"pointer"}}>
+                      <div style={{width:34,textAlign:"center",color:"#2F6586"}}><i className="ti ti-tools-kitchen-2" style={{fontSize:20}}/></div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:700}}>{rc.titolo}</div>
+                        <div style={{fontSize:11,color:"#8A949B"}}>{rc.categoria}{por.kcal?" · "+por.kcal+" kcal":""}{rc.tempo?" · "+rc.tempo:""}</div>
+                      </div>
+                      <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {drag&&drag.active&&(
+        <div style={{position:"fixed",left:drag.x,top:drag.y,transform:"translate(-50%,-140%)",zIndex:400,pointerEvents:"none",
+          background:"#2F6586",color:"#fff",borderRadius:12,padding:"8px 13px",fontSize:12,fontWeight:800,boxShadow:"0 10px 24px -8px rgba(20,40,55,.6)",display:"flex",alignItems:"center",gap:7}}>
+          <i className={"ti "+(drag.m==="Pranzo"?"ti-sun":"ti-moon")} style={{fontSize:14}}/>Sposta {drag.m} di {drag.g.slice(0,3)}
+        </div>
+      )}
+
+      {popup&&<PopupPasto data={popup} scelte={scelteAttive} setScelte={setScelteAttive} setPopup={setPopup} cambiaGiorno={cambiaGiorno} cambiaPasto={cambiaPasto} GIORNI={GIORNI_B} PASTI={PASTI_B} onSalvaRicetta={function(r){setRicette(ricette.concat([r]));}}/>}
+
+      {showSpesa&&(
+        <div onClick={function(){setShowSpesa(false);}}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:200,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){e.stopPropagation();}}
+            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,maxHeight:"70vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #E3EAEE",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:13,fontWeight:800}}>Lista della spesa</div>
+              <button onClick={function(){setShowSpesa(false);}} style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#8A949B"}}>x</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"10px 14px 24px"}}>
+              <SpesaItemsB scelte={scelteAttive} spesaCheck={spesaCheck} setSpesaCheck={setSpesaCheck}/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRicette&&(
+        <div onClick={function(){setShowRicette(null);}}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:300,
+            display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={function(e){e.stopPropagation();}}
+            style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:390,
+              maxHeight:"75vh",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"14px 16px 8px",borderBottom:"1px solid #E3EAEE",
+              display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:14,fontWeight:800,color:"#C2355A"}}>Ricette preferite</div>
+              <button onClick={function(){setShowRicette(null);}}
+                style={{background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#8A949B"}}>x</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"10px 14px 24px"}}>
+              {ricette.length===0&&(
+                <div style={{textAlign:"center",padding:"30px 0",color:"#8A949B",fontSize:12}}>
+                  Nessuna ricetta salvata. Salva un pasto dalla griglia settimanale.
+                </div>
+              )}
+              {ricette.map(function(r,ri){
+                var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(ALIMENTI_CUSTOM);
+                return (
+                  <div key={r.id} style={{background:"#F5F8FC",borderRadius:12,padding:"12px",marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:800,color:"#2C3338"}}>{r.nome}</div>
+                        {r.nota&&<div style={{fontSize:10,color:"#8A949B",fontStyle:"italic"}}>{r.nota}</div>}
+                      </div>
+                      <div style={{display:"flex",gap:4}}>
+                        <button onClick={function(){
+                          setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=Object.assign({},r.pasto); return n; });
+                          if(onSavePasto){ var gp=key.split("-"); onSavePasto(settB, gp[0], gp.slice(1).join("-"), Object.assign({},r.pasto)); }
+                          setShowRicette(null);
+                        }} style={{padding:"4px 10px",borderRadius:20,border:"none",
+                          background:"#2F6586",color:"#fff",fontSize:9,cursor:"pointer",fontWeight:700}}>
+                          Usa
+                        </button>
+                        <button onClick={function(){
+                          setRicette(ricette.filter(function(_,i){return i!==ri;}));
+                        }} style={{padding:"4px 8px",borderRadius:20,border:"1px solid #E3EAEE",
+                          background:"#fff",color:"#C2355A",fontSize:9,cursor:"pointer"}}>
+                          x
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                      {["carbo","proteina","verdura","frutta"].map(function(k){
+                        var id=r.pasto[k];
+                        if(!id) return null;
+                        var it=allDB.find(function(x){return x.id===id;});
+                        if(!it) return null;
+                        return <span key={k} style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 7px",borderRadius:20}}>{it.emoji} {it.nome}</span>;
+                      })}
+                    </div>
+                    {r.note_famiglia&&Object.keys(r.note_famiglia).length>0&&(
+                      <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #eee"}}>
+                        <div style={{fontSize:9,color:"#8A949B",marginBottom:3}}>Note per membro:</div>
+                        {Object.keys(r.note_famiglia).map(function(membro){
+                          return (
+                            <div key={membro} style={{fontSize:9,color:"#555"}}>
+                              <strong>{membro}:</strong> {r.note_famiglia[membro]}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
 function patologiaPrimaria(patologie) {
   if(patologie.indexOf("svezzamento") >= 0) return "svezzamento";
   if(patologie.indexOf("ipoproteica") >= 0) return "ipoproteica";
