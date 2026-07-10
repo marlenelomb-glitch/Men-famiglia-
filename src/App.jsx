@@ -8107,8 +8107,8 @@ function ListaSpesaView(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
-        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Lista della spesa</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:props.embedded?0:8}}>
+        <div style={{fontSize:props.embedded?18:23,fontWeight:800,letterSpacing:"-0.01em"}}>Lista della spesa</div>
         <span style={{fontSize:13,color:"#8A949B"}}>{items.length} articoli</span>
       </div>
 
@@ -8603,6 +8603,40 @@ function FrigoLG(props) {
   );
 }
 
+function ProvvisteView(props) {
+  var s = useState("spesa"); var seg = s[0]; var setSeg = s[1];
+  var SEGS = [
+    {id:"spesa",    l:"Lista spesa", ic:"ti-shopping-bag"},
+    {id:"dispensa", l:"Dispensa",    ic:"ti-box"},
+    {id:"frigo",    l:"Frigo",       ic:"ti-fridge"}
+  ];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Provviste</div>
+      <div style={{display:"flex",gap:4,background:"#E2EEF5",borderRadius:12,padding:3}}>
+        {SEGS.map(function(sg){
+          var on = seg === sg.id;
+          return (
+            <button key={sg.id} onClick={function(){ setSeg(sg.id); }}
+              style={{flex:1,border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",borderRadius:9,padding:"9px 0",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:6,boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
+              <i className={"ti "+sg.ic} style={{fontSize:15}}/>{sg.l}
+            </button>
+          );
+        })}
+      </div>
+      {seg==="spesa" && (
+        <ListaSpesaView spesa={props.spesa} setSpesa={props.setSpesa} builder={props.builder} menu={props.menu} ospiti={props.ospiti} embedded={true}/>
+      )}
+      {seg==="dispensa" && (
+        <DispensaView dispensa={props.dispensa} setDispensa={props.setDispensa} spesa={props.spesa} setSpesa={props.setSpesa} embedded={true} mobileFisso="dispensa"/>
+      )}
+      {seg==="frigo" && (
+        <DispensaView dispensa={props.dispensa} setDispensa={props.setDispensa} spesa={props.spesa} setSpesa={props.setSpesa} embedded={true} mobileFisso="frigo"/>
+      )}
+    </div>
+  );
+}
+
 function DispensaView(props) {
   var dispensa = props.dispensa || [];
   var setDispensa = props.setDispensa || function(){};
@@ -8614,7 +8648,9 @@ function DispensaView(props) {
   var s_scad = useState(""); var scad = s_scad[0]; var setScad = s_scad[1];
   var s_cont = useState("auto"); var contSel = s_cont[0]; var setContSel = s_cont[1];
   var s_vista = useState("ripiani"); var vista = s_vista[0]; var setVista = s_vista[1];
-  var s_mob = useState("frigo"); var mobile = s_mob[0]; var setMobile = s_mob[1];
+  var mobileFisso = props.mobileFisso || null;
+  var embedded = !!props.embedded;
+  var s_mob = useState(mobileFisso || "frigo"); var mobile = s_mob[0]; var setMobile = s_mob[1];
   var s_guida = useState(false); var guida = s_guida[0]; var setGuida = s_guida[1];
 
   function aggiungi() {
@@ -8678,8 +8714,8 @@ function DispensaView(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
-        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Dispensa</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:embedded?0:8}}>
+        <div style={{fontSize:embedded?18:23,fontWeight:800,letterSpacing:"-0.01em"}}>{embedded ? (mobileFisso==="frigo"?"Frigorifero e congelatore":"Dispensa") : "Dispensa"}</div>
         <i className="ti ti-plus" style={{fontSize:20,color:"#2F6586",cursor:"pointer"}}
           onClick={function(){ setShowAdd(!showAdd); }}/>
       </div>
@@ -8759,6 +8795,7 @@ function DispensaView(props) {
 
       {vista==="ripiani" ? (
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {!mobileFisso && (
           <div style={{display:"flex",gap:6}}>
             {[{id:"frigo",l:"Frigo · Congelatore",ic:"ti-fridge"},{id:"dispensa",l:"Dispensa",ic:"ti-box"}].map(function(v){
               var on = mobile === v.id;
@@ -8772,6 +8809,7 @@ function DispensaView(props) {
               );
             })}
           </div>
+          )}
           {mobile==="frigo" ? (
             <FrigoLG frigo={gruppo("frigo")} freezer={gruppo("freezer")} onRemove={rimuoviItem}/>
           ) : (
@@ -10543,7 +10581,6 @@ export default function App() {
   var SHEET_ITEMS = [
     {id:"salute",      l:"Famiglia",      ic:"ti-users",              s:"Profili, pesi e crescita"},
     {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
-    {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
     {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
@@ -10916,7 +10953,7 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ListaSpesaView spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}/>
+          <ProvvisteView dispensa={dispensa} setDispensa={setDispensaLS} spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
@@ -10971,7 +11008,7 @@ export default function App() {
           <i className="ti ti-home"/>Home
         </button>
         <button className={"tab"+(tab==="spesa"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("spesa");}}>
-          <i className="ti ti-shopping-bag"/>Spesa
+          <i className="ti ti-fridge"/>Provviste
         </button>
         <button className={"tab"+(tab==="builder"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("builder");}}>
           <span className="fab"><i className="ti ti-layout-grid-add"/></span>
