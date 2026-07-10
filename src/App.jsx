@@ -8603,6 +8603,71 @@ function FrigoLG(props) {
   );
 }
 
+function HubTabs(props) {
+  var segs = props.segs || [];
+  var seg = props.seg;
+  var setSeg = props.setSeg;
+  return (
+    <div style={{display:"flex",gap:4,overflowX:"auto",background:"#E2EEF5",borderRadius:12,padding:3}}>
+      {segs.map(function(sg){
+        var on = seg === sg.id;
+        return (
+          <button key={sg.id} onClick={function(){ setSeg(sg.id); }}
+            style={{flex:"1 0 auto",border:"none",background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",borderRadius:9,padding:"9px 13px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:5,whiteSpace:"nowrap",boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
+            <i className={"ti "+sg.ic} style={{fontSize:14}}/>{sg.l}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SaluteHub(props) {
+  var s = useState("famiglia"); var seg = s[0]; var setSeg = s[1];
+  var SEGS = [
+    {id:"famiglia", l:"Famiglia", ic:"ti-users"},
+    {id:"diete",    l:"Diete",    ic:"ti-school"},
+    {id:"medicine", l:"Medicine", ic:"ti-pill"},
+    {id:"piramide", l:"Piramide", ic:"ti-pyramid"}
+  ];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <HubTabs segs={SEGS} seg={seg} setSeg={setSeg}/>
+      {seg==="famiglia" && (
+        <SaluteView profili={props.profili} setProfili={props.setProfili} setTab={props.setTab} pesoLog={props.pesoLog} setPesoLog={props.setPesoLog} onSavePeso={props.onSavePeso} onDeletePeso={props.onDeletePeso} onSaveObiettivo={props.onSaveObiettivo}/>
+      )}
+      {seg==="diete" && (
+        <PianiView piani={props.piani} setPiani={props.setPiani} profili={props.profili}/>
+      )}
+      {seg==="medicine" && (
+        <MedicineView profili={props.profili} medicine={props.medicine} setMedicine={props.setMedicine}/>
+      )}
+      {seg==="piramide" && (
+        <PiramideView/>
+      )}
+    </div>
+  );
+}
+
+function RicetteHub(props) {
+  var s = useState("idee"); var seg = s[0]; var setSeg = s[1];
+  var SEGS = [
+    {id:"idee",      l:"Le mie ricette", ic:"ti-bulb"},
+    {id:"community", l:"Community",       ic:"ti-users-group"}
+  ];
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <HubTabs segs={SEGS} seg={seg} setSeg={setSeg}/>
+      {seg==="idee" && (
+        <TabIdee profili={props.profili} dispensa={props.dispensa} ricetteIG={props.ricetteIG} setRicetteIG={props.setRicetteIG} pagine={props.pagine} setPagine={props.setPagine}/>
+      )}
+      {seg==="community" && (
+        <CommunityView familyId={props.familyId} utente={props.utente} profili={props.profili} setTab={props.setTab}/>
+      )}
+    </div>
+  );
+}
+
 function ProvvisteView(props) {
   var s = useState("spesa"); var seg = s[0]; var setSeg = s[1];
   var SEGS = [
@@ -10579,16 +10644,12 @@ export default function App() {
   const TABS_ROW2 = TABS.slice(5);
   var s_sheet = useState(false); var sheetOpen = s_sheet[0]; var setSheetOpen = s_sheet[1];
   var SHEET_ITEMS = [
-    {id:"salute",      l:"Famiglia",      ic:"ti-users",              s:"Profili, pesi e crescita"},
-    {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
-    {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
-    {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
-    {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
-    {id:"community",   l:"Community",      ic:"ti-users-group",        s:"Ricette e consigli per patologia"},
-    {id:"mealprep",    l:"Meal prep",     ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
-    {id:"idee",        l:"Idee",          ic:"ti-bulb",               s:"Ricette e ispirazioni"},
-    {id:"ai",          l:"Assistente AI", ic:"ti-sparkles",           s:"Menu e domande"},
-    {id:"impostazioni",l:"Impostazioni",  ic:"ti-settings",           s:"Famiglia e PIN"}
+    {id:"famiglia",    l:"Famiglia e salute", ic:"ti-heart-rate-monitor", s:"Profili, pesi, diete, medicine, piramide"},
+    {id:"ricette",     l:"Ricette",           ic:"ti-bulb",               s:"Le tue ricette e la community"},
+    {id:"amici",       l:"Amici",             ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
+    {id:"mealprep",    l:"Meal prep",         ic:"ti-tools-kitchen-2",    s:"Preparazioni"},
+    {id:"ai",          l:"Assistente AI",     ic:"ti-sparkles",           s:"Menu e domande"},
+    {id:"impostazioni",l:"Impostazioni",      ic:"ti-settings",           s:"Famiglia e PIN"}
   ];
   var MORE_TABS = SHEET_ITEMS.map(function(x){ return x.id; });
 
@@ -10947,6 +11008,15 @@ export default function App() {
         )}
         {tab==="salute" && (
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}/>
+        )}
+        {tab==="famiglia" && (
+          <SaluteHub profili={profili} setProfili={setProfili} setTab={handleSetTab}
+            pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}
+            piani={piani} setPiani={setPianiLS} medicine={medicine} setMedicine={setMedicineLS}/>
+        )}
+        {tab==="ricette" && (
+          <RicetteHub profili={profili} dispensa={dispensa} ricetteIG={ricetteIG} setRicetteIG={setRicetteIGLS} pagine={pagineIG} setPagine={setPagineIGLS}
+            familyId={familyId} utente={utente} setTab={handleSetTab}/>
         )}
         {tab==="dispensa" && (
           <DispensaView dispensa={dispensa} setDispensa={setDispensaLS}
