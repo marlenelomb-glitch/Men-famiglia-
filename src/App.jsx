@@ -4419,8 +4419,29 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, onSavePasto}) {
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, onSavePasto}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
+  var giorniFuoriB = giorniFuori || {};
+  var toggleFuoriB = toggleFuori || function(){};
+  var pianiListaB = (piani && piani.lista) ? piani.lista : [];
+  function presenzaGiornoB(pid, dayFull, dayShort, weekday) {
+    var sf = giorniFuoriB[dayFull];
+    var isF = sf ? (typeof sf.has === "function" ? sf.has(pid) : (Array.isArray(sf) ? sf.indexOf(pid) >= 0 : false)) : false;
+    if(isF) return "fuori";
+    var mensa = false, dieta = false;
+    pianiListaB.forEach(function(pl){
+      if(!pl || pl.membroId !== pid) return;
+      var wk = (typeof settimanaPianoNum === "function") ? settimanaPianoNum(pl, new Date()) : 1;
+      var w = (pl.settimane || {})[wk];
+      var dd = (w && w.giorni) ? w.giorni[dayShort] : null;
+      if(!dd) return;
+      if(pl.tipo === "mensa") { if(weekday && dd.pranzo && (""+dd.pranzo).trim()) mensa = true; }
+      else if(pl.tipo === "membro") { if(Object.keys(dd).some(function(k){ return dd[k] && (""+dd[k]).trim(); })) dieta = true; }
+    });
+    if(mensa) return "mensa";
+    if(dieta) return "dieta";
+    return "casa";
+  }
   var PASTI_B  = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
 
   var scelte=builderScelte||{}; var setScelte=setBuilderScelte;
@@ -5040,6 +5061,23 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         </div>
                       );
                     })}
+                    {Object.keys(profili||{}).length>0 && (
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
+                        {Object.keys(profili).map(function(pid){
+                          var pp = profili[pid]; if(!pp) return null;
+                          var stt = presenzaGiornoB(pid, g, g.slice(0,3), i<=4);
+                          var isFuori = stt==="fuori";
+                          var isMensa = stt==="mensa" || stt==="dieta";
+                          return (
+                            <button key={pid} onClick={function(){ toggleFuoriB(g, pid); }}
+                              style={{display:"flex",alignItems:"center",gap:4,border:"1.5px solid "+(isFuori?"#C2355A":(isMensa?"#E8D5AE":"#E3EAEE")),background:isFuori?"#FBE7EC":(isMensa?"#F6ECD9":"#fff"),borderRadius:20,padding:"3px 9px 3px 3px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              <span style={{width:18,height:18,borderRadius:"50%",background:pp.colore||"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,flexShrink:0,opacity:isFuori?0.5:1}}>{(pp.nome?pp.nome.slice(0,1):"?").toUpperCase()}</span>
+                              <span style={{fontSize:10,fontWeight:700,color:isFuori?"#C2355A":(isMensa?"#8A5A12":"#2C3338"),textDecoration:isFuori?"line-through":"none"}}>{(""+(pp.nome||"")).split(" ")[0]}{isMensa?" · mensa":""}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -6322,9 +6360,9 @@ function lunediSettimana() {
 }
 
 var REAZIONI = [
-  {id:"ok",       l:"Accetto",  ic:"ti-check",     c:"#2F6586", bg:"#E2EEF5"},
-  {id:"modifica", l:"Modifica", ic:"ti-pencil",    c:"#8A5A12", bg:"#F6ECD9"},
-  {id:"fuori",    l:"Fuori",    ic:"ti-door-exit", c:"#C2355A", bg:"#FBE7EC"}
+  {id:"ok",       l:"Accetto",      ic:"ti-check",     c:"#2F6586", bg:"#E2EEF5"},
+  {id:"modifica", l:"Modifica",     ic:"ti-pencil",    c:"#8A5A12", bg:"#F6ECD9"},
+  {id:"fuori",    l:"Mangia fuori", ic:"ti-door-exit", c:"#C2355A", bg:"#FBE7EC"}
 ];
 function reazById(id){ return REAZIONI.find(function(r){ return r.id === id; }) || null; }
 function isoDay(dt){ return dt.getFullYear()+"-"+("0"+(dt.getMonth()+1)).slice(-2)+"-"+("0"+dt.getDate()).slice(-2); }
@@ -6551,17 +6589,20 @@ function MenuView(props) {
                   var r = getReaz(d, p.id); var st = r ? r.stato : null;
                   var col = p.colore || "#6BA6C9";
                   var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
+                  var fuoriV = st === "fuori";
                   return (
-                    <div key={p.id} style={{marginBottom:8}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8}}>
-                        <span style={{width:26,height:26,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</span>
-                        <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</span>
+                    <div key={p.id} style={{marginBottom:10}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                        <span style={{width:26,height:26,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0,opacity:fuoriV?0.5:1}}>{ini}</span>
+                        <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:fuoriV?"#B4BEC4":"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textDecoration:fuoriV?"line-through":"none"}}>{p.nome}</span>
+                      </div>
+                      <div style={{display:"flex",gap:6}}>
                         {REAZIONI.map(function(rz){
                           var on = st === rz.id;
                           return (
                             <button key={rz.id} onClick={function(){ setReaz(d, p.id, rz.id); }}
-                              style={{width:34,height:34,borderRadius:10,cursor:"pointer",border:"1.5px solid "+(on?rz.c:"#E3EAEE"),background:on?rz.bg:"#fff",color:on?rz.c:"#B4BEC4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                              <i className={"ti "+rz.ic}/>
+                              style={{flex:1,padding:"8px 4px",borderRadius:11,cursor:"pointer",border:"1.5px solid "+(on?rz.c:"#E3EAEE"),background:on?rz.bg:"#fff",color:on?rz.c:"#8A949B",fontSize:11,fontWeight:on?800:600,display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              <i className={"ti "+rz.ic} style={{fontSize:13}}/>{rz.l}
                             </button>
                           );
                         })}
@@ -10916,6 +10957,7 @@ export default function App() {
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
             mealPrep={mealPrep} dispensa={dispensa} setMealPrep={setMealPrepLS}
             alimentiCustom={alimentiCustom} setAlimentiCustom={setAlimentiCustomLS}
+            giorniFuori={giorniFuori} toggleFuori={toggleFuori} piani={piani}
             onSavePasto={savePastoToSupabase}/>
         )}
         {tab==="ai" && (
