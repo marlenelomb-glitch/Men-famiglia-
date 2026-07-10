@@ -7971,21 +7971,34 @@ function CommunityView(props) {
     setSaving(true); setErrC("");
     var autore = (utente && utente.email) ? utente.email.split("@")[0] : "Anonimo";
     var patSel = tags[0];
-    supabase.from("community").insert({
+    var body = {
       family_id: familyId, patologia: tags.join(","), tipo: form.tipo,
       titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica,
       foto: form.foto || null, proteine: form.tipo==="prodotto" ? (""+(form.proteine||"")).trim() : null, dove: form.tipo==="prodotto" ? (""+(form.dove||"")).trim() : null
-    }).then(function(r){
+    };
+    function scaduto(r){ var m=(""+((r && (r.message||r.code))||"")).toLowerCase(); return m.indexOf("jwt")>=0 || m.indexOf("expired")>=0 || (r && r.code==="PGRST301"); }
+    function ok(){
       setSaving(false);
-      if(Array.isArray(r) && r.length){
-        setForm({tipo:form.tipo, tags:tags.slice(), titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
-        setShowAdd(false); setErrC("");
-        setFTipo("tutte"); if(fPat!=="tutte") setFPat(patSel);
-        loadPosts();
-      } else {
-        var msg = (r && (r.message || r.code)) ? (r.message || r.code) : "controlla di aver lanciato l'SQL della community su Supabase (SQL Editor).";
-        setErrC("Non riesco a salvare: " + msg);
+      setForm({tipo:form.tipo, tags:tags.slice(), titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
+      setShowAdd(false); setErrC("");
+      setFTipo("tutte"); if(fPat!=="tutte") setFPat(patSel);
+      loadPosts();
+    }
+    function fail(r){
+      setSaving(false);
+      var msg = (r && (r.message || r.code)) ? (r.message || r.code) : "controlla di aver lanciato l'SQL della community su Supabase (SQL Editor).";
+      setErrC("Non riesco a salvare: " + msg);
+    }
+    supabase.from("community").insert(body).then(function(r){
+      if(Array.isArray(r) && r.length){ ok(); return; }
+      if(scaduto(r) && supabase.refreshSession){
+        supabase.refreshSession().then(function(sess){
+          if(!sess){ setSaving(false); setErrC("Sessione scaduta. Esci e rientra dall'account, poi riprova."); return; }
+          supabase.from("community").insert(body).then(function(r2){ if(Array.isArray(r2) && r2.length){ ok(); } else { fail(r2); } }, function(){ setSaving(false); setErrC("Errore di rete. Riprova."); });
+        }, function(){ setSaving(false); setErrC("Sessione scaduta. Esci e rientra."); });
+        return;
       }
+      fail(r);
     }, function(){ setSaving(false); setErrC("Errore di rete. Riprova."); });
   }
   function elimina(id) {
@@ -9320,8 +9333,10 @@ export default function App() {
 
   useEffect(function(){
     if(!utente) return;
-    var iv = setInterval(function(){ supabase.refreshSession(); }, 50*60*1000);
-    return function(){ clearInterval(iv); };
+    var iv = setInterval(function(){ supabase.refreshSession(); }, 20*60*1000);
+    function onVis(){ if(typeof document !== "undefined" && document.visibilityState === "visible") supabase.refreshSession(); }
+    if(typeof document !== "undefined") document.addEventListener("visibilitychange", onVis);
+    return function(){ clearInterval(iv); if(typeof document !== "undefined") document.removeEventListener("visibilitychange", onVis); };
   }, [utente]);
 
   const handleSetTab = (t) => {
