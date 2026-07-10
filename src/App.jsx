@@ -6352,6 +6352,8 @@ function MenuView(props) {
   var ospiti = props.ospiti || {};
   var setOspiti = props.setOspiti || function(){};
   var familyId = props.familyId;
+  var soloOggi = !!props.soloOggi;
+  var oggiIdxM = (new Date().getDay()+6)%7;
   var vals = Object.values(profili);
 
   var s_shareMsg = useState(""); var shareMsg = s_shareMsg[0]; var setShareMsg = s_shareMsg[1];
@@ -6431,11 +6433,11 @@ function MenuView(props) {
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
         <div>
-          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em"}}>Menu e voti</div>
-          <div style={{fontSize:12,color:"#8A949B"}}>La settimana e cosa ne pensa la famiglia</div>
+          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em"}}>{soloOggi?"Menu di oggi e voti":"Menu e voti"}</div>
+          <div style={{fontSize:12,color:"#8A949B"}}>{soloOggi?"Cosa ne pensa la famiglia":"La settimana e cosa ne pensa la famiglia"}</div>
         </div>
         <span style={{fontSize:13,color:"#2F6586",fontWeight:700}}>
-          <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{range}
+          <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{soloOggi?(new Date().getDate()+" "+MESI_ABBR[new Date().getMonth()]):range}
         </span>
       </div>
 
@@ -6477,6 +6479,7 @@ function MenuView(props) {
       )}
 
       {DAYS.map(function(d, i){
+        if(soloOggi && i !== oggiIdxM) return null;
         var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
         var pranzo = nomePasto(d, "Pranzo");
         var cena = nomePasto(d, "Cena");
@@ -10806,7 +10809,7 @@ export default function App() {
             <div style={{borderTop:"1px solid #E3EAEE",paddingTop:4}}/>
             <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
               profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
-              ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId}/>
+              ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId} soloOggi={true}/>
           </div>
         )}
         {tab==="mensa" && (
