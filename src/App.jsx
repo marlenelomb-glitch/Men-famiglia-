@@ -2902,7 +2902,7 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, onSavePasto}) {
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, modelliMenu, setModelliMenu, onSavePasto}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var giorniFuoriB = giorniFuori || {};
   var toggleFuoriB = toggleFuori || function(){};
@@ -2938,6 +2938,8 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var s8=useState(null); var popup=s8[0]; var setPopup=s8[1];
   var s9=useState([]); var customIng=s9[0]; var setCustomIng=s9[1];
   var s10=useState(0); var settB=s10[0]; var setSettB=s10[1]; // 0=questa sett, 1=prossima
+  var sMod=useState(false); var showModelli=sMod[0]; var setShowModelli=sMod[1];
+  var sModN=useState(""); var modNome=sModN[0]; var setModNome=sModN[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3228,6 +3230,19 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   // Scelte attive in base alla settimana selezionata
   var scelteAttive = (settB===0 ? scelte : scelteProssima) || {};
   var setScelteAttive = settB===0 ? setScelte : setScelteProssima;
+  function salvaModello(){
+    var nome=(""+(modNome||"")).trim() || ("Menu "+(((modelliMenu||[]).length)+1));
+    var snap={}; Object.keys(scelteAttive||{}).forEach(function(k){ snap[k]=scelteAttive[k]; });
+    (setModelliMenu||function(){})((modelliMenu||[]).concat([{id:"mod_"+new Date().getTime(), nome:nome, dati:snap}]));
+    setModNome("");
+  }
+  function usaModello(mod){
+    if(!mod) return; var dati=mod.dati||{};
+    setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); Object.keys(dati).forEach(function(k){ n[k]=dati[k]; }); return n; });
+    if(onSavePasto){ Object.keys(dati).forEach(function(k){ var gp=k.split("-"); onSavePasto(settB, gp[0], gp.slice(1).join("-"), dati[k]); }); }
+    setShowModelli(false);
+  }
+  function rimuoviModello(id){ (setModelliMenu||function(){})((modelliMenu||[]).filter(function(x){ return x.id!==id; })); }
   var sceltaG = scelteAttive[keyG] || {};
   var puG = sceltaG.piattoUnico || {nome:"",kcal:"",prot:""};
 
@@ -3481,12 +3496,57 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             );
           })()}
 
-          <button onClick={function(){ completaAuto(); }}
-            style={{width:"100%",border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
-              fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-            <i className="ti ti-wand" style={{fontSize:16}}/>Completa in automatico
-          </button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={function(){ completaAuto(); }}
+              style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
+                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+              <i className="ti ti-wand" style={{fontSize:16}}/>Completa
+            </button>
+            <button onClick={function(){ setShowModelli(true); }}
+              style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
+                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+              <i className="ti ti-repeat" style={{fontSize:16}}/>Riusa un menu
+            </button>
+          </div>
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+
+          {showModelli && (
+            <div onClick={function(){ setShowModelli(false); }} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div onClick={function(e){ e.stopPropagation(); }} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"82vh",overflowY:"auto",padding:"10px 18px 22px"}}>
+                <div style={{width:38,height:4,background:"#E3EAEE",borderRadius:4,margin:"0 auto 10px"}}/>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <i className="ti ti-repeat" style={{fontSize:20,color:"#2F6586"}}/>
+                  <div style={{fontSize:18,fontWeight:800,flex:1}}>Riusa un menu</div>
+                  <i className="ti ti-x" onClick={function(){ setShowModelli(false); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+                </div>
+                <div style={{fontSize:12,color:"#8A949B",marginBottom:10}}>Salva la settimana di adesso come modello e riusala quando vuoi.</div>
+                <div style={{display:"flex",gap:8,marginBottom:14}}>
+                  <input value={modNome} onChange={function(e){ setModNome(e.target.value); }} placeholder="Nome (es. Settimana tipo)"
+                    style={{flex:1,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                  <button onClick={salvaModello} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"0 16px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Salva</button>
+                </div>
+                <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".03em",marginBottom:8}}>I tuoi modelli</div>
+                {(!modelliMenu || !modelliMenu.length) ? (
+                  <div style={{fontSize:13,color:"#8A949B",padding:"6px 0"}}>Ancora nessun modello. Salvane uno qui sopra.</div>
+                ) : (
+                  modelliMenu.map(function(mod){
+                    var nn=Object.keys(mod.dati||{}).length;
+                    return (
+                      <div key={mod.id} style={{display:"flex",alignItems:"center",gap:10,border:"1px solid #E3EAEE",borderRadius:12,padding:"10px 12px",marginBottom:8}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:14,fontWeight:700}}>{mod.nome}</div>
+                          <div style={{fontSize:11,color:"#8A949B"}}>{nn} pasti salvati</div>
+                        </div>
+                        <button onClick={function(){ usaModello(mod); }} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:10,padding:"8px 14px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Usa</button>
+                        <i className="ti ti-trash" onClick={function(){ rimuoviModello(mod.id); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                      </div>
+                    );
+                  })
+                )}
+                <div style={{fontSize:10,color:"#8A949B",marginTop:8}}>"Usa" riempie la settimana {settB===0?"di adesso":"prossima"} col modello scelto.</div>
+              </div>
+            </div>
+          )}
 
           <div style={{marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:3,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
@@ -8263,6 +8323,28 @@ function HomeView(props) {
     if(b.pasti >= 3 && b.verdura < Math.ceil(b.pasti / 2)) w.push("poca verdura");
     return w;
   }
+  var riepilogo = (function(){
+    var fam = {pesce:0,carne:0,legumi:0,uova:0}; var pastiFam=0;
+    GIORNI_FULL.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){
+      var s=builder[g+"-"+m]; if(!s) return;
+      var pieno = s.proteina || (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim());
+      if(pieno) pastiFam++;
+      var cat = s.proteina ? catProt(ingById(s.proteina)) : null;
+      if(cat) fam[cat]++;
+    }); });
+    var tipi = ["pesce","carne","legumi","uova"].filter(function(k){ return fam[k]>0; }).length;
+    var positivi=[]; var attenzioni=[];
+    if(fam.pesce>=2) positivi.push("buon pesce");
+    if(fam.legumi>=2) positivi.push("buoni legumi");
+    if(tipi>=3) positivi.push("bella varietà");
+    membriBil.forEach(function(pid){
+      if(pid==="_tutti") return;
+      var w=bilanciWarn(bilPP[pid]); if(!w.length) return;
+      var nome=(profili[pid]&&profili[pid].nome)||"—"; attenzioni.push(nome+": "+w.join(", "));
+    });
+    return {pastiFam:pastiFam, tipi:tipi, positivi:positivi, attenzioni:attenzioni};
+  })();
+  function capF(t){ t=""+(t||""); return t.charAt(0).toUpperCase()+t.slice(1); }
 
   var prepScad = mealPrep.filter(function(p){ return p && p.porzioniRimaste > 0 && scadenzaEntro(p.scadenza, 3); });
   var dispScad = dispensa.filter(function(d){ return d && scadenzaEntro(d.scadenza, 3); });
@@ -8451,6 +8533,28 @@ function HomeView(props) {
           </button>
         </div>
       )}
+
+      <div style={cardStyle}>
+        <div style={ctStyle}><i className="ti ti-sparkles" style={{color:"#2F6586",fontSize:15}}/>In breve questa settimana</div>
+        {riepilogo.pastiFam === 0 ? (
+          <div style={{fontSize:13,color:"#8A949B"}}>Settimana ancora da pianificare. Apri il Builder per iniziare.</div>
+        ) : (
+          <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>{riepilogo.pastiFam} pasti pianificati · {riepilogo.tipi} tipi di proteine</div>
+            {riepilogo.positivi.length > 0 && (
+              <div style={{background:"#E2EEF5",borderRadius:11,padding:"9px 11px",color:"#2F6586",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
+                <i className="ti ti-thumb-up"/><span>{capF(riepilogo.positivi.join(", "))}</span>
+              </div>
+            )}
+            {riepilogo.attenzioni.map(function(a, i){
+              return <div key={i} style={warnRow}><i className="ti ti-alert-triangle"/><span>{a}</span></div>;
+            })}
+            {riepilogo.attenzioni.length === 0 && riepilogo.positivi.length === 0 && (
+              <div style={{fontSize:12,color:"#8A949B"}}>Settimana equilibrata, continua così.</div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div style={cardStyle}>
         <div style={ctStyle}><i className="ti ti-leaf" style={{color:"#2F6586",fontSize:15}}/>Questa settimana · per persona</div>
@@ -9033,7 +9137,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, preferiti:setPreferiti, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, preferiti:setPreferiti, modelliMenu:setModelliMenu, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -9080,7 +9184,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, preferiti:preferiti, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, preferiti:preferiti, modelliMenu:modelliMenu, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -9207,6 +9311,7 @@ export default function App() {
   const [medicine, setMedicine] = useState(loadLS("medicine", {}));
   const [noteGiorno, setNoteGiorno] = useState(loadLS("noteGiorno", {}));
   const [preferiti, setPreferiti] = useState(loadLS("preferiti", {}));
+  const [modelliMenu, setModelliMenu] = useState(loadLS("modelliMenu", []));
   const [ricetteIG, setRicetteIG] = useState(loadLS("ricetteIG", []));
   const [pagineIG, setPagineIG] = useState(loadLS("pagineIG", [
     {id:"p1", nome:"Giallo Zafferano", handle:"giallozafferano", url:"https://www.instagram.com/giallozafferano/"},
@@ -9330,6 +9435,7 @@ export default function App() {
   var setMedicineLS           = mkSetterSync("medicine", setMedicine);
   var setNoteGiornoLS         = mkSetterSync("noteGiorno", setNoteGiorno);
   var setPreferitiLS          = mkSetterSync("preferiti", setPreferiti);
+  var setModelliMenuLS        = mkSetterSync("modelliMenu", setModelliMenu);
   var setRicetteIGLS          = mkSetterSync("ricetteIG", setRicetteIG);
   var setPagineIGLS           = mkSetterSync("pagineIG", setPagineIG);
   var setPinLS                = mkSetter("pin", setPin);
@@ -9679,6 +9785,7 @@ export default function App() {
             mealPrep={mealPrep} dispensa={dispensa} setMealPrep={setMealPrepLS}
             alimentiCustom={alimentiCustom} setAlimentiCustom={setAlimentiCustomLS}
             giorniFuori={giorniFuori} toggleFuori={toggleFuori} piani={piani}
+            modelliMenu={modelliMenu} setModelliMenu={setModelliMenuLS}
             onSavePasto={savePastoToSupabase}/>
         )}
         {tab==="ai" && (
