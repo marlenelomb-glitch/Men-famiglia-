@@ -274,7 +274,7 @@ function notificaIscrizione(emailUtente) {
   }).catch(function(){});
 }
 
-import { useState, useMemo, useCallback, useEffect, Component } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, Component } from "react";
 import { DB_RICETTE } from "./ricette.js";
 import LoadingScreen from "./LoadingScreen.jsx";
 
@@ -7149,16 +7149,148 @@ function RicetteHub(props) {
   );
 }
 
+function ScannerCibo(props) {
+  var onAggiungi = props.onAggiungi || function(){};
+  var onSpesa = props.onSpesa || function(){};
+  var onClose = props.onClose || function(){};
+  var sCode = useState(""); var code = sCode[0]; var setCode = sCode[1];
+  var sLoad = useState(false); var loading = sLoad[0]; var setLoading = sLoad[1];
+  var sRes = useState(null); var res = sRes[0]; var setRes = sRes[1];
+  var sErr = useState(""); var err = sErr[0]; var setErr = sErr[1];
+  var sCam = useState(false); var camOn = sCam[0]; var setCamOn = sCam[1];
+  var videoRef = useRef(null);
+  var hasDetector = (typeof window !== "undefined" && "BarcodeDetector" in window);
+
+  function cerca(ean) {
+    var q = (""+ean).replace(/[^0-9]/g,"");
+    if(q.length < 6) { setErr("Codice non valido."); return; }
+    setLoading(true); setErr(""); setRes(null);
+    fetch("https://world.openfoodfacts.org/api/v2/product/"+q+".json?fields=product_name,brands,nutriments")
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        setLoading(false);
+        if(!d || d.status===0 || !d.product){ setErr("Prodotto non trovato. Puoi scriverlo a mano nella dispensa."); return; }
+        var p = d.product; var n = p.nutriments || {};
+        setRes({ code:q, nome:(p.product_name||"").trim(), marca:((p.brands||"").split(",")[0]||"").trim(),
+          kcal:Math.round(n["energy-kcal_100g"]||0), prot:Math.round((n.proteins_100g||0)*10)/10, carb:Math.round((n.carbohydrates_100g||0)*10)/10 });
+      }, function(){ setLoading(false); setErr("Errore di rete. Riprova."); });
+  }
+  useEffect(function(){
+    if(!camOn) return;
+    var stream=null, stop=false, det=null;
+    if(hasDetector){ try{ det=new window.BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128"]}); }catch(e){ det=null; } }
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(s){
+        stream=s;
+        if(videoRef.current){ videoRef.current.srcObject=s; var pp=videoRef.current.play(); if(pp&&pp.catch)pp.catch(function(){}); }
+        function tick(){
+          if(stop) return;
+          if(det && videoRef.current){
+            det.detect(videoRef.current).then(function(codes){
+              if(codes && codes.length){ setCamOn(false); cerca(codes[0].rawValue); }
+              else setTimeout(tick, 400);
+            }, function(){ setTimeout(tick, 500); });
+          }
+        }
+        setTimeout(tick, 600);
+      }, function(){ setErr("Non riesco ad aprire la fotocamera. Scrivi il codice a mano."); setCamOn(false); });
+    } else { setErr("Fotocamera non disponibile. Scrivi il codice a mano."); setCamOn(false); }
+    return function(){ stop=true; if(stream) stream.getTracks().forEach(function(t){ t.stop(); }); };
+  }, [camOn]);
+
+  function aggiungiDispensa(){ if(!res) return; onAggiungi({nome:res.nome||("Prodotto "+res.code), kcal_p:res.kcal, prot_p:res.prot, carb_p:res.carb, marca:res.marca}); onClose(); }
+  function aggiungiSpesaBtn(){ if(!res) return; onSpesa({nome:res.nome||("Prodotto "+res.code)}); onClose(); }
+
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={function(e){ e.stopPropagation(); }} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"88vh",overflowY:"auto",padding:"10px 18px 22px"}}>
+        <div style={{width:38,height:4,background:"#E3EAEE",borderRadius:4,margin:"0 auto 10px"}}/>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+          <i className="ti ti-barcode" style={{fontSize:22,color:"#2F6586"}}/>
+          <div style={{fontSize:18,fontWeight:800,flex:1}}>Scansiona un prodotto</div>
+          <i className="ti ti-x" onClick={onClose} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+        </div>
+
+        {camOn ? (
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <video ref={videoRef} muted playsInline style={{width:"100%",borderRadius:14,background:"#000",aspectRatio:"4/3",objectFit:"cover"}}/>
+            <div style={{fontSize:12,color:"#8A949B",textAlign:"center"}}>Inquadra il codice a barre del prodotto</div>
+            <button onClick={function(){ setCamOn(false); }} style={{border:"1.5px solid #E3EAEE",background:"#fff",color:"#8A949B",borderRadius:12,padding:"11px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Annulla</button>
+          </div>
+        ) : (
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {hasDetector && (
+              <button onClick={function(){ setErr(""); setRes(null); setCamOn(true); }} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:13,padding:"13px",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                <i className="ti ti-camera" style={{fontSize:18}}/>Apri la fotocamera
+              </button>
+            )}
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>{hasDetector?"Oppure scrivi il codice a barre":"Scrivi il codice a barre (sotto il prodotto)"}</div>
+            <div style={{display:"flex",gap:8}}>
+              <input inputMode="numeric" value={code} onChange={function(e){ setCode(e.target.value.replace(/[^0-9]/g,"")); }} onKeyDown={function(e){ if(e.key==="Enter") cerca(code); }} placeholder="Es. 8001234567890"
+                style={{flex:1,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              <button onClick={function(){ cerca(code); }} style={{border:"none",background:"#6BA6C9",color:"#fff",borderRadius:12,padding:"0 18px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Cerca</button>
+            </div>
+          </div>
+        )}
+
+        {loading && <div style={{fontSize:13,color:"#8A949B",textAlign:"center",marginTop:12}}>Cerco il prodotto…</div>}
+        {err && <div style={{marginTop:12,background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"11px 13px",fontSize:12,color:"#8A5A12",fontWeight:700}}>{err}</div>}
+
+        {res && (
+          <div className="mf-card" style={{marginTop:14,display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{fontSize:16,fontWeight:800}}>{res.nome || ("Prodotto "+res.code)}</div>
+            {res.marca ? <div style={{fontSize:12,color:"#8A949B",fontWeight:600,marginTop:-6}}>{res.marca}</div> : null}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:800}}><i className="ti ti-flask" style={{fontSize:13}}/>{res.prot}g proteine /100g</span>
+              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#F2F6F8",color:"#2C3338",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:700}}><i className="ti ti-flame" style={{fontSize:13}}/>{res.kcal} kcal /100g</span>
+              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#F2F6F8",color:"#2C3338",borderRadius:20,padding:"4px 10px",fontSize:12,fontWeight:700}}>Carbo {res.carb}g</span>
+            </div>
+            <div style={{display:"flex",gap:8,marginTop:2}}>
+              <button onClick={aggiungiSpesaBtn} style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla spesa</button>
+              <button onClick={aggiungiDispensa} style={{flex:1,border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Alla dispensa</button>
+            </div>
+          </div>
+        )}
+        <div style={{fontSize:10,color:"#8A949B",marginTop:14,lineHeight:1.4}}>Dati da Open Food Facts (database aperto). Su iPhone la fotocamera nel browser può non funzionare: usa il codice a mano.</div>
+      </div>
+    </div>
+  );
+}
+
 function ProvvisteView(props) {
+  var sScan = useState(false); var showScan = sScan[0]; var setShowScan = sScan[1];
   var s = useState("spesa"); var seg = s[0]; var setSeg = s[1];
   var SEGS = [
     {id:"spesa",    l:"Lista spesa", ic:"ti-shopping-bag"},
     {id:"dispensa", l:"Dispensa",    ic:"ti-box"},
     {id:"frigo",    l:"Frigo",       ic:"ti-fridge"}
   ];
+  function scanAggiungi(item){
+    var arr = (props.dispensa||[]).slice();
+    var cont = (typeof alimentoContenitore==="function") ? alimentoContenitore(item.nome) : "dispensa";
+    arr.push(Object.assign({nome:item.nome, qty:"1", unita:"pz", cat:"dispensa", contenitore:cont, scadenza:""},
+      {kcal_p:item.kcal_p||0, prot_p:item.prot_p||0, carb_p:item.carb_p||0, marca:item.marca||""}));
+    (props.setDispensa||function(){})(arr);
+    setSeg(cont==="frigo"||cont==="freezer" ? "frigo" : "dispensa");
+  }
+  function scanSpesa(item){
+    (props.setSpesa||function(){})(function(prev){
+      var arr = (typeof normSpesa==="function") ? normSpesa(prev) : (prev||[]).slice();
+      var low = (item.nome||"").toLowerCase();
+      if(!arr.some(function(x){ return (""+x.nome).toLowerCase()===low; })) arr.push({nome:item.nome, cat:(typeof catDaParola==="function"?catDaParola(item.nome):"altro"), fatto:false});
+      return arr;
+    });
+    setSeg("spesa");
+  }
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",paddingTop:8}}>Provviste</div>
+      {showScan && <ScannerCibo onClose={function(){ setShowScan(false); }} onAggiungi={scanAggiungi} onSpesa={scanSpesa}/>}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Provviste</div>
+        <button onClick={function(){ setShowScan(true); }} style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:11,padding:"8px 12px",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-barcode" style={{fontSize:16}}/>Scansiona
+        </button>
+      </div>
       <div style={{display:"flex",gap:4,background:"#E2EEF5",borderRadius:12,padding:3}}>
         {SEGS.map(function(sg){
           var on = seg === sg.id;
