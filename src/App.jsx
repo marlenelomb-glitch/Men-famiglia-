@@ -1331,13 +1331,13 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                   value={nuovaRicetta.ingredienti}
                   onChange={e=>setNuovaRicetta(p=>({...p,ingredienti:e.target.value}))}
                   rows={2}
-                  style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #FBE7EC",
+                  style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #E2EEF5",
                     fontSize:11,marginBottom:6,resize:"none",boxSizing:"border-box"}}/>
                 <textarea placeholder="Note (come adattarla, cosa cambiare per i bambini...)"
                   value={nuovaRicetta.note}
                   onChange={e=>setNuovaRicetta(p=>({...p,note:e.target.value}))}
                   rows={2}
-                  style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #FBE7EC",
+                  style={{width:"100%",padding:"7px",borderRadius:8,border:"1.5px solid #E2EEF5",
                     fontSize:11,marginBottom:6,resize:"none",boxSizing:"border-box"}}/>
 
                 {/* Upload foto */}
@@ -1358,11 +1358,11 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                       </button>
                     </div>
                   ) : (
-                    <label style={{display:"block",border:"1.5px dashed #FBE7EC",
+                    <label style={{display:"block",border:"1.5px dashed #E2EEF5",
                       borderRadius:10,padding:"14px",textAlign:"center",cursor:"pointer",
                       background:"#fff"}}>
-                      <div style={{fontSize:22,marginBottom:4,color:"#C2355A"}}><i className="ti ti-camera"/></div>
-                      <div style={{fontSize:10,color:"#C2355A",fontWeight:700}}>
+                      <div style={{fontSize:22,marginBottom:4,color:"#2F6586"}}><i className="ti ti-camera"/></div>
+                      <div style={{fontSize:10,color:"#2F6586",fontWeight:700}}>
                         Tocca per aggiungere foto
                       </div>
                       <div style={{fontSize:9,color:"#8A949B",marginTop:2}}>
@@ -1408,7 +1408,7 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                     setShowAddRicetta(false);
                   }}
                   style={{width:"100%",padding:"8px",borderRadius:10,border:"none",
-                    background:"#C2355A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    background:"#2F6586",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                   Salva ricetta
                 </button>
               </div>
@@ -1420,8 +1420,8 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                 {["tutte",...new Set(ricetteIG.map(r=>r.fonte).filter(Boolean))].map(f=>(
                   <button key={f} onClick={()=>setFiltroFonte(f)}
                     style={{padding:"3px 10px",borderRadius:20,whiteSpace:"nowrap",
-                      border:"1.5px solid "+(filtroFonte===f?"#C2355A":"#ddd"),
-                      background:filtroFonte===f?"#C2355A":"#fff",
+                      border:"1.5px solid "+(filtroFonte===f?"#2F6586":"#ddd"),
+                      background:filtroFonte===f?"#2F6586":"#fff",
                       color:filtroFonte===f?"#fff":"#555",
                       fontSize:9,fontWeight:filtroFonte===f?700:400,cursor:"pointer"}}>
                     {f==="tutte"?"Tutte":f}
@@ -1454,7 +1454,7 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                       {r.titolo}
                     </div>
                     {r.fonte && (
-                      <div style={{fontSize:9,color:"#C2355A",fontWeight:600,marginBottom:4}}>
+                      <div style={{fontSize:9,color:"#2F6586",fontWeight:600,marginBottom:4}}>
                         {r.fonte}
                       </div>
                     )}
@@ -7688,6 +7688,7 @@ export default function App() {
           </button>
         )}
         <ErrorBoundary key={tab}>
+        <div className="mf-fade">
         {tab==="home" && (
           <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}
             mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}
@@ -7780,6 +7781,7 @@ export default function App() {
         {tab==="ai" && (
           <AssistenteAI profili={profili} familyId={familyId}/>
         )}
+        </div>
         </ErrorBoundary>
       </div>
 
