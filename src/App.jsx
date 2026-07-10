@@ -7929,6 +7929,7 @@ function CommunityView(props) {
   var sSav = useState(false); var saving = sSav[0]; var setSaving = sSav[1];
   var sForm = useState({tipo:"consiglio", patologia:defPat, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
   var form = sForm[0]; var setForm = sForm[1];
+  var sErrC = useState(""); var errC = sErrC[0]; var setErrC = sErrC[1];
 
   function loadPosts() {
     setLoading(true);
@@ -7964,16 +7965,25 @@ function CommunityView(props) {
   }
   function salva() {
     if(!(""+form.titolo).trim()) return;
-    setSaving(true);
+    setSaving(true); setErrC("");
     var autore = (utente && utente.email) ? utente.email.split("@")[0] : "Anonimo";
+    var patSel = form.patologia;
     supabase.from("community").insert({
       family_id: familyId, patologia: form.patologia, tipo: form.tipo,
       titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica,
       foto: form.foto || null, proteine: form.tipo==="prodotto" ? (""+(form.proteine||"")).trim() : null, dove: form.tipo==="prodotto" ? (""+(form.dove||"")).trim() : null
-    }).then(function(){
-      setForm({tipo:form.tipo, patologia:form.patologia, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
-      setShowAdd(false); setSaving(false); loadPosts();
-    }, function(){ setSaving(false); });
+    }).then(function(r){
+      setSaving(false);
+      if(Array.isArray(r) && r.length){
+        setForm({tipo:form.tipo, patologia:form.patologia, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
+        setShowAdd(false); setErrC("");
+        setFTipo("tutte"); if(fPat!=="tutte") setFPat(patSel);
+        loadPosts();
+      } else {
+        var msg = (r && (r.message || r.code)) ? (r.message || r.code) : "controlla di aver lanciato l'SQL della community su Supabase (SQL Editor).";
+        setErrC("Non riesco a salvare: " + msg);
+      }
+    }, function(){ setSaving(false); setErrC("Errore di rete. Riprova."); });
   }
   function elimina(id) {
     supabase.from("community").delete().eq("id", id).then(function(){ loadPosts(); }, function(){});
@@ -8001,6 +8011,12 @@ function CommunityView(props) {
         style={{border:"none",background:showAdd?"#E2EEF5":"#2F6586",color:showAdd?"#2F6586":"#fff",borderRadius:13,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"'Nunito',system-ui,sans-serif"}}>
         <i className={"ti "+(showAdd?"ti-x":"ti-plus")} style={{fontSize:17}}/>{showAdd?"Annulla":"Aggiungi ricetta, consiglio o prodotto"}
       </button>
+
+      {errC ? (
+        <div style={{background:"#FBE7EC",border:"1px solid #F3C6D2",borderRadius:12,padding:"11px 13px",fontSize:12,color:"#C2355A",fontWeight:700,display:"flex",alignItems:"flex-start",gap:8}}>
+          <i className="ti ti-alert-triangle" style={{fontSize:16,flexShrink:0,marginTop:1}}/><span>{errC}</span>
+        </div>
+      ) : null}
 
       {showAdd && (
         <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:11}}>
