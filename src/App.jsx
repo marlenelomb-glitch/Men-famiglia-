@@ -7927,8 +7927,9 @@ function CommunityView(props) {
   var sFTipo = useState("tutte"); var fTipo = sFTipo[0]; var setFTipo = sFTipo[1];
   var sAdd = useState(false); var showAdd = sAdd[0]; var setShowAdd = sAdd[1];
   var sSav = useState(false); var saving = sSav[0]; var setSaving = sSav[1];
-  var sForm = useState({tipo:"consiglio", patologia:defPat, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
+  var sForm = useState({tipo:"consiglio", tags:[defPat], titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
   var form = sForm[0]; var setForm = sForm[1];
+  function toggleTag(id){ setForm(function(prev){ var t=((prev.tags)||[]).slice(); var i=t.indexOf(id); if(i>=0)t.splice(i,1); else t.push(id); var n=Object.assign({},prev); n.tags=t; return n; }); }
   var sErrC = useState(""); var errC = sErrC[0]; var setErrC = sErrC[1];
 
   function loadPosts() {
@@ -7965,17 +7966,19 @@ function CommunityView(props) {
   }
   function salva() {
     if(!(""+form.titolo).trim()) return;
+    var tags = (form.tags||[]).filter(Boolean);
+    if(!tags.length){ setErrC("Scegli almeno un tag (patologia o dieta)."); return; }
     setSaving(true); setErrC("");
     var autore = (utente && utente.email) ? utente.email.split("@")[0] : "Anonimo";
-    var patSel = form.patologia;
+    var patSel = tags[0];
     supabase.from("community").insert({
-      family_id: familyId, patologia: form.patologia, tipo: form.tipo,
+      family_id: familyId, patologia: tags.join(","), tipo: form.tipo,
       titolo: (""+form.titolo).trim(), testo: (""+(form.testo||"")).trim(), autore: autore, pubblica: !!form.pubblica,
       foto: form.foto || null, proteine: form.tipo==="prodotto" ? (""+(form.proteine||"")).trim() : null, dove: form.tipo==="prodotto" ? (""+(form.dove||"")).trim() : null
     }).then(function(r){
       setSaving(false);
       if(Array.isArray(r) && r.length){
-        setForm({tipo:form.tipo, patologia:form.patologia, titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
+        setForm({tipo:form.tipo, tags:tags.slice(), titolo:"", testo:"", pubblica:true, foto:null, proteine:"", dove:""});
         setShowAdd(false); setErrC("");
         setFTipo("tutte"); if(fPat!=="tutte") setFPat(patSel);
         loadPosts();
@@ -7990,8 +7993,9 @@ function CommunityView(props) {
   }
 
   var visti = posts.filter(function(p){
-    if(fPat === "mie") { if(familyPats.indexOf(p.patologia) < 0) return false; }
-    else if(fPat !== "tutte" && p.patologia !== fPat) return false;
+    var tags = (""+(p.patologia||"")).split(",").map(function(x){ return x.trim(); }).filter(Boolean);
+    if(fPat === "mie") { if(!tags.some(function(t){ return familyPats.indexOf(t) >= 0; })) return false; }
+    else if(fPat !== "tutte") { if(tags.indexOf(fPat) < 0) return false; }
     if(fTipo !== "tutte" && p.tipo !== fTipo) return false;
     return true;
   });
@@ -8026,10 +8030,11 @@ function CommunityView(props) {
             <button onClick={function(){ upd("tipo","prodotto"); }} style={segBtn(form.tipo==="prodotto")}>Prodotto</button>
           </div>
           <div>
-            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Per quale patologia</div>
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:6}}>Per quali patologie o diete (puoi sceglierne più di una)</div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
               {PAT.map(function(pt){
-                return <button key={pt.id} onClick={function(){ upd("patologia",pt.id); }} style={chipStyle(form.patologia===pt.id)}>{pt.label}</button>;
+                var on = ((form.tags)||[]).indexOf(pt.id) >= 0;
+                return <button key={pt.id} onClick={function(){ toggleTag(pt.id); }} style={chipStyle(on)}>{on?"✓ ":""}{pt.label}</button>;
               })}
             </div>
           </div>
@@ -8110,7 +8115,11 @@ function CommunityView(props) {
                 <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:800}}>
                   <i className={"ti "+tipoIc} style={{fontSize:13}}/>{tipoL}
                 </span>
-                <span style={{fontSize:11,fontWeight:700,color:"#8A949B"}}>{patLabel(p.patologia)}</span>
+                <span style={{display:"flex",flexWrap:"wrap",gap:5,flex:1,minWidth:0}}>
+                  {(""+(p.patologia||"")).split(",").map(function(x){ return x.trim(); }).filter(Boolean).map(function(tg, ti){
+                    return <span key={ti} style={{fontSize:10,fontWeight:700,color:"#2F6586",background:"#F2F6F8",borderRadius:20,padding:"2px 8px"}}>{patLabel(tg)}</span>;
+                  })}
+                </span>
                 {!p.pubblica ? <i className="ti ti-lock" style={{fontSize:13,color:"#B4BEC4"}} title="Solo tua"/> : null}
                 {mio ? <i className="ti ti-trash" onClick={function(){ elimina(p.id); }} style={{marginLeft:"auto",fontSize:15,color:"#B4BEC4",cursor:"pointer"}}/> : null}
               </div>
