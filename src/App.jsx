@@ -6370,6 +6370,7 @@ function MenuView(props) {
   var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
   var s_editDay = useState(""); var editDay = s_editDay[0]; var setEditDay = s_editDay[1];
   var s_nota = useState(""); var notaVal = s_nota[0]; var setNotaVal = s_nota[1];
+  var s_gv = useState(oggiIdxM); var giornoView = s_gv[0]; var setGiornoView = s_gv[1];
 
   var lun = lunediSettimana();
   var dom = new Date(lun.getTime()); dom.setDate(lun.getDate()+6);
@@ -6433,13 +6434,32 @@ function MenuView(props) {
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
         <div>
-          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em"}}>{soloOggi?"Menu di oggi e voti":"Menu e voti"}</div>
-          <div style={{fontSize:12,color:"#8A949B"}}>{soloOggi?"Cosa ne pensa la famiglia":"La settimana e cosa ne pensa la famiglia"}</div>
+          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em"}}>{soloOggi?"Menu e voti":"Menu e voti"}</div>
+          <div style={{fontSize:12,color:"#8A949B"}}>{soloOggi?"Un giorno alla volta":"La settimana e cosa ne pensa la famiglia"}</div>
         </div>
-        <span style={{fontSize:13,color:"#2F6586",fontWeight:700}}>
-          <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{soloOggi?(new Date().getDate()+" "+MESI_ABBR[new Date().getMonth()]):range}
-        </span>
+        {soloOggi ? null : (
+          <span style={{fontSize:13,color:"#2F6586",fontWeight:700}}>
+            <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{range}
+          </span>
+        )}
       </div>
+
+      {soloOggi && (
+        <div style={{display:"flex",alignItems:"center",gap:10,justifyContent:"space-between"}}>
+          <button onClick={function(){ if(giornoView>0) setGiornoView(giornoView-1); }}
+            style={{border:"1.5px solid #E3EAEE",background:"#fff",color:giornoView<=0?"#CADCE8":"#2F6586",borderRadius:11,width:38,height:38,cursor:giornoView<=0?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <i className="ti ti-chevron-left" style={{fontSize:18}}/>
+          </button>
+          <div style={{textAlign:"center"}}>
+            <div style={{fontSize:15,fontWeight:800,color:"#2C3338"}}>{DAYS[giornoView]}{giornoView===oggiIdxM?" · oggi":""}</div>
+            <div style={{fontSize:12,color:"#8A949B",fontWeight:600}}>{new Date(lun.getTime()+giornoView*86400000).getDate()+" "+MESI_ABBR[new Date(lun.getTime()+giornoView*86400000).getMonth()]}</div>
+          </div>
+          <button onClick={function(){ if(giornoView<6) setGiornoView(giornoView+1); }}
+            style={{border:"1.5px solid #E3EAEE",background:"#fff",color:giornoView>=6?"#CADCE8":"#2F6586",borderRadius:11,width:38,height:38,cursor:giornoView>=6?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <i className="ti ti-chevron-right" style={{fontSize:18}}/>
+          </button>
+        </div>
+      )}
 
       <button onClick={condividiMenu}
         style={{width:"100%",padding:"12px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#E2EEF5",
@@ -6479,7 +6499,7 @@ function MenuView(props) {
       )}
 
       {DAYS.map(function(d, i){
-        if(soloOggi && i !== oggiIdxM) return null;
+        if(soloOggi && i !== giornoView) return null;
         var data = new Date(lun.getTime()); data.setDate(lun.getDate()+i);
         var pranzo = nomePasto(d, "Pranzo");
         var cena = nomePasto(d, "Cena");
