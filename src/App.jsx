@@ -6354,6 +6354,10 @@ function MenuView(props) {
   var familyId = props.familyId;
   var soloOggi = !!props.soloOggi;
   var oggiIdxM = (new Date().getDay()+6)%7;
+  var preferiti = props.preferiti || {};
+  var setPreferiti = props.setPreferiti || function(){};
+  function isPref(nome){ return !!(nome && preferiti[(""+nome).trim()]); }
+  function togglePref(nome){ nome = (""+(nome||"")).trim(); if(!nome) return; setPreferiti(function(prev){ var m = Object.assign({}, prev||{}); if(m[nome]) delete m[nome]; else m[nome] = true; return m; }); }
   var vals = Object.values(profili);
 
   var s_shareMsg = useState(""); var shareMsg = s_shareMsg[0]; var setShareMsg = s_shareMsg[1];
@@ -6469,7 +6473,7 @@ function MenuView(props) {
       </button>
       {shareMsg&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{shareMsg}</div>}
 
-      {vals.length>0&&(
+      {vals.length>0 && !soloOggi && (
         <div>
           <div className="cap" style={{marginBottom:8}}>Vista: famiglia o singolo membro</div>
           <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:2}}>
@@ -6509,15 +6513,16 @@ function MenuView(props) {
         var miaStato = mia ? mia.stato : null;
         var altri = vals.filter(function(p){ var r = getReaz(d, p.id); return r && r.stato; });
         var osp = getOspRec(d); var nOsp = osp.n;
+        var pasti = [{l:"Pranzo",ic:"ti-sun",nome:pranzo},{l:"Cena",ic:"ti-moon",nome:cena}].filter(function(x){ return x.nome; });
         return (
           <div key={d} className="mf-card" style={{padding:"13px 15px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:vuoto?0:2}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
               <div style={{width:40}}>
                 <div style={{fontSize:14,fontWeight:800,color:vuoto?"#8A949B":"#2C3338"}}>{GIORNI_ABBR[i]}</div>
                 <div style={{fontSize:11,color:"#8A949B"}}>{data.getDate()}</div>
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:14,fontWeight:600,color:vuoto?"#8A949B":"#2C3338"}}>{vuoto ? "Da pianificare" : piatti}</div>
+                {vuoto ? <div style={{fontSize:14,fontWeight:600,color:"#8A949B"}}>Da pianificare</div> : null}
               </div>
               <button onClick={function(){ setTab("builder"); }}
                 style={{border:"none",background:"transparent",color:"#2F6586",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>
@@ -6525,35 +6530,50 @@ function MenuView(props) {
               </button>
             </div>
 
-            {membro&&(
-              <div style={{display:"flex",gap:6,marginTop:10}}>
-                {REAZIONI.map(function(rz){
-                  var on = miaStato === rz.id;
+            {pasti.map(function(pt){
+              return (
+                <div key={pt.l} style={{display:"flex",alignItems:"center",gap:9,marginTop:8}}>
+                  <div style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}><i className={"ti "+pt.ic}/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".03em"}}>{pt.l}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>{pt.nome}</div>
+                  </div>
+                  <i className={"ti "+(isPref(pt.nome)?"ti-star-filled":"ti-star")} onClick={function(){ togglePref(pt.nome); }}
+                    style={{fontSize:20,color:isPref(pt.nome)?"#2F6586":"#CADCE8",cursor:"pointer",flexShrink:0}}/>
+                </div>
+              );
+            })}
+
+            {vals.length>0 && !vuoto && (
+              <div style={{marginTop:12,paddingTop:11,borderTop:"1px solid #F1F4F6"}}>
+                <div className="cap" style={{marginBottom:8}}>Cosa ne pensa la famiglia</div>
+                {vals.map(function(p){
+                  var r = getReaz(d, p.id); var st = r ? r.stato : null;
+                  var col = p.colore || "#6BA6C9";
+                  var ini = (p.nome ? p.nome.slice(0,1) : "?").toUpperCase();
                   return (
-                    <button key={rz.id} onClick={function(){
-                        if(rz.id==="modifica"){ setReaz(d, mkey, "modifica"); setEditDay(d); setNotaVal((mia&&mia.nota)||""); }
-                        else { setReaz(d, mkey, rz.id); if(editDay===d) setEditDay(""); }
-                      }}
-                      style={{flex:1,padding:"8px 4px",borderRadius:11,cursor:"pointer",
-                        border:"1.5px solid "+(on?rz.c:"#E3EAEE"),background:on?rz.bg:"#fff",
-                        color:on?rz.c:"#8A949B",fontSize:12,fontWeight:on?800:600,
-                        display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-                        fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                      <i className={"ti "+rz.ic} style={{fontSize:14}}/>{rz.l}
-                    </button>
+                    <div key={p.id} style={{marginBottom:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{width:26,height:26,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</span>
+                        <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</span>
+                        {REAZIONI.map(function(rz){
+                          var on = st === rz.id;
+                          return (
+                            <button key={rz.id} onClick={function(){ setReaz(d, p.id, rz.id); }}
+                              style={{width:34,height:34,borderRadius:10,cursor:"pointer",border:"1.5px solid "+(on?rz.c:"#E3EAEE"),background:on?rz.bg:"#fff",color:on?rz.c:"#B4BEC4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                              <i className={"ti "+rz.ic}/>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {st==="modifica" && (
+                        <input defaultValue={(r&&r.nota)||""} placeholder="Cosa cambieresti?"
+                          onBlur={function(e){ setReaz(d, p.id, "modifica", e.target.value); }}
+                          style={{width:"100%",marginTop:6,padding:"8px 11px",borderRadius:10,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",boxSizing:"border-box"}}/>
+                      )}
+                    </div>
                   );
                 })}
-              </div>
-            )}
-
-            {membro&&miaStato==="modifica"&&editDay===d&&(
-              <div style={{display:"flex",gap:6,marginTop:8}}>
-                <input autoFocus placeholder="Cosa cambieresti?" value={notaVal}
-                  onChange={function(e){ setNotaVal(e.target.value); }}
-                  onKeyDown={function(e){ if(e.key==="Enter"){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); } }}
-                  style={{flex:1,padding:"9px 11px",borderRadius:11,border:"1.5px solid #E3EAEE",fontSize:13,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-                <button onClick={function(){ setReaz(d, mkey, "modifica", notaVal.trim()); setEditDay(""); }}
-                  style={{padding:"9px 14px",borderRadius:11,border:"none",background:"#2F6586",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>OK</button>
               </div>
             )}
 
@@ -10256,7 +10276,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, preferiti:setPreferiti, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -10303,7 +10323,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, preferiti:preferiti, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -10429,6 +10449,7 @@ export default function App() {
   const [piani, setPiani] = useState(loadLS("piani", {}));
   const [medicine, setMedicine] = useState(loadLS("medicine", {}));
   const [noteGiorno, setNoteGiorno] = useState(loadLS("noteGiorno", {}));
+  const [preferiti, setPreferiti] = useState(loadLS("preferiti", {}));
   const [ricetteIG, setRicetteIG] = useState(loadLS("ricetteIG", []));
   const [pagineIG, setPagineIG] = useState(loadLS("pagineIG", [
     {id:"p1", nome:"Giallo Zafferano", handle:"giallozafferano", url:"https://www.instagram.com/giallozafferano/"},
@@ -10556,6 +10577,7 @@ export default function App() {
   var setPianiLS              = mkSetterSync("piani", setPiani);
   var setMedicineLS           = mkSetterSync("medicine", setMedicine);
   var setNoteGiornoLS         = mkSetterSync("noteGiorno", setNoteGiorno);
+  var setPreferitiLS          = mkSetterSync("preferiti", setPreferiti);
   var setRicetteIGLS          = mkSetterSync("ricetteIG", setRicetteIG);
   var setPagineIGLS           = mkSetterSync("pagineIG", setPagineIG);
   var setPinLS                = mkSetter("pin", setPin);
@@ -10829,7 +10851,8 @@ export default function App() {
             <div style={{borderTop:"1px solid #E3EAEE",paddingTop:4}}/>
             <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
               profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
-              ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId} soloOggi={true}/>
+              ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId} soloOggi={true}
+              preferiti={preferiti} setPreferiti={setPreferitiLS}/>
           </div>
         )}
         {tab==="mensa" && (
