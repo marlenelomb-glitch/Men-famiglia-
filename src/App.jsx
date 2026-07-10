@@ -6430,7 +6430,10 @@ function MenuView(props) {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
-        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Menu</div>
+        <div>
+          <div style={{fontSize:20,fontWeight:800,letterSpacing:"-0.01em"}}>Menu e voti</div>
+          <div style={{fontSize:12,color:"#8A949B"}}>La settimana e cosa ne pensa la famiglia</div>
+        </div>
         <span style={{fontSize:13,color:"#2F6586",fontWeight:700}}>
           <i className="ti ti-calendar" style={{verticalAlign:"-2px",marginRight:4}}/>{range}
         </span>
@@ -10438,7 +10441,6 @@ export default function App() {
 
   const TABS = [
     {id:"home",        l:"Home",     ic:"ti-home"},
-    {id:"menu",        l:"Menu",     ic:"ti-calendar"},
     {id:"diario",      l:"Diario",   ic:"ti-chart-bar"},
     {id:"salute",      l:"Salute",   ic:"ti-heart-rate-monitor"},
     {id:"dispensa",    l:"Dispensa", ic:"ti-fridge"},
@@ -10457,7 +10459,6 @@ export default function App() {
     {id:"salute",      l:"Famiglia",      ic:"ti-users",              s:"Profili, pesi e crescita"},
     {id:"piramide",    l:"Piramide",      ic:"ti-pyramid",            s:"Porzioni consigliate"},
     {id:"dispensa",    l:"Dispensa",      ic:"ti-fridge",             s:"Scorte alimentari"},
-    {id:"spesa",       l:"Lista spesa",   ic:"ti-shopping-bag",       s:"Cosa comprare, per categorie"},
     {id:"mensa",       l:"Menu e diete",   ic:"ti-school",             s:"Mensa o dieta di un membro"},
     {id:"amici",       l:"Amici",          ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
     {id:"medicine",    l:"Medicine",       ic:"ti-pill",               s:"Dosi e frequenza per membro"},
@@ -10798,14 +10799,15 @@ export default function App() {
             mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}
             medicine={medicine} setMedicine={setMedicineLS} noteGiorno={noteGiorno} setNoteGiorno={setNoteGiornoLS}/>
         )}
-        {tab==="menu" && (
-          <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
-            profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
-            ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId}/>
-        )}
         {tab==="diario" && (
-          <DiarioView menu={menu} builder={builderScelte} profili={profili}
-            diario={diarioLog} setDiario={setDiarioLogLS}/>
+          <div style={{display:"flex",flexDirection:"column",gap:18}}>
+            <DiarioView menu={menu} builder={builderScelte} profili={profili}
+              diario={diarioLog} setDiario={setDiarioLogLS}/>
+            <div style={{borderTop:"1px solid #E3EAEE",paddingTop:4}}/>
+            <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
+              profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
+              ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId}/>
+          </div>
         )}
         {tab==="mensa" && (
           <PianiView piani={piani} setPiani={setPianiLS} profili={profili}/>
@@ -10880,8 +10882,8 @@ export default function App() {
         <button className={"tab"+(tab==="home"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("home");}}>
           <i className="ti ti-home"/>Home
         </button>
-        <button className={"tab"+(tab==="menu"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("menu");}}>
-          <i className="ti ti-tools-kitchen-2"/>Menu
+        <button className={"tab"+(tab==="spesa"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("spesa");}}>
+          <i className="ti ti-shopping-bag"/>Spesa
         </button>
         <button className={"tab"+(tab==="builder"?" on":"")} onClick={function(){setSheetOpen(false);handleSetTab("builder");}}>
           <span className="fab"><i className="ti ti-layout-grid-add"/></span>
