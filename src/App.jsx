@@ -8212,6 +8212,8 @@ function HomeView(props) {
   var oggiIso = isoDay(new Date());
   var sNoteDraft = useState({}); var noteDraft = sNoteDraft[0]; var setNoteDraft = sNoteDraft[1];
   var sMembSel = useState(""); var membSel = sMembSel[0]; var setMembSel = sMembSel[1];
+  var sSpesaOff = useState(0); var spesaOff = sSpesaOff[0]; var setSpesaOff = sSpesaOff[1];
+  var sExpBil = useState({}); var expBil = sExpBil[0]; var setExpBil = sExpBil[1];
 
   var GIORNI_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var GIORNI_SHORT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -8327,37 +8329,48 @@ function HomeView(props) {
     return "tra " + n + " giorni";
   }
 
-  var mancantiOggi = [];
-  [{m:"Pranzo",l:"il pranzo"},{m:"Cena",l:"la cena"}].forEach(function(pp){
-    var s = builder[gOggi+"-"+pp.m]; if(!s) return;
-    var nomi = [];
-    if(s.piattoUnico && s.piattoUnico.riconosciuti && s.piattoUnico.riconosciuti.length) {
-      s.piattoUnico.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); });
-    }
-    ["proteina","carbo","verdura","verdura2"].forEach(function(k){
-      var id = s[k]; if(!id) return; var it = ingById(id); if(it && it.nome) nomi.push(it.nome);
-    });
-    ((s.piu)||[]).forEach(function(d){
-      if(d && d.riconosciuti && d.riconosciuti.length) { d.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); }); }
-      else if(d && d.nome && (""+d.nome).trim()) { nomi.push((""+d.nome).trim()); }
-    });
-    nomi.forEach(function(nome){
-      var low = (""+nome).toLowerCase();
-      var inDisp = dispensa.some(function(d){
-        if(!d || !d.nome) return false;
-        var dn = (""+d.nome).toLowerCase();
-        return dn.indexOf(low) >= 0 || low.indexOf(dn) >= 0;
+  function calcMancanti(gFull) {
+    var out = [];
+    [{m:"Pranzo",l:"il pranzo"},{m:"Cena",l:"la cena"}].forEach(function(pp){
+      var s = builder[gFull+"-"+pp.m]; if(!s) return;
+      var nomi = [];
+      if(s.piattoUnico && s.piattoUnico.riconosciuti && s.piattoUnico.riconosciuti.length) {
+        s.piattoUnico.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); });
+      }
+      ["proteina","carbo","verdura","verdura2"].forEach(function(k){
+        var id = s[k]; if(!id) return; var it = ingById(id); if(it && it.nome) nomi.push(it.nome);
       });
-      var gia = mancantiOggi.some(function(x){ return x.nome === nome; });
-      if(!inDisp && !gia) mancantiOggi.push({nome:nome, pasto:pp.l});
+      ((s.piu)||[]).forEach(function(d){
+        if(d && d.riconosciuti && d.riconosciuti.length) { d.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); }); }
+        else if(d && d.nome && (""+d.nome).trim()) { nomi.push((""+d.nome).trim()); }
+      });
+      nomi.forEach(function(nome){
+        var low = (""+nome).toLowerCase();
+        var inDisp = dispensa.some(function(d){
+          if(!d || !d.nome) return false;
+          var dn = (""+d.nome).toLowerCase();
+          return dn.indexOf(low) >= 0 || low.indexOf(dn) >= 0;
+        });
+        var gia = out.some(function(x){ return x.nome === nome; });
+        if(!inDisp && !gia) out.push({nome:nome, pasto:pp.l});
+      });
     });
-  });
-  mancantiOggi = mancantiOggi.slice(0,5);
+    return out.slice(0,6);
+  }
+  var spesaOffEff = spesaOff < 0 ? 0 : (spesaOff > 6 ? 6 : spesaOff);
+  var gSel = GIORNI_FULL[(todayIdx + spesaOffEff) % 7];
+  var mancantiSel = calcMancanti(gSel);
+  function labelGiornoOff(d) {
+    if(d === 0) return "oggi";
+    if(d === 1) return "domani";
+    var dt = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
+    return giorniLabel[dt.getDay()] + " " + dt.getDate() + " " + mesiAbbr[dt.getMonth()];
+  }
 
   function aggiungiSpesa() {
     setSpesa(function(prev){
       var arr = normSpesa(prev);
-      mancantiOggi.forEach(function(mm){
+      mancantiSel.forEach(function(mm){
         var low = mm.nome.toLowerCase();
         var gia = arr.some(function(x){ return (""+x.nome).toLowerCase() === low; });
         if(!gia) arr.push({nome:mm.nome, cat:catDaParola(mm.nome), fatto:false});
@@ -8681,25 +8694,39 @@ function HomeView(props) {
         </div>
       )}
 
-      {mancantiOggi.length > 0 && (
-        <div style={warmCardStyle}>
-          <div style={ctWarm}><i className="ti ti-shopping-cart" style={{color:"#8A5A12",fontSize:15}}/>Ti serve per oggi</div>
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {mancantiOggi.map(function(mm, i){
-              return (
-                <div key={i} style={warnRow}>
-                  <i className="ti ti-basket"/>
-                  <span>Manca <b>{mm.nome}</b> per {mm.pasto}</span>
-                </div>
-              );
-            })}
-          </div>
-          <button onClick={aggiungiSpesa}
-            style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:11,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",marginTop:10,cursor:"pointer"}}>
-            <i className="ti ti-plus"/>Aggiungi alla lista della spesa
+      <div style={warmCardStyle}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:11}}>
+          <div style={Object.assign({},ctWarm,{marginBottom:0,flex:1})}><i className="ti ti-shopping-cart" style={{color:"#8A5A12",fontSize:15}}/>Ti serve per {labelGiornoOff(spesaOffEff)}</div>
+          <button onClick={function(){ if(spesaOffEff>0) setSpesaOff(spesaOffEff-1); }} disabled={spesaOffEff<=0}
+            style={{width:30,height:30,borderRadius:"50%",border:"1.5px solid #E8D5AE",background:spesaOffEff<=0?"#FBF5E8":"#fff",color:spesaOffEff<=0?"#D9C89E":"#8A5A12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,cursor:spesaOffEff<=0?"default":"pointer",fontFamily:"'Nunito',system-ui,sans-serif",flexShrink:0}}>
+            <i className="ti ti-chevron-left"/>
+          </button>
+          <button onClick={function(){ if(spesaOffEff<6) setSpesaOff(spesaOffEff+1); }} disabled={spesaOffEff>=6}
+            style={{width:30,height:30,borderRadius:"50%",border:"1.5px solid #E8D5AE",background:spesaOffEff>=6?"#FBF5E8":"#fff",color:spesaOffEff>=6?"#D9C89E":"#8A5A12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,cursor:spesaOffEff>=6?"default":"pointer",fontFamily:"'Nunito',system-ui,sans-serif",flexShrink:0}}>
+            <i className="ti ti-chevron-right"/>
           </button>
         </div>
-      )}
+        {mancantiSel.length > 0 ? (
+          <div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {mancantiSel.map(function(mm, i){
+                return (
+                  <div key={i} style={warnRow}>
+                    <i className="ti ti-basket"/>
+                    <span>Manca <b>{mm.nome}</b> per {mm.pasto}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={aggiungiSpesa}
+              style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:12,padding:11,fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",marginTop:10,cursor:"pointer"}}>
+              <i className="ti ti-plus"/>Aggiungi alla lista della spesa
+            </button>
+          </div>
+        ) : (
+          <div style={{fontSize:12,color:"#8A5A12",fontWeight:600}}>Per {labelGiornoOff(spesaOffEff)} hai già tutto in casa, oppure il menu è ancora da pianificare.</div>
+        )}
+      </div>
 
       <div style={cardStyle}>
         <div style={ctStyle}><i className="ti ti-sparkles" style={{color:"#2F6586",fontSize:15}}/>In breve questa settimana</div>
@@ -8733,47 +8760,58 @@ function HomeView(props) {
           var warns = bilanciWarn(b);
           var wtxt = warns.join(", "); wtxt = wtxt.charAt(0).toUpperCase() + wtxt.slice(1);
           var pat = pid === "_tutti" ? null : patologiaMembro(p);
+          var aperto = !!expBil[pid];
           return (
             <div key={pid} style={{paddingTop:idx>0?11:0,marginTop:idx>0?11:0,borderTop:idx>0?"1px solid #F1F4F6":"none"}}>
-              <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
+              <div onClick={function(){ setExpBil(function(prev){ var m = Object.assign({}, prev); m[pid] = !m[pid]; return m; }); }}
+                style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
                 <div style={{width:24,height:24,borderRadius:"50%",background:col,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>{ini}</div>
                 <div style={{fontSize:13,fontWeight:800}}>{p.nome || "—"}</div>
+                {warns.length > 0 && !aperto ? (
+                  <span style={{width:8,height:8,borderRadius:"50%",background:"#8A5A12",flexShrink:0}}/>
+                ) : null}
                 {pat ? (
                   <span style={{marginLeft:"auto",fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:20,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",gap:4}}>
                     <i className="ti ti-stethoscope" style={{fontSize:11}}/>{pat}
                   </span>
                 ) : null}
+                <i className={"ti "+(aperto?"ti-chevron-up":"ti-chevron-down")} style={{marginLeft:pat?9:"auto",color:"#8A949B",fontSize:16,flexShrink:0}}/>
               </div>
-              {b.pasti === 0 ? (
-                <div style={{fontSize:12,color:"#8A949B",fontWeight:600}}>Mangia sempre fuori casa questa settimana</div>
-              ) : (
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {protCats.map(function(c){
-                    var n = b[c.key];
-                    var evid = c.key === "carne" && warns.indexOf("troppa carne") >= 0;
-                    return (
-                      <span key={c.key} style={{display:"inline-flex",alignItems:"center",gap:5,background:evid?"#F6ECD9":"#E2EEF5",color:evid?"#8A5A12":"#2F6586",borderRadius:20,padding:"5px 10px",fontSize:12,fontWeight:700}}>
-                        <i className={"ti "+c.ic} style={{fontSize:13}}/>{c.label} {n}
+              {aperto ? (
+                <div style={{marginTop:9}}>
+                  {b.pasti === 0 ? (
+                    <div style={{fontSize:12,color:"#8A949B",fontWeight:600}}>Mangia sempre fuori casa questa settimana</div>
+                  ) : (
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {protCats.map(function(c){
+                        var n = b[c.key];
+                        var evid = c.key === "carne" && warns.indexOf("troppa carne") >= 0;
+                        return (
+                          <span key={c.key} style={{display:"inline-flex",alignItems:"center",gap:5,background:evid?"#F6ECD9":"#E2EEF5",color:evid?"#8A5A12":"#2F6586",borderRadius:20,padding:"5px 10px",fontSize:12,fontWeight:700}}>
+                            <i className={"ti "+c.ic} style={{fontSize:13}}/>{c.label} {n}
+                          </span>
+                        );
+                      })}
+                      <span style={{display:"inline-flex",alignItems:"center",gap:5,background:(warns.indexOf("poca verdura")>=0)?"#F6ECD9":"#E2EEF5",color:(warns.indexOf("poca verdura")>=0)?"#8A5A12":"#2F6586",borderRadius:20,padding:"5px 10px",fontSize:12,fontWeight:700}}>
+                        <i className="ti ti-salad" style={{fontSize:13}}/>Verdura {b.verdura}
                       </span>
-                    );
-                  })}
-                  <span style={{display:"inline-flex",alignItems:"center",gap:5,background:(warns.indexOf("poca verdura")>=0)?"#F6ECD9":"#E2EEF5",color:(warns.indexOf("poca verdura")>=0)?"#8A5A12":"#2F6586",borderRadius:20,padding:"5px 10px",fontSize:12,fontWeight:700}}>
-                    <i className="ti ti-salad" style={{fontSize:13}}/>Verdura {b.verdura}
-                  </span>
+                    </div>
+                  )}
+                  {warns.length > 0 ? (
+                    <div style={Object.assign({},warnRow,{marginTop:8})}>
+                      <i className="ti ti-alert-triangle"/>
+                      <span>{wtxt} questa settimana</span>
+                    </div>
+                  ) : null}
+                  {pat ? (
+                    <div style={{fontSize:10,color:"#8A949B",marginTop:7}}>La condizione «{pat}» vale anche quando mangia fuori casa.</div>
+                  ) : null}
                 </div>
-              )}
-              {warns.length > 0 ? (
-                <div style={Object.assign({},warnRow,{marginTop:8})}>
-                  <i className="ti ti-alert-triangle"/>
-                  <span>{wtxt} questa settimana</span>
-                </div>
-              ) : null}
-              {pat ? (
-                <div style={{fontSize:10,color:"#8A949B",marginTop:7}}>La condizione «{pat}» vale anche quando mangia fuori casa.</div>
               ) : null}
             </div>
           );
         })}
+        <div style={{fontSize:10,color:"#8A949B",marginTop:10}}>Tocca un membro per vedere il suo equilibrio della settimana.</div>
       </div>
 
       {(prepScad.length > 0 || dispScad.length > 0) && (
