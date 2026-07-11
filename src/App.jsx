@@ -2941,6 +2941,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   var sMod=useState(false); var showModelli=sMod[0]; var setShowModelli=sMod[1];
   var sModN=useState(""); var modNome=sModN[0]; var setModNome=sModN[1];
   var sScanNA=useState(false); var showScanNA=sScanNA[0]; var setShowScanNA=sScanNA[1];
+  var sVistaB=useState((function(){ try{ var v=localStorage.getItem("mf_builderVista"); return v?JSON.parse(v):"scorri"; }catch(e){ return "scorri"; } })());
+  var vistaB=sVistaB[0]; var setVistaBraw=sVistaB[1];
+  function setVistaB(v){ setVistaBraw(v); try{ localStorage.setItem("mf_builderVista", JSON.stringify(v)); }catch(e){} }
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3416,7 +3419,24 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
             </div>
           ):null}
 
-          <div style={{display:"grid",gridTemplateColumns:"16px repeat(7,1fr)",gap:5,alignItems:"stretch",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",marginRight:"auto",letterSpacing:".04em"}}>Come vedere la settimana</span>
+            <div style={{display:"flex",background:"#E2EEF5",borderRadius:10,padding:3}}>
+              <button onClick={function(){ setVistaB("scorri"); }}
+                style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
+                  background:vistaB==="scorri"?"#fff":"transparent",color:vistaB==="scorri"?"#2F6586":"#7C93A3",boxShadow:vistaB==="scorri"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
+                <i className="ti ti-arrows-horizontal" style={{fontSize:14}}/>Giorni
+              </button>
+              <button onClick={function(){ setVistaB("griglia"); }}
+                style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
+                  background:vistaB==="griglia"?"#fff":"transparent",color:vistaB==="griglia"?"#2F6586":"#7C93A3",boxShadow:vistaB==="griglia"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
+                <i className="ti ti-layout-grid" style={{fontSize:14}}/>Griglia
+              </button>
+            </div>
+          </div>
+
+          <div style={vistaB==="scorri"?{overflowX:"auto",WebkitOverflowScrolling:"touch",margin:"0 -2px",paddingBottom:6}:{}}>
+          <div style={{display:"grid",gridTemplateColumns:vistaB==="scorri"?"20px repeat(7,98px)":"16px repeat(7,1fr)",gap:vistaB==="scorri"?7:5,alignItems:"stretch",marginBottom:8,minWidth:vistaB==="scorri"?"max-content":"auto"}}>
             {(function(){
               var items=[];
               items.push(<div key="corner"/>);
@@ -3474,6 +3494,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               return items;
             })()}
           </div>
+          </div>
+
+          {vistaB==="scorri" ? (
+            <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"0 4px 6px",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+              <i className="ti ti-arrow-right" style={{fontSize:13}}/>Scorri di lato per gli altri giorni
+            </div>
+          ) : null}
 
           {(settB===0 && oggiIdxB>0) ? (
             <div style={{fontSize:10,color:"#2F6586",textAlign:"center",padding:"2px 4px 8px",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
