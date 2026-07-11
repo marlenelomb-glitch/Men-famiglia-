@@ -8221,6 +8221,7 @@ function HomeView(props) {
   var sMembSel = useState(""); var membSel = sMembSel[0]; var setMembSel = sMembSel[1];
   var sSpesaOff = useState(0); var spesaOff = sSpesaOff[0]; var setSpesaOff = sSpesaOff[1];
   var sExpBil = useState({}); var expBil = sExpBil[0]; var setExpBil = sExpBil[1];
+  var sVediSett = useState(false); var vediSett = sVediSett[0]; var setVediSett = sVediSett[1];
 
   var GIORNI_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var GIORNI_SHORT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -8735,6 +8736,17 @@ function HomeView(props) {
         )}
       </div>
 
+      <div onClick={function(){ setVediSett(function(v){ return !v; }); }}
+        style={Object.assign({},cardStyle,{cursor:"pointer",display:"flex",alignItems:"center",gap:8})}>
+        <i className="ti ti-chart-histogram" style={{color:"#2F6586",fontSize:16,flexShrink:0}}/>
+        <div style={{fontSize:13,fontWeight:800,color:"#2C3338"}}>Com'è la settimana</div>
+        {!vediSett ? (
+          <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>riepilogo ed equilibrio</div>
+        ) : null}
+        <i className={"ti "+(vediSett?"ti-chevron-up":"ti-chevron-down")} style={{marginLeft:"auto",color:"#8A949B",fontSize:17,flexShrink:0}}/>
+      </div>
+      {vediSett ? (
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={cardStyle}>
         <div style={ctStyle}><i className="ti ti-sparkles" style={{color:"#2F6586",fontSize:15}}/>In breve questa settimana</div>
         {riepilogo.pastiFam === 0 ? (
@@ -8820,6 +8832,8 @@ function HomeView(props) {
         })}
         <div style={{fontSize:10,color:"#8A949B",marginTop:10}}>Tocca un membro per vedere il suo equilibrio della settimana.</div>
       </div>
+      </div>
+      ) : null}
 
       {(prepScad.length > 0 || dispScad.length > 0) && (
         <div style={warmCardStyle}>
