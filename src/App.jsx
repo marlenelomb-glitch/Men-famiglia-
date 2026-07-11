@@ -2902,7 +2902,7 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, modelliMenu, setModelliMenu, onSavePasto}) {
+function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, modelliMenu, setModelliMenu, onSavePasto, onApriMensa}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var giorniFuoriB = giorniFuori || {};
   var toggleFuoriB = toggleFuori || function(){};
@@ -3509,6 +3509,13 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               <i className="ti ti-repeat" style={{fontSize:16}}/>Riusa un menu
             </button>
           </div>
+          {onApriMensa ? (
+            <button onClick={function(){ onApriMensa(); }}
+              style={{width:"100%",marginTop:8,border:"1px dashed #CADCE8",background:"#F2F6F8",color:"#2F6586",borderRadius:12,padding:"10px 12px",
+                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
+              <i className="ti ti-school" style={{fontSize:15}}/>Imposta il menu della mensa
+            </button>
+          ) : null}
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
 
           {showModelli && (
@@ -7169,7 +7176,7 @@ function HubTabs(props) {
 }
 
 function SaluteHub(props) {
-  var s = useState("famiglia"); var seg = s[0]; var setSeg = s[1];
+  var s = useState(props.segInit || "famiglia"); var seg = s[0]; var setSeg = s[1];
   var SEGS = [
     {id:"famiglia", l:"Famiglia", ic:"ti-users"},
     {id:"diete",    l:"Diete",    ic:"ti-school"},
@@ -9499,6 +9506,8 @@ export default function App() {
     if(t !== "menu") setAutoGeneraMenu(false);
     setTab(t);
   };
+  var sFamSeg = useState("famiglia"); var famigliaSeg = sFamSeg[0]; var setFamigliaSeg = sFamSeg[1];
+  function apriMensa() { setFamigliaSeg("diete"); handleSetTab("famiglia"); }
   const isAdmin = !!(utente && utente.email && utente.email.toLowerCase() === "marlene.lomb@gmail.com");
   const [settimana, setSettimana] = useState(0);
   const [activeDay, setActiveDay] = useState(0);
@@ -9937,7 +9946,7 @@ export default function App() {
           <SaluteView profili={profili} setProfili={setProfili} setTab={handleSetTab} pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}/>
         )}
         {tab==="famiglia" && (
-          <SaluteHub profili={profili} setProfili={setProfili} setTab={handleSetTab}
+          <SaluteHub segInit={famigliaSeg} profili={profili} setProfili={setProfili} setTab={handleSetTab}
             pesoLog={pesoLog} setPesoLog={setPesoLog} onSavePeso={savePesoToSupabase} onDeletePeso={deletePesoFromSupabase} onSaveObiettivo={salvaObiettivoPeso}
             piani={piani} setPiani={setPianiLS} medicine={medicine} setMedicine={setMedicineLS}/>
         )}
@@ -9993,7 +10002,7 @@ export default function App() {
             alimentiCustom={alimentiCustom} setAlimentiCustom={setAlimentiCustomLS}
             giorniFuori={giorniFuori} toggleFuori={toggleFuori} piani={piani}
             modelliMenu={modelliMenu} setModelliMenu={setModelliMenuLS}
-            onSavePasto={savePastoToSupabase}/>
+            onSavePasto={savePastoToSupabase} onApriMensa={apriMensa}/>
         )}
         {tab==="ai" && (
           <AssistenteAI profili={profili} familyId={familyId}/>
@@ -10029,7 +10038,7 @@ export default function App() {
               {SHEET_ITEMS.map(function(it){
                 return (
                   <div key={it.id} className="mf-row" style={{cursor:"pointer"}}
-                    onClick={function(){ setSheetOpen(false); handleSetTab(it.id); }}>
+                    onClick={function(){ setSheetOpen(false); if(it.id==="famiglia") setFamigliaSeg("famiglia"); handleSetTab(it.id); }}>
                     <div className="mf-ic"><i className={"ti "+it.ic}/></div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:14,fontWeight:600}}>{it.l}</div>
