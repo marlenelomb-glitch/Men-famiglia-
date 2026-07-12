@@ -4118,6 +4118,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   </div>
                 </div>
                 <div style={{overflowY:"auto",padding:"8px 16px 24px"}}>
+                  {!nuovoAl && (
+                    <button onClick={function(){ setNuovoAl({cat:"carne"}); setShowScanNA(true); }}
+                      style={{width:"100%",marginBottom:10,border:"1.5px solid #6BA6C9",background:"#EBF3FA",color:"#2F6586",borderRadius:12,padding:"11px",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                      <i className="ti ti-barcode" style={{fontSize:16}}/>Scansiona un prodotto
+                    </button>
+                  )}
                   {sceltaG[picker.campo]&&(
                     <div onClick={function(){ setCampoG(picker.campo, null); setPicker(null); }}
                       style={{display:"flex",alignItems:"center",gap:10,padding:"11px 4px",cursor:"pointer",color:"#C2355A",fontWeight:700,fontSize:14}}>
