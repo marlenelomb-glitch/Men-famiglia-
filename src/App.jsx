@@ -3128,6 +3128,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   function setPiuNome(i, val) { mutaPiu(function(a){ if(a[i]) a[i].nome = val; }); }
   function riconosciPiu(i) { mutaPiu(function(a){ if(!a[i]) return; var r = riconosciPasto(a[i].nome); a[i].riconosciuti = r.items.length ? r.items : []; }); }
   function piuValidi(s) { return ((s&&s.piu)||[]).filter(function(x){ return x && x.nome && (""+x.nome).trim(); }); }
+  function altriValidi(s) { return ((s&&s.piattoUnico&&s.piattoUnico.altri)||[]).filter(function(d){ return d && (""+(d.nome||"")).trim() && (d.membri||[]).length>0; }); }
   function addPiatto() { mutaPU(function(pu){ pu.altri.push({nome:"", kcal:"", prot:"", membri:[]}); }); }
   function removeAltro(i) { mutaPU(function(pu){ pu.altri.splice(i,1); }); }
   function setAltroField(i, field, val) { mutaPU(function(pu){ if(!pu.altri[i]) return; pu.altri[i] = Object.assign({}, pu.altri[i]); pu.altri[i][field] = val; }); }
@@ -3496,6 +3497,9 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                       )}
                       {piuValidi(s).length>0 ? (
                         <div style={{fontSize:8,fontWeight:800,color:"#2F6586",background:"#E2EEF5",borderRadius:8,padding:"1px 6px",marginTop:1}}>+{piuValidi(s).length}</div>
+                      ) : null}
+                      {altriValidi(s).length>0 ? (
+                        <div style={{fontSize:8,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:8,padding:"1px 6px",marginTop:1,display:"flex",alignItems:"center",gap:3}}><i className="ti ti-user" style={{fontSize:9}}/>{altriValidi(s).length}</div>
                       ) : null}
                     </div>
                   );
@@ -4106,7 +4110,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
               <i className="ti ti-x" onClick={function(){ setPicker(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer",flexShrink:0}}/>
             </div>
             <div style={{display:"flex",gap:7,padding:"0 18px 8px"}}>
-              {[{k:"componi",ic:"ti-layout-list",t:"Componi"},{k:"completo",ic:"ti-tools-kitchen-2",t:"Piatto completo"}].map(function(tb){
+              {[{k:"componi",ic:"ti-layout-list",t:"Componi"},{k:"completo",ic:"ti-tools-kitchen-2",t:"Completo"},{k:"persona",ic:"ti-user",t:"Persona"}].map(function(tb){
                 var on=sheetTab===tb.k;
                 return <button key={tb.k} onClick={function(){ setSheetTab(tb.k); }}
                   style={{flex:1,border:"1.5px solid "+(on?"#E2EEF5":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",
@@ -4243,7 +4247,43 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                   })()}
                 </div>
               </>
-            ):(
+            ): sheetTab==="persona" ? (
+              <div style={{overflowY:"auto",padding:"6px 16px 24px",display:"flex",flexDirection:"column",gap:11}}>
+                <div style={{fontSize:12,color:"#8A949B",fontWeight:600,lineHeight:1.45}}>Il pasto è per tutta la famiglia. Qui aggiungi un <b style={{color:"#2C3338"}}>piatto diverso</b> solo per chi ti serve (es. il bimbo aproteico). Chi non è segnato mangia il pasto base.</div>
+                {((puG.altri)||[]).length===0 ? (
+                  <div style={{fontSize:12,color:"#B4BEC4",fontWeight:600,textAlign:"center",padding:"4px 0"}}>Nessuna eccezione: mangiano tutti il pasto base.</div>
+                ) : null}
+                {((puG.altri)||[]).map(function(d,i){
+                  return (
+                    <div key={i} style={{border:"1.5px solid #E3EAEE",borderRadius:13,padding:"11px 12px",display:"flex",flexDirection:"column",gap:9}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:11,fontWeight:800,color:"#2F6586",flex:1,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-user" style={{fontSize:14}}/>Piatto diverso {i+1}</span>
+                        <i className="ti ti-trash" onClick={function(){ removeAltro(i); }} style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
+                      </div>
+                      <input value={d.nome||""} onChange={function(e){ setAltroField(i,"nome",e.target.value); }} onBlur={function(){ riconosciAltro(i); }} onKeyDown={function(e){ if(e.key==="Enter"){ e.target.blur(); } }}
+                        placeholder="Es. Pasta aproteica al pomodoro"
+                        style={{padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                      <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Chi lo mangia</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {Object.keys(profili||{}).map(function(pid){
+                          var p=profili[pid]||{}; var on=(d.membri||[]).indexOf(pid)>=0;
+                          return <button key={pid} onClick={function(){ toggleAltroMembro(i,pid); }}
+                            style={{border:"1.5px solid "+(on?(p.colore||"#2F6586"):"#E3EAEE"),background:on?(p.colore||"#2F6586"):"#fff",color:on?"#fff":"#2C3338",borderRadius:20,padding:"6px 11px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{p.nome}</button>;
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                <button onClick={function(){ addPiatto(); }}
+                  style={{padding:"12px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <i className="ti ti-plus" style={{fontSize:16}}/>Aggiungi un piatto per una persona
+                </button>
+                <button onClick={function(){ setPicker(null); }}
+                  style={{padding:"13px",borderRadius:13,border:"none",background:"#2F6586",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  <i className="ti ti-check" style={{fontSize:18}}/>Fatto
+                </button>
+              </div>
+            ): (
               <div style={{overflowY:"auto",padding:"4px 16px 24px",display:"flex",flexDirection:"column",gap:12}}>
                 <div className="mf-card" style={{padding:"14px 15px",display:"flex",flexDirection:"column",gap:10}}>
                   <div style={{fontSize:12,color:"#2C3338",fontWeight:800,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-pencil" style={{fontSize:16,color:"#2F6586"}}/>Scrivi il piatto</div>
