@@ -7032,15 +7032,17 @@ function TesseraAlimento(props) {
           border:"1px solid "+st.bordo,borderRadius:9,fontSize:8,fontWeight:800,
           color:st.accent,padding:"0 4px",minWidth:14,textAlign:"center",zIndex:2}}>{cell.it.qty}</div>
       )}
-      <div style={{position:"relative"}}>
-        <div style={{fontSize:30,lineHeight:1,filter:low?"grayscale(.5) opacity(.7)":"none"}}>{cell.emoji}</div>
+      <div style={{position:"relative",width:"100%"}}>
+        <div style={{background:"#fff",border:"1px solid "+st.bordo,borderRadius:9,padding:"8px 5px",minHeight:40,
+          display:"flex",alignItems:"center",justifyContent:"center",opacity:low?0.6:1}}>
+          <span style={{fontSize:10.5,fontWeight:700,color:st.testo,textAlign:"center",lineHeight:1.15,
+            display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",wordBreak:"break-word"}}>{cell.it.nome}</span>
+        </div>
         {scad && scad.t !== "OK" && (
-          <span style={{position:"absolute",bottom:-1,right:-3,width:10,height:10,borderRadius:"50%",
+          <span style={{position:"absolute",bottom:-3,right:-3,width:10,height:10,borderRadius:"50%",
             background:scad.c,border:"1.5px solid #fff"}}/>
         )}
       </div>
-      <div style={{fontSize:8.5,fontWeight:600,color:st.testo,textAlign:"center",lineHeight:1.1,
-        whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:"100%"}}>{cell.it.nome}</div>
       {cott !== null && cott > 0 && (
         <div style={{fontSize:7.5,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",
           borderRadius:6,padding:"0 4px",lineHeight:1.5}}>⏱ {cott}'</div>
