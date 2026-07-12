@@ -3251,6 +3251,18 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
   function cambiaGiorno(i){setGiornoSel(i);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[i]+"-"+pastoSel]||{});}
   function cambiaPasto(p){setPastoSel(p);setStepCorrente(1);setLiveScelta(scelteAttive[GIORNI_B[giornoSel]+"-"+p]||{});}
 
+  function giornoHaMenu(g) {
+    function pieno(s){ return !!(s && (s.proteina||s.carbo||s.verdura||s.verdura2||s.frutta||s.latticino||(s.piattoUnico&&s.piattoUnico.nome&&(""+s.piattoUnico.nome).trim())||(s.piu&&s.piu.length))); }
+    return pieno(scelteAttive[g+"-Pranzo"]) || pieno(scelteAttive[g+"-Cena"]);
+  }
+  function cancellaGiorno(g) {
+    if(typeof window!=="undefined" && window.confirm && !window.confirm("Svuotare il menu di "+g+" (pranzo e cena)?")) return;
+    setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); delete n[g+"-Pranzo"]; delete n[g+"-Cena"]; return n; });
+    if(onSavePasto){ onSavePasto(settB, g, "Pranzo", {}); onSavePasto(settB, g, "Cena", {}); }
+    setMsgB("Menu di "+g+" svuotato");
+    setTimeout(function(){ setMsgB(""); }, 1600);
+  }
+
   function salva(dati) {
     setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=dati; return n; });
     if(onSavePasto) onSavePasto(settB, GIORNI_B[giornoSel], pastoSel, dati);
@@ -3441,6 +3453,12 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                     <div style={{fontSize:11,fontWeight:800,color:isOggi?"#2F6586":"#2C3338"}}>{g.slice(0,3)}</div>
                     <div style={{fontSize:9,fontWeight:700,color:isOggi?"#2F6586":"#8A949B"}}>{dataG.getDate()}</div>
                     {isOggi ? <div style={{height:3,borderRadius:3,background:"#2F6586",margin:"2px 4px 0"}}/> : null}
+                    {giornoHaMenu(g) ? (
+                      <div onClick={function(){ cancellaGiorno(g); }} title={"Svuota "+g}
+                        style={{margin:"3px auto 0",width:20,height:20,borderRadius:7,background:"#FBE7EC",color:"#C2355A",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                        <i className="ti ti-eraser" style={{fontSize:12}}/>
+                      </div>
+                    ) : null}
                   </div>
                 );
               });
