@@ -9946,11 +9946,13 @@ export default function App() {
 
       <div key={tab} className="mf-fade" style={{padding:"8px 16px 96px"}}>
         <BannerScadenze dispensa={dispensa}/>
-        {tab!=="home" && (
+        {tab!=="home" && ["spesa","builder","diario"].indexOf(tab)<0 && (
           <button onClick={function(){ setSheetOpen(false); handleSetTab("home"); }}
-            style={{display:"flex",alignItems:"center",gap:6,border:"none",background:"transparent",
-              color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",padding:"0 0 4px"}}>
-            <i className="ti ti-arrow-left" style={{fontSize:18}}/>Home
+            title="Torna alla Home"
+            style={{width:34,height:34,borderRadius:11,background:"#fff",border:"1px solid #E3EAEE",
+              color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
+              cursor:"pointer",marginBottom:6,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+            <i className="ti ti-chevron-left"/>
           </button>
         )}
         <ErrorBoundary key={tab}>
