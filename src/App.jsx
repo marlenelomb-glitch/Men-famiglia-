@@ -287,7 +287,7 @@ class ErrorBoundary extends Component {
       var self = this;
       return (
         <div style={{padding:"40px 24px",textAlign:"center",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-          <div style={{fontSize:34,marginBottom:10}}>😕</div>
+          <div style={{fontSize:34,marginBottom:10,color:"#8A5A12"}}><i className="ti ti-alert-triangle"/></div>
           <div style={{fontSize:16,fontWeight:800,color:"#2C3338",marginBottom:8}}>Questa schermata ha avuto un problema</div>
           <div style={{fontSize:12,color:"#8A949B",marginBottom:16,wordBreak:"break-word"}}>{String((this.state.err && this.state.err.message) || this.state.err)}</div>
           <button onClick={function(){ self.setState({err:null}); }}
@@ -733,9 +733,6 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
         <div style={{background:"#EBF3FA",borderRadius:14,padding:"13px",marginBottom:14,
           border:"1.5px solid #CADCE8"}}>
           <div style={{display:"flex",gap:7,marginBottom:8}}>
-            <input value={form.emoji} onChange={e=>setForm(p=>({...p,emoji:e.target.value}))}
-              style={{width:46,padding:"7px 4px",borderRadius:8,border:"1.5px solid #CADCE8",
-                fontSize:18,textAlign:"center"}}/>
             <input placeholder="Nome pasto preparato" value={form.nome}
               onChange={e=>setForm(p=>({...p,nome:e.target.value}))}
               style={{flex:1,padding:"7px",borderRadius:8,border:"1.5px solid #CADCE8",fontSize:12}}/>
@@ -835,7 +832,6 @@ function TabMealPrep({mealPrep, setMealPrep, profili}) {
               prox?"0 0 0 2px #8A5A12,0 2px 6px rgba(0,0,0,.05)":
               "0 1px 6px rgba(0,0,0,.07)"}}>
             <div style={{display:"flex",alignItems:"flex-start",gap:9,marginBottom:6}}>
-              <span style={{fontSize:20}}>{item.emoji}</span>
               <div style={{flex:1}}>
                 <div style={{fontSize:12,fontWeight:800,color:finito?"#8A949B":"#222"}}>
                   {item.nome}
@@ -1149,7 +1145,7 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
               )}
               <div style={{padding:"12px 14px"}}>
                 <div style={{fontSize:13,fontWeight:800,color:"#222",marginBottom:4}}>
-                  {ric.emoji||""} {ric.titolo}
+                  {ric.titolo}
                 </div>
                 <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
                   {ric.categoria&&<span style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",
@@ -1538,7 +1534,6 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                 <div key={i} style={{background:"#fff",borderRadius:14,padding:"12px 14px",
                   marginBottom:10,boxShadow:"0 1px 6px rgba(0,0,0,.07)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:8}}>
-                    <span style={{fontSize:20}}>{ric.emoji||""}</span>
                     <div>
                       <div style={{fontSize:12,fontWeight:800,color:"#222"}}>{ric.titolo}</div>
                       <div style={{fontSize:9,color:"#8A949B"}}>{ric.tempo}</div>
@@ -2304,14 +2299,14 @@ function Drop(props) {
         {props.opts.map(function(o){
           return (
             <option key={o.id} value={o.disabled?"":o.id} disabled={!!o.disabled}>
-              {o.emoji?o.emoji+" ":""}{o.nome}
+              {o.nome}
             </option>
           );
         })}
       </select>
       {sel&&!sel.disabled&&(
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 4px 0"}}>
-          <span style={{fontSize:12,color:props.color,fontWeight:700}}>{sel.emoji} {sel.nome}</span>
+          <span style={{fontSize:12,color:props.color,fontWeight:700}}>{sel.nome}</span>
           <i className="ti ti-x" onClick={function(){props.onChange(null);}}
             style={{color:"#B4BEC4",fontSize:15,cursor:"pointer"}}/>
         </div>
@@ -2333,7 +2328,7 @@ function TwoLevelDrop(props) {
     <div style={{marginBottom:12}}>
       <div style={{fontSize:11,fontWeight:600,marginBottom:6,letterSpacing:"0.02em",color:props.warn?"#C2355A":props.color||"#8A949B"}}>
         {props.label}
-        {selItem&&<span style={{marginLeft:6,fontWeight:800,fontSize:12,color:props.color}}>{selItem.emoji} {selItem.nome}</span>}
+        {selItem&&<span style={{marginLeft:6,fontWeight:800,fontSize:12,color:props.color}}>{selItem.nome}</span>}
         {selItem&&<i className="ti ti-x" onClick={function(){props.onChange(null);}} style={{marginLeft:6,color:"#B4BEC4",fontSize:14,cursor:"pointer",verticalAlign:"-2px"}}/>}
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:openCat?7:0}}>
@@ -2364,7 +2359,7 @@ function TwoLevelDrop(props) {
             {itemsForCat.map(function(o){
               return (
                 <option key={o.id} value={o.id}>
-                  {o.emoji?o.emoji+" ":""}{o.nome}
+                  {o.nome}
                 </option>
               );
             })}
@@ -2536,7 +2531,6 @@ function NutriPanel(props) {
           var gv = grammi[it.field];
           return (
             <div key={it.field} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderTop:"1px solid #EAF0F4"}}>
-              <span style={{fontSize:16}}>{it.emoji}</span>
               <span style={{flex:1,minWidth:0,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.nome}</span>
               <input inputMode="numeric" value={gv !== undefined ? gv : String(it.g)}
                 onChange={function(e){ onGrammi(it.field, e.target.value.replace(/[^0-9]/g,"")); }}
@@ -2593,9 +2587,9 @@ function GrigliaSettimana(props) {
         <div key={g+pasto} onClick={function(){setPopup({giorno:g,pasto:pasto,s:s,gi:gi});}}
           style={{background:bg,borderRadius:6,padding:"3px 3px",cursor:"pointer",position:"relative",minHeight:26,
             border:isSel&&pastoSel===pasto?"2px solid #2C3338":"1.5px solid transparent"}}>
-          {protItem&&<div style={{fontSize:8,fontWeight:700,color:tx,lineHeight:1.2}}>{protItem.emoji} {protItem.nome.slice(0,10)}</div>}
-          {carboItem&&<div style={{fontSize:7,color:"#8A949B",lineHeight:1.1}}>{carboItem.emoji} {carboItem.nome.slice(0,9)}</div>}
-          {!protItem&&fruttaItem&&<div style={{fontSize:8,color:"#6BA6C9"}}>{fruttaItem.emoji} {fruttaItem.nome.slice(0,10)}</div>}
+          {protItem&&<div style={{fontSize:8,fontWeight:700,color:tx,lineHeight:1.2}}>{protItem.nome.slice(0,10)}</div>}
+          {carboItem&&<div style={{fontSize:7,color:"#8A949B",lineHeight:1.1}}>{carboItem.nome.slice(0,9)}</div>}
+          {!protItem&&fruttaItem&&<div style={{fontSize:8,color:"#6BA6C9"}}>{fruttaItem.nome.slice(0,10)}</div>}
         </div>
       );
     });
@@ -2656,7 +2650,6 @@ function PopupPasto(props) {
               return (
                 <div key={x.label} style={{display:"flex",alignItems:"center",gap:10,
                   padding:"7px 12px",background:"#F5F8FC",borderRadius:10}}>
-                  <span style={{fontSize:18}}>{x.item.emoji}</span>
                   <div>
                     <div style={{fontSize:9,color:"#8A949B",fontWeight:600}}>{x.label}</div>
                     <div style={{fontSize:12,fontWeight:700,color:"#2C3338"}}>{x.item.nome}</div>
@@ -2785,7 +2778,6 @@ function SpesaItemsB(props) {
           <div key={cat.id} style={{marginBottom:14}}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,
               paddingBottom:4,borderBottom:"2px solid "+cat.color+"33"}}>
-              <span style={{fontSize:14}}>{cat.emoji}</span>
               <span style={{fontSize:10,fontWeight:800,color:cat.color}}>{cat.l}</span>
               <span style={{fontSize:9,color:"#8A949B"}}>({items.length})</span>
             </div>
@@ -2799,7 +2791,7 @@ function SpesaItemsB(props) {
                     background:chk?cat.color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                     {chk&&<span style={{color:"#fff",fontSize:11,fontWeight:800}}>v</span>}
                   </div>
-                  <span style={{fontSize:11,flex:1,textDecoration:chk?"line-through":"none"}}>{it.emoji} {it.nome}</span>
+                  <span style={{fontSize:11,flex:1,textDecoration:chk?"line-through":"none"}}>{it.nome}</span>
                 </div>
               );
             })}
@@ -4066,7 +4058,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                 return (
                   <div key={rc.id} onClick={function(){ usaRicetta(rc); }}
                     style={{display:"flex",alignItems:"center",gap:12,padding:"11px 4px",borderTop:"1px solid #EEF2F5",cursor:"pointer"}}>
-                    <div style={{fontSize:22,width:34,textAlign:"center"}}>{rc.emoji||"🍽️"}</div>
+                    <div style={{width:34,textAlign:"center",color:"#2F6586"}}><i className="ti ti-tools-kitchen-2" style={{fontSize:20}}/></div>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:14,fontWeight:700}}>{rc.titolo}</div>
                       <div style={{fontSize:11,color:"#8A949B"}}>{rc.categoria}{por.kcal?" · "+por.kcal+" kcal":""}{rc.tempo?" · "+rc.tempo:""}</div>
@@ -4400,7 +4392,7 @@ function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderSc
                         if(!id) return null;
                         var it=allDB.find(function(x){return x.id===id;});
                         if(!it) return null;
-                        return <span key={k} style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 7px",borderRadius:20}}>{it.emoji} {it.nome}</span>;
+                        return <span key={k} style={{fontSize:9,background:"#EBF3FA",color:"#2F6586",padding:"2px 7px",borderRadius:20}}>{it.nome}</span>;
                       })}
                     </div>
                     {r.note_famiglia&&Object.keys(r.note_famiglia).length>0&&(
@@ -6736,7 +6728,7 @@ function ListaSpesaView(props) {
                   border:"1.5px solid "+(gia?"#E3EAEE":"#BFD9EA"),cursor:gia?"default":"pointer",
                   background:gia?"#F2F6F8":"#fff",color:gia?"#B4BEC4":"#2C3338",fontSize:12,fontWeight:600,
                   fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                <span style={{fontSize:14}}>{alimentoEmoji(n)}</span>{n}
+                {n}
                 {!gia&&<i className="ti ti-plus" style={{fontSize:12,color:"#2F6586"}}/>}
               </button>
             );
@@ -6927,7 +6919,7 @@ function alimentoInfo(nome) {
   }
   return best;
 }
-function alimentoEmoji(nome) { var a = alimentoInfo(nome); return a ? a.e : "🍽️"; }
+function alimentoEmoji(nome) { return ""; }
 function alimentoContenitore(nome) { var a = alimentoInfo(nome); return a ? a.c : "dispensa"; }
 
 var COTTURA_MAP = [
@@ -7045,7 +7037,7 @@ function TesseraAlimento(props) {
       </div>
       {cott !== null && cott > 0 && (
         <div style={{fontSize:7.5,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",
-          borderRadius:6,padding:"0 4px",lineHeight:1.5}}>⏱ {cott}'</div>
+          borderRadius:6,padding:"0 4px",lineHeight:1.5,display:"flex",alignItems:"center",gap:2}}><i className="ti ti-clock" style={{fontSize:8}}/>{cott}'</div>
       )}
     </div>
   );
@@ -7554,7 +7546,7 @@ function DispensaView(props) {
                           border:"1.5px solid "+(gia?"#E3EAEE":st.bordo),cursor:gia?"default":"pointer",
                           background:gia?"#F2F6F8":"#fff",color:gia?"#B4BEC4":"#2C3338",fontSize:12,fontWeight:600,
                           fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                        <span style={{fontSize:14}}>{alimentoEmoji(n)}</span>{n}
+                        {n}
                         {!gia&&<i className="ti ti-plus" style={{fontSize:12,color:st.accent}}/>}
                       </button>
                     );
@@ -7619,12 +7611,12 @@ function DispensaView(props) {
           var rem = giorniRestanoD(it.scadenza);
           return (
             <div key={i} className="mf-row">
-              <div className="mf-ic" style={{fontSize:20}}>{alimentoEmoji(it.nome)}</div>
+              <div className="mf-ic"><i className={"ti "+(it.contenitore==="freezer"?"ti-snowflake":(it.contenitore==="frigo"?"ti-fridge":"ti-basket"))}/></div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:500,display:"flex",alignItems:"center",gap:6}}>{it.nome}{it.aperto&&<span onClick={function(){ chiudiIdx(i); }} style={{fontSize:9,fontWeight:800,color:"#8A5A12",background:"#F6ECD9",borderRadius:20,padding:"2px 7px",cursor:"pointer"}}>Aperto</span>}</div>
                 <div style={{fontSize:11,color:"#8A949B",display:"flex",gap:8,flexWrap:"wrap"}}>
                   <span>{(it.qty||"")+" "+(it.unita||"")}</span>
-                  {cott !== null && cott > 0 && <span style={{color:"#8A5A12",fontWeight:700}}>⏱ {cott} min</span>}
+                  {cott !== null && cott > 0 && <span style={{color:"#8A5A12",fontWeight:700,display:"inline-flex",alignItems:"center",gap:3}}><i className="ti ti-clock" style={{fontSize:11}}/>{cott} min</span>}
                   {it.aperto ? <span style={{color:(rem!=null&&rem<=1)?"#C2355A":"#8A5A12",fontWeight:700}}>{rem<0?"Scaduto":(rem===0?"Da finire oggi":("Restano "+rem+(rem===1?" giorno":" giorni")))}</span> : (ss && <span style={{color:ss.c,fontWeight:700}}>{ss.t==="OK"?"Scade "+it.scadenza:ss.t}</span>)}
                 </div>
               </div>
@@ -8083,7 +8075,7 @@ function CommunityView(props) {
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
               {PAT.map(function(pt){
                 var on = ((form.tags)||[]).indexOf(pt.id) >= 0;
-                return <button key={pt.id} onClick={function(){ toggleTag(pt.id); }} style={chipStyle(on)}>{on?"✓ ":""}{pt.label}</button>;
+                return <button key={pt.id} onClick={function(){ toggleTag(pt.id); }} style={chipStyle(on)}>{on?<i className="ti ti-check" style={{fontSize:12,marginRight:3}}/>:null}{pt.label}</button>;
               })}
             </div>
           </div>
@@ -8136,7 +8128,7 @@ function CommunityView(props) {
         <button onClick={function(){ setFPat("tutte"); }} style={chipStyle(fPat==="tutte")}>Tutte</button>
         {PAT.slice().sort(function(a,b){ return (familyPats.indexOf(b.id)>=0?1:0) - (familyPats.indexOf(a.id)>=0?1:0); }).map(function(pt){
           var fam = familyPats.indexOf(pt.id) >= 0;
-          return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{fam?"★ ":""}{pt.label}</button>;
+          return <button key={pt.id} onClick={function(){ setFPat(pt.id); }} style={chipStyle(fPat===pt.id)}>{fam?<i className="ti ti-star-filled" style={{fontSize:11,marginRight:3}}/>:null}{pt.label}</button>;
         })}
       </div>
       <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
@@ -8982,7 +8974,7 @@ function MenuCondiviso(props) {
     <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",padding:"18px 16px 40px",boxSizing:"border-box",
       fontFamily:"'Nunito',system-ui,sans-serif",background:"#F2F6F8",color:"#2C3338"}}>
       <div style={{textAlign:"center",marginBottom:16}}>
-        <div style={{fontSize:30,marginBottom:6}}>🍽</div>
+        <div style={{fontSize:28,marginBottom:6,color:"#2F6586"}}><i className="ti ti-tools-kitchen-2"/></div>
         <div style={{fontSize:20,fontWeight:800}}>Il menu della settimana</div>
         <div style={{fontSize:13,color:"#8A949B",marginTop:3}}>Dì la tua: accetta, proponi o segnala se sei fuori</div>
       </div>
@@ -9119,7 +9111,7 @@ function VotoPartner(props) {
     <div style={{minHeight:"100vh",maxWidth:390,margin:"0 auto",padding:"24px",boxSizing:"border-box",
       fontFamily:"'Nunito',system-ui,sans-serif",background:"#F5F8FC"}}>
       <div style={{textAlign:"center",marginBottom:20}}>
-        <div style={{fontSize:32,marginBottom:8}}>🍽</div>
+        <div style={{fontSize:30,marginBottom:8,color:"#2F6586"}}><i className="ti ti-tools-kitchen-2"/></div>
         <div style={{fontSize:20,fontWeight:800,color:"#2C3338"}}>Cosa si mangia {giorno}?</div>
         <div style={{fontSize:13,color:"#8A949B",marginTop:4}}>Scegli la cena che preferisci</div>
       </div>
@@ -9135,7 +9127,7 @@ function VotoPartner(props) {
               padding:"16px",borderRadius:12,cursor:"pointer",fontSize:15,lineHeight:1.5,
               border:sel?"2.5px solid #2F6586":"1.5px solid #ddd",
               background:sel?"#E2EEF5":"#fff",color:"#2C3338",fontWeight:sel?700:400}}>
-            {sel?"✓ ":""}{op}
+            {sel?<i className="ti ti-check" style={{marginRight:5}}/>:null}{op}
           </button>
         );
       })}
