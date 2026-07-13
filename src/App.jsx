@@ -7810,11 +7810,15 @@ function DiarioView(props) {
   var s_an = useState(""); var addNome = s_an[0]; var setAddNome = s_an[1];
   var s_ak = useState(""); var addKcal = s_ak[0]; var setAddKcal = s_ak[1];
   var s_ap = useState("Pranzo"); var addPasto = s_ap[0]; var setAddPasto = s_ap[1];
+  var s_off = useState(0); var dayOff = s_off[0]; var setDayOff = s_off[1];
 
   var now = new Date();
-  var dateKey = now.getFullYear() + "-" + ("0"+(now.getMonth()+1)).slice(-2) + "-" + ("0"+now.getDate()).slice(-2);
-  var oggiApp = DAYS[(now.getDay()+6)%7];
+  var viewDate = new Date(); viewDate.setHours(0,0,0,0); viewDate.setDate(viewDate.getDate()+dayOff);
+  var dateKey = viewDate.getFullYear() + "-" + ("0"+(viewDate.getMonth()+1)).slice(-2) + "-" + ("0"+viewDate.getDate()).slice(-2);
   var ordine = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
+  var GG_D = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
+  var MESI_D = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+  function labelGiornoD(){ if(dayOff===0) return "Oggi"; if(dayOff===-1) return "Ieri"; if(dayOff===1) return "Domani"; return GG_D[viewDate.getDay()]+" "+viewDate.getDate()+" "+MESI_D[viewDate.getMonth()]; }
 
   var membro = profili[midSel] || vals[0] || null;
   var mkey = membro ? membro.id : "";
@@ -7852,9 +7856,17 @@ function DiarioView(props) {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
-        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em"}}>Diario</div>
-        <span style={{fontSize:13,color:"#8A949B"}}>Oggi</span>
+      <div style={{display:"flex",alignItems:"center",gap:9,paddingTop:8}}>
+        <div style={{fontSize:23,fontWeight:800,letterSpacing:"-0.01em",flex:1}}>Diario</div>
+        <button onClick={function(){ setDayOff(dayOff-1); }} title="Giorno prima"
+          style={{width:32,height:32,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-chevron-left"/>
+        </button>
+        <div style={{fontSize:12,fontWeight:800,color:"#2C3338",minWidth:82,textAlign:"center"}}>{labelGiornoD()}</div>
+        <button onClick={function(){ if(dayOff<0) setDayOff(dayOff+1); }} disabled={dayOff>=0} title="Giorno dopo"
+          style={{width:32,height:32,borderRadius:10,border:"1px solid #E3EAEE",background:dayOff>=0?"#F2F6F8":"#fff",color:dayOff>=0?"#C4D2DA":"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,cursor:dayOff>=0?"default":"pointer",flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-chevron-right"/>
+        </button>
       </div>
 
       {vals.length===0 ? (
@@ -7897,7 +7909,7 @@ function DiarioView(props) {
       </div>
 
       <div>
-        <div className="cap" style={{marginBottom:8}}>Mangiato oggi</div>
+        <div className="cap" style={{marginBottom:8}}>{dayOff===0?"Mangiato oggi":("Mangiato · "+labelGiornoD())}</div>
         <div className="mf-card flush">
           {items.length===0&&(
             <div className="mf-row">
