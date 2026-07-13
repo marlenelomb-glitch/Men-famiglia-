@@ -7776,6 +7776,8 @@ function DiarioView(props) {
   var s_an = useState(""); var addNome = s_an[0]; var setAddNome = s_an[1];
   var s_ak = useState(""); var addKcal = s_ak[0]; var setAddKcal = s_ak[1];
   var s_ap = useState("Pranzo"); var addPasto = s_ap[0]; var setAddPasto = s_ap[1];
+  var s_ag = useState(""); var addGr = s_ag[0]; var setAddGr = s_ag[1];
+  var s_edit = useState(""); var editId = s_edit[0]; var setEditId = s_edit[1];
   var s_off = useState(0); var dayOff = s_off[0]; var setDayOff = s_off[1];
 
   var now = new Date();
@@ -7804,9 +7806,17 @@ function DiarioView(props) {
     nd[dateKey] = g;
     setDiario(nd);
   }
-  function aggiungiVoce(pasto, nome, kcal) {
-    var id = "e" + now.getTime() + "_" + Math.round(consumate + items.length + nome.length);
-    salvaRec({items: items.concat([{id:id, pasto:pasto, nome:nome, kcal:kcal||0}]), acqua:acqua});
+  function cercaAlim(nome) {
+    var q = (""+(nome||"")).toLowerCase().trim(); if(q.length < 2) return null;
+    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+    var exact = null, part = null;
+    all.forEach(function(it){
+      if(!it || !it.kcal_p) return;
+      var n = (""+(it.nome||"")).toLowerCase();
+      if(n === q){ if(!exact) exact = it; }
+      else if(!part && (n.indexOf(q) >= 0 || q.indexOf(n) >= 0)) part = it;
+    });
+    return exact || part;
   }
   function rimuoviVoce(id) {
     salvaRec({items: items.filter(function(x){ return x.id !== id; }), acqua:acqua});
@@ -7814,10 +7824,21 @@ function DiarioView(props) {
   function setAcqua(n) {
     salvaRec({items:items, acqua: Math.max(0, Math.min(12, n))});
   }
-  function addExtra() {
-    if(!addNome.trim()) return;
-    aggiungiVoce(addPasto, addNome.trim(), parseInt(addKcal, 10) || 0);
-    setAddNome(""); setAddKcal(""); setShowAdd(false);
+  function apriAggiungi() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setAddPasto("Pranzo"); setShowAdd(true); }
+  function apriModifica(x) { setEditId(x.id); setAddNome(x.nome||""); setAddKcal(x.kcal?String(x.kcal):""); setAddGr(x.gr?String(x.gr):""); setAddPasto(x.pasto||"Pranzo"); setShowAdd(true); }
+  function annullaForm() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setShowAdd(false); }
+  function salvaVoce() {
+    var nome = addNome.trim(); if(!nome) return;
+    var alim = cercaAlim(nome);
+    var g = parseInt(addGr, 10) || 0;
+    var kc = (alim && alim.kcal_p && g > 0) ? Math.round(alim.kcal_p * g / 100) : (parseInt(addKcal, 10) || 0);
+    if(editId) {
+      salvaRec({items: items.map(function(x){ return x.id === editId ? Object.assign({}, x, {pasto:addPasto, nome:nome, kcal:kc, gr:g}) : x; }), acqua:acqua});
+    } else {
+      var id = "e" + now.getTime() + "_" + Math.round(consumate + items.length + nome.length);
+      salvaRec({items: items.concat([{id:id, pasto:addPasto, nome:nome, kcal:kc, gr:g}]), acqua:acqua});
+    }
+    annullaForm();
   }
 
   return (
@@ -7880,7 +7901,7 @@ function DiarioView(props) {
           {items.length===0&&(
             <div className="mf-row">
               <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #CADCE8",color:"#8A949B"}}><i className="ti ti-checkbox"/></div>
-              <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Ancora niente per {membro ? membro.nome : ""}. Aggiungi un cibo qui sotto; per togliere una voce usa la x.</div>
+              <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Ancora niente per {membro ? membro.nome : ""}. Aggiungi un cibo qui sotto. Poi tocca una voce per modificarla o la x per toglierla.</div>
             </div>
           )}
           {ordine.map(function(m){
@@ -7888,14 +7909,14 @@ function DiarioView(props) {
             if(!rows.length) return null;
             return rows.map(function(r){
               return (
-                <div key={r.id} className="mf-row">
+                <div key={r.id} className="mf-row" style={{cursor:"pointer"}} onClick={function(){ apriModifica(r); }}>
                   <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[m]||"ti-tools-kitchen-2")}/></div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:14,fontWeight:500}}>{r.nome}</div>
-                    <div style={{fontSize:11,color:"#8A949B"}}>{m}</div>
+                    <div style={{fontSize:11,color:"#8A949B"}}>{m}{r.gr ? " · "+r.gr+" g" : ""}</div>
                   </div>
                   <span style={{fontSize:13,color:"#8A949B",marginRight:8}}>{r.kcal ? r.kcal+" kcal" : "-"}</span>
-                  <i className="ti ti-x" onClick={function(){ rimuoviVoce(r.id); }}
+                  <i className="ti ti-x" onClick={function(e){ e.stopPropagation(); rimuoviVoce(r.id); }}
                     style={{fontSize:16,color:"#B4BEC4",cursor:"pointer"}}/>
                 </div>
               );
@@ -7905,21 +7926,61 @@ function DiarioView(props) {
       </div>
 
       {showAdd ? (
-        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:8}}>
-          <input placeholder="Cosa ha mangiato" value={addNome} onChange={function(e){setAddNome(e.target.value);}}
-            style={{padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-          <div style={{display:"flex",gap:8}}>
-            <select value={addPasto} onChange={function(e){setAddPasto(e.target.value);}}
-              style={{flex:1,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-              {ordine.map(function(m){ return <option key={m} value={m}>{m}</option>; })}
-            </select>
-            <input placeholder="kcal" inputMode="numeric" value={addKcal} onChange={function(e){setAddKcal(e.target.value.replace(/[^0-9]/g,""));}}
-              style={{width:80,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-            <button onClick={addExtra} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#6BA6C9",color:"#fff",fontWeight:700,cursor:"pointer"}}>OK</button>
-          </div>
-        </div>
+        (function(){
+          var alimMatch = cercaAlim(addNome);
+          var grNum = parseInt(addGr, 10) || 0;
+          var stdPorz = alimMatch ? porzioneStdIng(alimMatch, 100) : 100;
+          var kcalAuto = (alimMatch && alimMatch.kcal_p && grNum > 0) ? Math.round(alimMatch.kcal_p * grNum / 100) : null;
+          var presets = [50, 100, 150, 200];
+          var gramInput = {padding:"9px 10px",borderRadius:11,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"};
+          var stepBtn = {width:34,height:34,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:18,cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"};
+          return (
+            <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontSize:13,fontWeight:800,flex:1}}>{editId ? "Modifica cibo" : "Aggiungi cibo"}</div>
+                <i className="ti ti-x" onClick={annullaForm} style={{fontSize:18,color:"#8A949B",cursor:"pointer"}}/>
+              </div>
+              <input placeholder="Cosa ha mangiato (es. Pizza)" value={addNome} onChange={function(e){setAddNome(e.target.value);}}
+                style={{padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+              {alimMatch ? (
+                <div style={{fontSize:11,color:"#2F6586",fontWeight:700}}>Trovato: {alimMatch.nome} · {alimMatch.kcal_p} kcal per 100 g</div>
+              ) : null}
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Quanto? (grammi)</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {presets.concat((alimMatch && presets.indexOf(stdPorz) < 0) ? [stdPorz] : []).map(function(g){
+                  var on = grNum === g;
+                  return <button key={g} onClick={function(){ setAddGr(String(g)); }}
+                    style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g} g{alimMatch&&g===stdPorz?" · porzione":""}</button>;
+                })}
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <button onClick={function(){ setAddGr(String(Math.max(0, grNum-10))); }} style={stepBtn}>−</button>
+                <input inputMode="numeric" value={addGr} onChange={function(e){setAddGr(e.target.value.replace(/[^0-9]/g,""));}} placeholder="grammi"
+                  style={Object.assign({flex:1,minWidth:0,textAlign:"center"}, gramInput)}/>
+                <span style={{fontSize:12,color:"#8A949B",fontWeight:700}}>g</span>
+                <button onClick={function(){ setAddGr(String(grNum+10)); }} style={stepBtn}>+</button>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <select value={addPasto} onChange={function(e){setAddPasto(e.target.value);}}
+                  style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                  {ordine.map(function(m){ return <option key={m} value={m}>{m}</option>; })}
+                </select>
+                {alimMatch ? (
+                  <div style={{width:88,textAlign:"center",fontSize:14,fontWeight:800,color:"#2F6586"}}>{kcalAuto!=null?kcalAuto:"—"} kcal</div>
+                ) : (
+                  <input placeholder="kcal" inputMode="numeric" value={addKcal} onChange={function(e){setAddKcal(e.target.value.replace(/[^0-9]/g,""));}}
+                    style={{width:80,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                )}
+                <button onClick={salvaVoce} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#2F6586",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",flexShrink:0}}>{editId?"Salva":"Aggiungi"}</button>
+              </div>
+              {!alimMatch && addNome.trim() ? (
+                <div style={{fontSize:10,color:"#8A949B"}}>Non è nel database: scrivi tu le kcal. Oppure usa lo scanner del codice a barre nelle Provviste.</div>
+              ) : null}
+            </div>
+          );
+        })()
       ) : (
-        <button onClick={function(){ setShowAdd(true); }}
+        <button onClick={apriAggiungi}
           style={{width:"100%",padding:"12px",borderRadius:14,border:"1.5px solid #6BA6C9",background:"#fff",
             color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",
             display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
