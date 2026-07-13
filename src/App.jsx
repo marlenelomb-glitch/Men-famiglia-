@@ -5266,6 +5266,7 @@ function MenuView(props) {
                 <button onClick={function(){ setOspN(d, nOsp+1); }}
                   style={{width:28,height:28,borderRadius:9,border:"none",background:"#6BA6C9",color:"#fff",fontSize:16,cursor:"pointer"}}>+</button>
               </div>
+              <div style={{fontSize:10,color:"#8A949B",marginTop:5,lineHeight:1.4}}>Segnare gli ospiti aumenta le porzioni e le quantità nella lista della spesa.</div>
               {nOsp>0&&(
                 <div style={{marginTop:8}}>
                   <div style={{fontSize:11,color:"#8A949B",marginBottom:6}}>Qualche ospite ha patologie o intolleranze?</div>
