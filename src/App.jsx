@@ -6666,26 +6666,33 @@ function ListaSpesaView(props) {
   }
 
   function generaDallaSettimana() {
-    var ids = [];
-    Object.keys(builder).forEach(function(k){
-      var s = builder[k];
-      if(!s) return;
-      ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){
-        if(s[f]) ids.push(s[f]);
-      });
-    });
     var attuali = normSpesa(spesa);
     var esistenti = attuali.map(function(x){ return x.nome.toLowerCase(); });
     var nuovi = []; var visti = {};
     function aggiungiVoce(nomeV, catV){
-      var key = nomeV.toLowerCase();
-      if(esistenti.indexOf(key) >= 0 || visti[key]) return;
+      var key = (""+(nomeV||"")).toLowerCase().trim();
+      if(!key || esistenti.indexOf(key) >= 0 || visti[key]) return;
       visti[key] = true;
-      nuovi.push({nome:nomeV, cat:catV, fatto:false});
+      nuovi.push({nome:nomeV, cat:catV || catDaParola(nomeV), fatto:false});
     }
-    ids.forEach(function(id){
-      var info = lookupIngSpesa(id);
-      if(info) aggiungiVoce(info.nome, info.cat);
+    function daId(id){ var info = lookupIngSpesa(id); if(info) aggiungiVoce(info.nome, info.cat); }
+    function daNomePiatto(nomeP){ tokensDaNome(nomeP||"").forEach(function(t){ aggiungiVoce(t, catDaParola(t)); }); }
+    function daRicon(arr){ (arr||[]).forEach(function(r){ if(!r) return; if(r.id) daId(r.id); else if(r.nome) aggiungiVoce(r.nome, catDaParola(r.nome)); }); }
+    function daPiatto(d){
+      if(!d || !(""+(d.nome||"")).trim()) return;
+      if(d.riconosciuti && d.riconosciuti.length) daRicon(d.riconosciuti);
+      else daNomePiatto(d.nome);
+    }
+    Object.keys(builder).forEach(function(k){
+      var s = builder[k];
+      if(!s) return;
+      ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ if(s[f]) daId(s[f]); });
+      var pu = s.piattoUnico;
+      if(pu){
+        daPiatto(pu);
+        (pu.altri||[]).forEach(daPiatto);
+      }
+      (s.piu||[]).forEach(daPiatto);
     });
     Object.keys(menu).forEach(function(k){
       var cell = menu[k];
@@ -8433,10 +8440,13 @@ function HomeView(props) {
       ["proteina","carbo","verdura","verdura2"].forEach(function(k){
         var id = s[k]; if(!id) return; var it = ingById(id); if(it && it.nome) nomi.push(it.nome);
       });
-      ((s.piu)||[]).forEach(function(d){
-        if(d && d.riconosciuti && d.riconosciuti.length) { d.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); }); }
-        else if(d && d.nome && (""+d.nome).trim()) { nomi.push((""+d.nome).trim()); }
-      });
+      function daPiattoNomi(d){
+        if(!d || !(""+(d.nome||"")).trim()) return;
+        if(d.riconosciuti && d.riconosciuti.length) { d.riconosciuti.forEach(function(r){ if(r && r.nome) nomi.push(r.nome); }); }
+        else { nomi.push((""+d.nome).trim()); }
+      }
+      ((s.piu)||[]).forEach(daPiattoNomi);
+      ((s.piattoUnico && s.piattoUnico.altri)||[]).forEach(daPiattoNomi);
       nomi.forEach(function(nome){
         var low = (""+nome).toLowerCase();
         var inDisp = dispensa.some(function(d){
