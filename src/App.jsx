@@ -7850,12 +7850,6 @@ function DiarioView(props) {
     setAddNome(""); setAddKcal(""); setShowAdd(false);
   }
 
-  var suggeriti = [];
-  ordine.forEach(function(m){
-    var info = pastoUnificato(builder, menu, oggiApp, m);
-    if(info) suggeriti.push({pasto:m, nome:info.nome, kcal:info.kcal});
-  });
-
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",paddingTop:8}}>
@@ -7908,7 +7902,7 @@ function DiarioView(props) {
           {items.length===0&&(
             <div className="mf-row">
               <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #CADCE8",color:"#8A949B"}}><i className="ti ti-checkbox"/></div>
-              <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Segna cosa ha mangiato {membro ? membro.nome : ""}: usa i suggerimenti sotto o aggiungi un cibo.</div>
+              <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Ancora niente per {membro ? membro.nome : ""}. Aggiungi un cibo qui sotto; per togliere una voce usa la x.</div>
             </div>
           )}
           {ordine.map(function(m){
@@ -7931,27 +7925,6 @@ function DiarioView(props) {
           })}
         </div>
       </div>
-
-      {suggeriti.length>0&&(
-        <div>
-          <div className="cap" style={{marginBottom:8}}>Dal menu di oggi · tocca per segnare come mangiato</div>
-          <div className="mf-card flush">
-            {suggeriti.map(function(s){
-              return (
-                <div key={s.pasto} className="mf-row" style={{cursor:"pointer"}}
-                  onClick={function(){ aggiungiVoce(s.pasto, s.nome, s.kcal); }}>
-                  <div className="mf-ic" style={{background:"#EBF3FA"}}><i className={"ti "+(ICONE_PASTO[s.pasto]||"ti-tools-kitchen-2")}/></div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,fontWeight:500}}>{s.nome}</div>
-                    <div style={{fontSize:11,color:"#8A949B"}}>{s.pasto}{s.kcal?" · "+s.kcal+" kcal":""}</div>
-                  </div>
-                  <i className="ti ti-plus" style={{fontSize:18,color:"#2F6586"}}/>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {showAdd ? (
         <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:8}}>
