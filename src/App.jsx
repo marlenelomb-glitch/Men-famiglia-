@@ -5254,48 +5254,6 @@ function MenuView(props) {
               </div>
             )}
 
-            <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <i className="ti ti-users" style={{fontSize:16,color:nOsp>0?"#2F6586":"#B4BEC4"}}/>
-                <span style={{flex:1,fontSize:12,fontWeight:600,color:nOsp>0?"#2F6586":"#8A949B"}}>
-                  {nOsp>0 ? ("Ho ospiti: "+nOsp+" in più a tavola") : "Ho ospiti?"}
-                </span>
-                <button onClick={function(){ setOspN(d, nOsp-1); }} disabled={nOsp<=0}
-                  style={{width:28,height:28,borderRadius:9,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:16,cursor:nOsp>0?"pointer":"default"}}>-</button>
-                <span style={{minWidth:18,textAlign:"center",fontSize:14,fontWeight:800,color:"#2C3338"}}>{nOsp}</span>
-                <button onClick={function(){ setOspN(d, nOsp+1); }}
-                  style={{width:28,height:28,borderRadius:9,border:"none",background:"#6BA6C9",color:"#fff",fontSize:16,cursor:"pointer"}}>+</button>
-              </div>
-              <div style={{fontSize:10,color:"#8A949B",marginTop:5,lineHeight:1.4}}>Segnare gli ospiti aumenta le porzioni e le quantità nella lista della spesa.</div>
-              {nOsp>0&&(
-                <div style={{marginTop:8}}>
-                  <div style={{fontSize:11,color:"#8A949B",marginBottom:6}}>Qualche ospite ha patologie o intolleranze?</div>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {GUEST_RESTR.map(function(rz){
-                      var on = osp.restr.indexOf(rz.id) >= 0;
-                      return (
-                        <button key={rz.id} onClick={function(){ toggleRestr(d, rz.id); }}
-                          style={{padding:"5px 10px",borderRadius:20,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",
-                            border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",
-                            color:on?"#2F6586":"#8A949B",fontWeight:on?700:500}}>
-                          {rz.l}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {osp.restr.length>0&&(
-                    <div style={{marginTop:8,background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:10,padding:"8px 10px",
-                      display:"flex",alignItems:"flex-start",gap:7}}>
-                      <i className="ti ti-alert-triangle" style={{fontSize:14,color:"#8A5A12",marginTop:1}}/>
-                      <span style={{flex:1,fontSize:11,color:"#8A5A12",lineHeight:1.4}}>
-                        Prevedi un'alternativa: {osp.restr.map(restrLabel).join(", ")}. Tocca <b>Modifica</b> per adattare il pasto.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             {altri.length>0&&(
               <div style={{display:"flex",flexDirection:"column",gap:4,marginTop:10,paddingTop:10,borderTop:"1px solid #E3EAEE"}}>
                 {altri.map(function(p){
