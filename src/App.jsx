@@ -5276,6 +5276,13 @@ function MenuView(props) {
         );
       })}
 
+      <div className="mf-card" onClick={function(){ setTab("amici"); }}
+        style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+        <i className="ti ti-users" style={{fontSize:19,color:"#2F6586"}}/>
+        <div style={{flex:1,fontSize:13,fontWeight:600}}>Aspetti ospiti a cena? Gestiscili nella pagina Amici</div>
+        <i className="ti ti-arrow-right" style={{color:"#8A949B"}}/>
+      </div>
+
       <div className="mf-card acc" onClick={function(){ setTab("ai"); }}
         style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
         <i className="ti ti-sparkles" style={{fontSize:19}}/>
