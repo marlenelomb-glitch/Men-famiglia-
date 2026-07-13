@@ -9599,8 +9599,7 @@ export default function App() {
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
 
-  const menuBase = useMemo(() => buildMenu(settimana, profili), [settimana, profili]);
-  const menu = useMemo(() => ({...menuBase, ...menuOverride}), [menuBase, menuOverride]);
+  const menu = useMemo(() => ({...menuOverride}), [menuOverride]);
 
   const toggleFuori = useCallback((giorno, pid) => {
     setGiorniFuoriLS(prev => {
