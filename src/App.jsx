@@ -2815,7 +2815,7 @@ var SINONIMI_PASTO = {
   patate:"patate", pure:"patate", pasta:"penne", spaghetti:"spaghetti", maccheroni:"penne",
   penne:"penne", fusilli:"fusilli", riso:"riso_b", risotto:"risotto", lasagne:"lasagne",
   lasagna:"lasagne", cannelloni:"lasagne", gnocchi:"gnocchi", ravioli:"ravioli", tortellini:"ravioli",
-  pane:"pane_int", pizza:"pizza", focaccia:"focaccia", piadina:"piadina", farro:"farro",
+  pane:"pane_int", panino:"pane_b", panini:"pane_b", michetta:"pane_b", rosetta:"pane_b", toast:"pane_b", tramezzino:"pane_b", pizza:"pizza", focaccia:"focaccia", piadina:"piadina", farro:"farro",
   orzo:"orzo", quinoa:"quinoa", cous:"cous", polenta:"polenta", zuppa:"lenticchie",
   zucchine:"zucchine", spinaci:"spinaci", broccoli:"broccoli", pomodor:"pomodori", insalata:"insalata",
   carote:"carote", zucca:"zucca", funghi:"funghi", melanzane:"melanzane", parmigiana:"melanzane",
@@ -7887,6 +7887,21 @@ function DiarioView(props) {
     nd[dateKey] = g;
     setDiario(nd);
   }
+  function riconosciComposto(nome) {
+    if(typeof riconosciPasto !== "function") return null;
+    var r = riconosciPasto(nome);
+    if(!r || !r.items || !r.items.length) return null;
+    var totG = 0, totK = 0, totP = 0, totC = 0, nomi = [];
+    r.items.forEach(function(x){
+      var it = ingById(x.id); if(!it || !it.kcal_p) return;
+      var g = (typeof porzioneRic === "function") ? porzioneRic(it) : 100;
+      totG += g; totK += (it.kcal_p||0)*g/100; totP += (it.prot_p||0)*g/100; totC += (it.carb_p||0)*g/100;
+      nomi.push(it.nome);
+    });
+    if(totG <= 0) return null;
+    return { id:"_comp", nome:nome, composto:true, ingredienti:nomi,
+      kcal_p: Math.round(totK/totG*100), prot_p: Math.round(totP/totG*100*10)/10, carb_p: Math.round(totC/totG*100*10)/10 };
+  }
   function cercaAlim(nome) {
     var q = (""+(nome||"")).toLowerCase().trim(); if(q.length < 2) return null;
     var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
@@ -7897,7 +7912,7 @@ function DiarioView(props) {
       if(n === q){ if(!exact) exact = it; }
       else if(!part && (n.indexOf(q) >= 0 || q.indexOf(n) >= 0)) part = it;
     });
-    return exact || part;
+    return exact || part || riconosciComposto(nome);
   }
   function rimuoviVoce(id) {
     salvaRec({items: items.filter(function(x){ return x.id !== id; }), acqua:acqua});
@@ -8054,7 +8069,9 @@ function DiarioView(props) {
               <input placeholder="Cosa ha mangiato (es. Pizza)" value={addNome} onChange={function(e){setAddNome(e.target.value);}}
                 style={{padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
               {alimMatch ? (
-                <div style={{fontSize:11,color:"#2F6586",fontWeight:700}}>Trovato: {alimMatch.nome} · {alimMatch.kcal_p} kcal per 100 g</div>
+                <div style={{fontSize:11,color:"#2F6586",fontWeight:700}}>
+                  {alimMatch.composto ? ("Riconosciuto: "+(alimMatch.ingredienti||[]).join(", ")+" · ~"+alimMatch.kcal_p+" kcal/100 g") : ("Trovato: "+alimMatch.nome+" · "+alimMatch.kcal_p+" kcal per 100 g")}
+                </div>
               ) : null}
               <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Quanto?</div>
               {porzioni.length > 0 ? (
