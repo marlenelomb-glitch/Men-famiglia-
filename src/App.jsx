@@ -7288,21 +7288,39 @@ function ScannerCibo(props) {
   var sRes = useState(null); var res = sRes[0]; var setRes = sRes[1];
   var sErr = useState(""); var err = sErr[0]; var setErr = sErr[1];
   var sCam = useState(false); var camOn = sCam[0]; var setCamOn = sCam[1];
+  var sName = useState(""); var qName = sName[0]; var setQName = sName[1];
+  var sList = useState(null); var lista = sList[0]; var setLista = sList[1];
   var videoRef = useRef(null);
   var hasDetector = (typeof window !== "undefined" && "BarcodeDetector" in window);
 
+  function mappaProdotto(p, codeFallback) {
+    var n = p.nutriments || {};
+    return { code:(p.code||codeFallback||""), nome:(p.product_name||"").trim(), marca:((p.brands||"").split(",")[0]||"").trim(),
+      kcal:Math.round(n["energy-kcal_100g"]||0), prot:Math.round((n.proteins_100g||0)*10)/10, carb:Math.round((n.carbohydrates_100g||0)*10)/10 };
+  }
   function cerca(ean) {
     var q = (""+ean).replace(/[^0-9]/g,"");
     if(q.length < 6) { setErr("Codice non valido."); return; }
-    setLoading(true); setErr(""); setRes(null);
-    fetch("https://world.openfoodfacts.org/api/v2/product/"+q+".json?fields=product_name,brands,nutriments")
+    setLoading(true); setErr(""); setRes(null); setLista(null);
+    fetch("https://world.openfoodfacts.org/api/v2/product/"+q+".json?fields=product_name,brands,nutriments,code")
       .then(function(r){ return r.json(); })
       .then(function(d){
         setLoading(false);
-        if(!d || d.status===0 || !d.product){ setErr("Prodotto non trovato. Puoi scriverlo a mano nella dispensa."); return; }
-        var p = d.product; var n = p.nutriments || {};
-        setRes({ code:q, nome:(p.product_name||"").trim(), marca:((p.brands||"").split(",")[0]||"").trim(),
-          kcal:Math.round(n["energy-kcal_100g"]||0), prot:Math.round((n.proteins_100g||0)*10)/10, carb:Math.round((n.carbohydrates_100g||0)*10)/10 });
+        if(!d || d.status===0 || !d.product){ setErr("Codice non trovato. Cercalo per nome qui sotto, oppure scrivilo a mano."); return; }
+        setRes(mappaProdotto(d.product, q));
+      }, function(){ setLoading(false); setErr("Errore di rete. Riprova."); });
+  }
+  function cercaNome(q) {
+    var s = (""+q).trim(); if(s.length < 2) { setErr("Scrivi almeno 2 lettere."); return; }
+    setLoading(true); setErr(""); setRes(null); setLista(null);
+    fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(s)+"&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,code")
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        setLoading(false);
+        var prods = (d && d.products) || [];
+        var out = prods.filter(function(p){ return p && (""+(p.product_name||"")).trim(); }).map(function(p){ return mappaProdotto(p, ""); });
+        if(!out.length){ setErr("Nessun risultato per «"+s+"». Prova un altro nome o scrivilo a mano."); return; }
+        setLista(out);
       }, function(){ setLoading(false); setErr("Errore di rete. Riprova."); });
   }
   useEffect(function(){
@@ -7362,11 +7380,39 @@ function ScannerCibo(props) {
                 style={{flex:1,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:15,fontWeight:700,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
               <button onClick={function(){ cerca(code); }} style={{border:"none",background:"#6BA6C9",color:"#fff",borderRadius:12,padding:"0 18px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Cerca</button>
             </div>
+
+            <div style={{borderTop:"1px solid #F1F4F6",paddingTop:11,display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Non trovi il codice? Cerca per nome</div>
+              <div style={{display:"flex",gap:8}}>
+                <input value={qName} onChange={function(e){ setQName(e.target.value); }} onKeyDown={function(e){ if(e.key==="Enter") cercaNome(qName); }} placeholder="Es. Yogurt greco Fage"
+                  style={{flex:1,padding:"11px 12px",borderRadius:12,border:"1.5px solid #E3EAEE",fontSize:14,fontWeight:600,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                <button onClick={function(){ cercaNome(qName); }} style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"0 16px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Cerca</button>
+              </div>
+            </div>
           </div>
         )}
 
         {loading && <div style={{fontSize:13,color:"#8A949B",textAlign:"center",marginTop:12}}>Cerco il prodotto…</div>}
         {err && <div style={{marginTop:12,background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"11px 13px",fontSize:12,color:"#8A5A12",fontWeight:700}}>{err}</div>}
+
+        {lista && lista.length>0 && (
+          <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:2}}>
+            <div style={{fontSize:11,color:"#8A949B",fontWeight:700,marginBottom:4}}>Risultati · tocca per scegliere</div>
+            {lista.map(function(p, i){
+              return (
+                <div key={i} onClick={function(){ setRes(p); setLista(null); }}
+                  style={{display:"flex",alignItems:"center",gap:11,padding:"9px 4px",borderTop:i>0?"1px solid #F1F4F6":"none",cursor:"pointer"}}>
+                  <div style={{width:32,height:32,borderRadius:10,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className="ti ti-package"/></div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</div>
+                    <div style={{fontSize:11,color:"#8A949B",fontWeight:600}}>{[p.marca, (p.kcal?p.kcal+" kcal/100g":"")].filter(Boolean).join(" · ")}</div>
+                  </div>
+                  <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18,flexShrink:0}}/>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {res && (
           <div className="mf-card" style={{marginTop:14,display:"flex",flexDirection:"column",gap:10}}>
