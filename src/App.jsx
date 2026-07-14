@@ -5361,7 +5361,7 @@ function porzioneStdIng(it, fallback) {
 }
 
 var PORZIONI_ID = {
-  pizza:[{l:"Pizza intera",g:350},{l:"Trancio/fetta",g:90},{l:"Pizzetta",g:100}],
+  pizza:[{l:"Pizza intera",g:350},{l:"Trancio",g:120},{l:"Pizzetta",g:100}],
   pizza_rossa:[{l:"Trancio",g:120},{l:"Pezzo",g:80},{l:"Teglia",g:300}],
   focaccia:[{l:"Pezzo",g:100},{l:"Teglia",g:250}],
   piadina:[{l:"1 piadina",g:120}],
