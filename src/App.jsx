@@ -2052,7 +2052,7 @@ var CARBOIDRATI = [
   {id:"pane_b",nome:"Pane bianco",cat:"pane",emoji:"?",kcal_p:265,prot_p:8,carb_p:50,phe_p:410,gsat_p:0.4,na_p:450,stagione:"tutto"},
   {id:"pane_int",nome:"Pane integrale",cat:"pane",emoji:"?",kcal_p:240,prot_p:9,carb_p:45,phe_p:450,gsat_p:0.5,na_p:400,stagione:"tutto"},
   {id:"focaccia",nome:"Focaccia",cat:"pane",emoji:"?",kcal_p:310,prot_p:8,carb_p:50,phe_p:410,gsat_p:1.5,na_p:600,stagione:"tutto"},
-  {id:"pizza",nome:"Pizza margherita",cat:"pane",emoji:"?",kcal_p:420,prot_p:11,carb_p:50,phe_p:560,gsat_p:4.0,na_p:600,stagione:"tutto"},
+  {id:"pizza",nome:"Pizza margherita",cat:"pane",emoji:"?",kcal_p:270,prot_p:8,carb_p:35,phe_p:560,gsat_p:3.5,na_p:600,stagione:"tutto"},
   {id:"pizza_rossa",nome:"Pizza rossa",cat:"pane",emoji:"?",kcal_p:250,prot_p:6,carb_p:44,phe_p:340,gsat_p:1.5,na_p:550,stagione:"tutto"},
   {id:"piadina",nome:"Piadina",cat:"pane",emoji:"?",kcal_p:340,prot_p:8,carb_p:50,phe_p:410,gsat_p:5.0,na_p:700,stagione:"tutto"},
   {id:"pinsa",nome:"Pinsa romana",cat:"pane",emoji:"?",kcal_p:260,prot_p:9,carb_p:48,phe_p:450,gsat_p:0.5,na_p:500,stagione:"tutto"},
@@ -5361,7 +5361,7 @@ function porzioneStdIng(it, fallback) {
 }
 
 var PORZIONI_ID = {
-  pizza:[{l:"Trancio",g:150},{l:"Pizzetta",g:100},{l:"Pizza intera",g:330}],
+  pizza:[{l:"Pizza intera",g:350},{l:"Trancio/fetta",g:90},{l:"Pizzetta",g:100}],
   pizza_rossa:[{l:"Trancio",g:120},{l:"Pezzo",g:80},{l:"Teglia",g:300}],
   focaccia:[{l:"Pezzo",g:100},{l:"Teglia",g:250}],
   piadina:[{l:"1 piadina",g:120}],
