@@ -5321,7 +5321,7 @@ var PORZIONI_CAT = {
   riso:[{l:"Piatto",g:80},{l:"Abbondante",g:120}],
   cereali:[{l:"Porzione",g:70}],
   tuberi:[{l:"Porzione",g:200},{l:"Piccola",g:120}],
-  pane:[{l:"Fetta",g:50},{l:"Panino",g:70},{l:"Michetta",g:60}],
+  pane:[{l:"Fetta",g:50},{l:"Panino",g:70}],
   colazione:[{l:"Porzione",g:40}],
   carne:[{l:"Fetta",g:120},{l:"Porzione",g:150},{l:"Piccola",g:100}],
   "carne bianca":[{l:"Fetta",g:120},{l:"Porzione",g:150},{l:"Piccola",g:100}],
@@ -8009,6 +8009,10 @@ function DiarioView(props) {
           var stdPorz = alimMatch ? porzioneStdIng(alimMatch, 100) : 100;
           var kcalAuto = (alimMatch && alimMatch.kcal_p && grNum > 0) ? Math.round(alimMatch.kcal_p * grNum / 100) : null;
           var porzioni = alimMatch ? porzioniPer(alimMatch) : [];
+          if(porzioni.length){
+            var refG = Math.max.apply(null, porzioni.map(function(p){ return p.g; }));
+            porzioni = porzioni.concat([{l:"Metà", g:Math.round(refG/2)}, {l:"1/4", g:Math.round(refG/4)}]);
+          }
           var presets = [50, 100, 150, 200];
           var gramInput = {padding:"9px 10px",borderRadius:11,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"};
           var stepBtn = {width:34,height:34,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:18,cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"};
