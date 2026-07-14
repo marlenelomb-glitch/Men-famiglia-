@@ -2111,6 +2111,10 @@ var PROTEINE = [
   {id:"philadelphia",nome:"Formaggio spalmabile",cat:"latticini",emoji:"?",kcal_p:250,prot_p:6,carb_p:4,phe_p:300,gsat_p:16,na_p:400,piramide:"latticini",freq:"libero"},
   {id:"latte",nome:"Latte",cat:"latticini",emoji:"?",kcal_p:64,prot_p:3.3,carb_p:5,phe_p:160,gsat_p:2.3,na_p:44,piramide:"latticini",freq:"libero"},
   {id:"yogurt_b",nome:"Yogurt bianco",cat:"latticini",emoji:"?",kcal_p:61,prot_p:3.5,carb_p:5,phe_p:170,gsat_p:2,na_p:50,piramide:"latticini",freq:"libero"},
+  {id:"latte_riso",nome:"Latte di riso",cat:"latticini",emoji:"?",kcal_p:50,prot_p:0.5,carb_p:10,phe_p:20,gsat_p:0.1,na_p:30,piramide:"latticini",freq:"libero"},
+  {id:"latte_soia",nome:"Latte di soia",cat:"latticini",emoji:"?",kcal_p:42,prot_p:3.3,carb_p:2,phe_p:150,gsat_p:0.3,na_p:30,piramide:"latticini",freq:"libero"},
+  {id:"latte_mandorla",nome:"Latte di mandorla",cat:"latticini",emoji:"?",kcal_p:24,prot_p:0.6,carb_p:3,phe_p:25,gsat_p:0.1,na_p:60,piramide:"latticini",freq:"libero"},
+  {id:"latte_avena",nome:"Latte di avena",cat:"latticini",emoji:"?",kcal_p:47,prot_p:1,carb_p:7,phe_p:40,gsat_p:0.2,na_p:40,piramide:"latticini",freq:"libero"},
 ];
 
 var VERDURE = [
@@ -2922,10 +2926,11 @@ function riconosciPasto(testo) {
       if(it && !chosen[it.id]) { byWord[k] = it; chosen[it.id] = true; }
     }
   });
+  var tWords = t.split(/[^a-zàèéìòùü]+/).filter(Boolean);
   db.forEach(function(it){
     var parole = it.nome.toLowerCase().split(/[^a-zàèéìòùü]+/).filter(function(w){ return w.length > 3; });
     for(var i=0;i<parole.length;i++){
-      if(t.indexOf(parole[i]) >= 0) {
+      if(tWords.indexOf(parole[i]) >= 0) {
         if(!byWord[parole[i]] && !chosen[it.id]) { byWord[parole[i]] = it; chosen[it.id] = true; }
         break;
       }
@@ -7980,11 +7985,17 @@ function DiarioView(props) {
       if(!it || !it.kcal_p) return;
       var n = (""+(it.nome||"")).toLowerCase();
       if(n === q || n.indexOf(q) === 0) starts.push(it);
-      else if(n.indexOf(q) >= 0 || q.indexOf(n) >= 0) contains.push(it);
+      else if(q.indexOf(n) >= 0 || n.indexOf(q) >= 0) contains.push(it);
+    });
+    contains.sort(function(a,b){
+      var na = (""+(a.nome||"")).toLowerCase(), nb = (""+(b.nome||"")).toLowerCase();
+      var ia = q.indexOf(na) >= 0 ? 1 : 0, ib = q.indexOf(nb) >= 0 ? 1 : 0;
+      if(ia !== ib) return ib - ia;
+      return nb.length - na.length;
     });
     var out = starts.concat(contains).slice(0, 8);
     var comp = riconosciComposto(nome);
-    if(comp && comp.ingredienti && comp.ingredienti.length >= 2) out = [comp].concat(out).slice(0, 8);
+    if(comp && comp.ingredienti && comp.ingredienti.length >= 2) out = out.concat([comp]).slice(0, 8);
     return out;
   }
   function rimuoviVoce(id) {
