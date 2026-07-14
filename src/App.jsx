@@ -5334,6 +5334,7 @@ var PORZIONI_CAT = {
 };
 function porzioniPer(it) {
   if(!it) return [];
+  if(it.porz) return [{l:"Porzione", g:it.porz}];
   if(PORZIONI_ID[it.id]) return PORZIONI_ID[it.id];
   if(it.cat && PORZIONI_CAT[it.cat]) return PORZIONI_CAT[it.cat];
   if(typeof VERDURE !== "undefined" && VERDURE.some(function(x){ return x.id === it.id; })) return [{l:"Contorno",g:150},{l:"Abbondante",g:200}];
@@ -7899,7 +7900,7 @@ function DiarioView(props) {
       nomi.push(it.nome);
     });
     if(totG <= 0) return null;
-    return { id:"_comp", nome:nome, composto:true, ingredienti:nomi,
+    return { id:"_comp", nome:nome, composto:true, ingredienti:nomi, porz: Math.round(totG),
       kcal_p: Math.round(totK/totG*100), prot_p: Math.round(totP/totG*100*10)/10, carb_p: Math.round(totC/totG*100*10)/10 };
   }
   function cercaAlim(nome) {
@@ -7927,7 +7928,7 @@ function DiarioView(props) {
     var nome = addNome.trim(); if(!nome) return;
     var alim = cercaAlim(nome);
     var g = parseInt(addGr, 10) || 0;
-    if(alim && alim.kcal_p && g <= 0) g = Math.round(porzioneStdIng(alim, 100));
+    if(alim && alim.kcal_p && g <= 0) g = Math.round(alim.porz || porzioneStdIng(alim, 100));
     var kc = (alim && alim.kcal_p && g > 0) ? Math.round(alim.kcal_p * g / 100) : (parseInt(addKcal, 10) || 0);
     var pr = (alim && g > 0) ? Math.round((alim.prot_p || 0) * g / 100) : (parseInt(addProt, 10) || 0);
     var cb = (alim && g > 0) ? Math.round((alim.carb_p || 0) * g / 100) : 0;
