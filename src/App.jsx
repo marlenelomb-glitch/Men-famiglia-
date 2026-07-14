@@ -7852,6 +7852,7 @@ function DiarioView(props) {
   var s_showAdd = useState(false); var showAdd = s_showAdd[0]; var setShowAdd = s_showAdd[1];
   var s_an = useState(""); var addNome = s_an[0]; var setAddNome = s_an[1];
   var s_ak = useState(""); var addKcal = s_ak[0]; var setAddKcal = s_ak[1];
+  var s_apr = useState(""); var addProt = s_apr[0]; var setAddProt = s_apr[1];
   var s_ap = useState("Pranzo"); var addPasto = s_ap[0]; var setAddPasto = s_ap[1];
   var s_ag = useState(""); var addGr = s_ag[0]; var setAddGr = s_ag[1];
   var s_edit = useState(""); var editId = s_edit[0]; var setEditId = s_edit[1];
@@ -7904,22 +7905,29 @@ function DiarioView(props) {
   function setAcqua(n) {
     salvaRec({items:items, acqua: Math.max(0, Math.min(12, n))});
   }
-  function apriAggiungi() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setAddPasto("Pranzo"); setPSize(1); setPBase(0); setPQty(1); setShowAdd(true); }
-  function apriModifica(x) { setEditId(x.id); setAddNome(x.nome||""); setAddKcal(x.kcal?String(x.kcal):""); setAddGr(x.gr?String(x.gr):""); setAddPasto(x.pasto||"Pranzo"); setPSize(1); setPBase(x.gr||0); setPQty(1); setShowAdd(true); }
-  function annullaForm() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setPSize(1); setPBase(0); setPQty(1); setShowAdd(false); }
+  function apriAggiungi() { setEditId(""); setAddNome(""); setAddKcal(""); setAddProt(""); setAddGr(""); setAddPasto("Pranzo"); setPSize(1); setPBase(0); setPQty(1); setShowAdd(true); }
+  function apriModifica(x) { setEditId(x.id); setAddNome(x.nome||""); setAddKcal(x.kcal?String(x.kcal):""); setAddProt(x.prot?String(x.prot):""); setAddGr(x.gr?String(x.gr):""); setAddPasto(x.pasto||"Pranzo"); setPSize(1); setPBase(x.gr||0); setPQty(1); setShowAdd(true); }
+  function annullaForm() { setEditId(""); setAddNome(""); setAddKcal(""); setAddProt(""); setAddGr(""); setPSize(1); setPBase(0); setPQty(1); setShowAdd(false); }
   function salvaVoce() {
     var nome = addNome.trim(); if(!nome) return;
     var alim = cercaAlim(nome);
     var g = parseInt(addGr, 10) || 0;
     var kc = (alim && alim.kcal_p && g > 0) ? Math.round(alim.kcal_p * g / 100) : (parseInt(addKcal, 10) || 0);
+    var pr = (alim && g > 0) ? Math.round((alim.prot_p || 0) * g / 100) : (parseInt(addProt, 10) || 0);
+    var cb = (alim && g > 0) ? Math.round((alim.carb_p || 0) * g / 100) : 0;
+    var voce = {pasto:addPasto, nome:nome, kcal:kc, prot:pr, carb:cb, gr:g};
     if(editId) {
-      salvaRec({items: items.map(function(x){ return x.id === editId ? Object.assign({}, x, {pasto:addPasto, nome:nome, kcal:kc, gr:g}) : x; }), acqua:acqua});
+      salvaRec({items: items.map(function(x){ return x.id === editId ? Object.assign({}, x, voce) : x; }), acqua:acqua});
     } else {
       var id = "e" + now.getTime() + "_" + Math.round(consumate + items.length + nome.length);
-      salvaRec({items: items.concat([{id:id, pasto:addPasto, nome:nome, kcal:kc, gr:g}]), acqua:acqua});
+      salvaRec({items: items.concat([Object.assign({id:id}, voce)]), acqua:acqua});
     }
     annullaForm();
   }
+  var consumateProt = items.reduce(function(s,x){ return s + (x.prot||0); }, 0);
+  var consumateCarb = items.reduce(function(s,x){ return s + (x.carb||0); }, 0);
+  var protMax = membro && membro.prot_max ? (parseInt(membro.prot_max, 10) || 0) : 0;
+  var protOver = protMax > 0 && consumateProt > protMax;
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -7973,6 +7981,23 @@ function DiarioView(props) {
           </div>
         </div>
         <div className="mf-track"><span style={{width:pct+"%",background:consumate>target?"#C2355A":"#6BA6C9"}}/></div>
+        <div style={{display:"flex",gap:8,marginTop:11}}>
+          <div style={{flex:1,background:protOver?"#FBE7EC":"#F2F6F8",borderRadius:11,padding:"9px 11px"}}>
+            <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".03em",color:protOver?"#C2355A":"#8A949B"}}>Proteine</div>
+            <div style={{fontSize:16,fontWeight:800,color:protOver?"#C2355A":"#2C3338"}}>{consumateProt} <span style={{fontSize:11,fontWeight:600,color:protOver?"#C2355A":"#8A949B"}}>{protMax>0?("/ "+protMax+" g"):"g"}</span></div>
+          </div>
+          <div style={{flex:1,background:"#F2F6F8",borderRadius:11,padding:"9px 11px"}}>
+            <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".03em",color:"#8A949B"}}>Carboidrati</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#2C3338"}}>{consumateCarb} <span style={{fontSize:11,fontWeight:600,color:"#8A949B"}}>g</span></div>
+          </div>
+        </div>
+        {protOver ? (
+          <div style={{marginTop:9,background:"#FBE7EC",borderRadius:10,padding:"8px 11px",fontSize:12,color:"#C2355A",fontWeight:700,display:"flex",alignItems:"center",gap:7}}>
+            <i className="ti ti-alert-triangle" style={{fontSize:15}}/>{membro?membro.nome:""} ha superato il limite di proteine ({protMax} g)
+          </div>
+        ) : (protMax > 0 ? (
+          <div style={{marginTop:9,fontSize:11,color:"#8A949B",fontWeight:600}}>Limite proteine per {membro?membro.nome:""}: {protMax} g al giorno.</div>
+        ) : null)}
       </div>
 
       <div>
@@ -7993,7 +8018,7 @@ function DiarioView(props) {
                   <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[m]||"ti-tools-kitchen-2")}/></div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:14,fontWeight:500}}>{r.nome}</div>
-                    <div style={{fontSize:11,color:"#8A949B"}}>{m}{r.gr ? " · "+r.gr+" g" : ""}</div>
+                    <div style={{fontSize:11,color:"#8A949B"}}>{m}{r.gr ? " · "+r.gr+" g" : ""}{r.prot ? " · "+r.prot+"g prot" : ""}</div>
                   </div>
                   <span style={{fontSize:13,color:"#8A949B",marginRight:8}}>{r.kcal ? r.kcal+" kcal" : "-"}</span>
                   <i className="ti ti-x" onClick={function(e){ e.stopPropagation(); rimuoviVoce(r.id); }}
@@ -8011,6 +8036,7 @@ function DiarioView(props) {
           var grNum = parseInt(addGr, 10) || 0;
           var stdPorz = alimMatch ? porzioneStdIng(alimMatch, 100) : 100;
           var kcalAuto = (alimMatch && alimMatch.kcal_p && grNum > 0) ? Math.round(alimMatch.kcal_p * grNum / 100) : null;
+          var protAuto = (alimMatch && grNum > 0) ? Math.round((alimMatch.prot_p || 0) * grNum / 100) : null;
           var porzioni = alimMatch ? porzioniPer(alimMatch) : [];
           if(porzioni.length){
             var refG = Math.max.apply(null, porzioni.map(function(p){ return p.g; }));
@@ -8072,21 +8098,29 @@ function DiarioView(props) {
                 <span style={{fontSize:12,color:"#8A949B",fontWeight:700}}>g</span>
                 <button onClick={function(){ setAddGr(String(grNum+10)); }} style={stepBtn}>+</button>
               </div>
+              {!alimMatch ? (
+                <div style={{display:"flex",gap:8}}>
+                  <input placeholder="kcal" inputMode="numeric" value={addKcal} onChange={function(e){setAddKcal(e.target.value.replace(/[^0-9]/g,""));}}
+                    style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                  <input placeholder="proteine g" inputMode="numeric" value={addProt} onChange={function(e){setAddProt(e.target.value.replace(/[^0-9]/g,""));}}
+                    style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
+                </div>
+              ) : null}
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
                 <select value={addPasto} onChange={function(e){setAddPasto(e.target.value);}}
                   style={{flex:1,minWidth:0,padding:"10px 12px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:13,outline:"none",background:"#fff",fontFamily:"'Nunito',system-ui,sans-serif"}}>
                   {ordine.map(function(m){ return <option key={m} value={m}>{m}</option>; })}
                 </select>
                 {alimMatch ? (
-                  <div style={{width:88,textAlign:"center",fontSize:14,fontWeight:800,color:"#2F6586"}}>{kcalAuto!=null?kcalAuto:"—"} kcal</div>
-                ) : (
-                  <input placeholder="kcal" inputMode="numeric" value={addKcal} onChange={function(e){setAddKcal(e.target.value.replace(/[^0-9]/g,""));}}
-                    style={{width:80,padding:"10px",borderRadius:12,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"}}/>
-                )}
+                  <div style={{minWidth:92,textAlign:"center"}}>
+                    <div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>{kcalAuto!=null?kcalAuto:"—"} kcal</div>
+                    <div style={{fontSize:11,fontWeight:700,color:"#8A949B"}}>{protAuto!=null?protAuto:0}g prot</div>
+                  </div>
+                ) : null}
                 <button onClick={salvaVoce} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#2F6586",color:"#fff",fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",flexShrink:0}}>{editId?"Salva":"Aggiungi"}</button>
               </div>
               {!alimMatch && addNome.trim() ? (
-                <div style={{fontSize:10,color:"#8A949B"}}>Non è nel database: scrivi tu le kcal. Oppure usa lo scanner del codice a barre nelle Provviste.</div>
+                <div style={{fontSize:10,color:"#8A949B"}}>Non è nel database: scrivi tu kcal e proteine. Oppure usa lo scanner del codice a barre.</div>
               ) : null}
             </div>
           );
