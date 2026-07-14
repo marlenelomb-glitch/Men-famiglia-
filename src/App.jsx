@@ -7927,6 +7927,7 @@ function DiarioView(props) {
     var nome = addNome.trim(); if(!nome) return;
     var alim = cercaAlim(nome);
     var g = parseInt(addGr, 10) || 0;
+    if(alim && alim.kcal_p && g <= 0) g = Math.round(porzioneStdIng(alim, 100));
     var kc = (alim && alim.kcal_p && g > 0) ? Math.round(alim.kcal_p * g / 100) : (parseInt(addKcal, 10) || 0);
     var pr = (alim && g > 0) ? Math.round((alim.prot_p || 0) * g / 100) : (parseInt(addProt, 10) || 0);
     var cb = (alim && g > 0) ? Math.round((alim.carb_p || 0) * g / 100) : 0;
