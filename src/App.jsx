@@ -7857,6 +7857,7 @@ function DiarioView(props) {
   var s_edit = useState(""); var editId = s_edit[0]; var setEditId = s_edit[1];
   var s_size = useState(1); var pSize = s_size[0]; var setPSize = s_size[1];
   var s_base = useState(0); var pBase = s_base[0]; var setPBase = s_base[1];
+  var s_qty = useState(1); var pQty = s_qty[0]; var setPQty = s_qty[1];
   var s_off = useState(0); var dayOff = s_off[0]; var setDayOff = s_off[1];
 
   var now = new Date();
@@ -7903,9 +7904,9 @@ function DiarioView(props) {
   function setAcqua(n) {
     salvaRec({items:items, acqua: Math.max(0, Math.min(12, n))});
   }
-  function apriAggiungi() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setAddPasto("Pranzo"); setPSize(1); setPBase(0); setShowAdd(true); }
-  function apriModifica(x) { setEditId(x.id); setAddNome(x.nome||""); setAddKcal(x.kcal?String(x.kcal):""); setAddGr(x.gr?String(x.gr):""); setAddPasto(x.pasto||"Pranzo"); setPSize(1); setPBase(x.gr||0); setShowAdd(true); }
-  function annullaForm() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setPSize(1); setPBase(0); setShowAdd(false); }
+  function apriAggiungi() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setAddPasto("Pranzo"); setPSize(1); setPBase(0); setPQty(1); setShowAdd(true); }
+  function apriModifica(x) { setEditId(x.id); setAddNome(x.nome||""); setAddKcal(x.kcal?String(x.kcal):""); setAddGr(x.gr?String(x.gr):""); setAddPasto(x.pasto||"Pranzo"); setPSize(1); setPBase(x.gr||0); setPQty(1); setShowAdd(true); }
+  function annullaForm() { setEditId(""); setAddNome(""); setAddKcal(""); setAddGr(""); setPSize(1); setPBase(0); setPQty(1); setShowAdd(false); }
   function salvaVoce() {
     var nome = addNome.trim(); if(!nome) return;
     var alim = cercaAlim(nome);
@@ -8034,15 +8035,15 @@ function DiarioView(props) {
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {porzioni.map(function(pz, pi){
                     var on = pBase === pz.g;
-                    return <button key={pi} onClick={function(){ setPBase(pz.g); setAddGr(String(Math.round(pz.g * pSize))); }}
+                    return <button key={pi} onClick={function(){ setPBase(pz.g); setAddGr(String(Math.round(pz.g * pSize * pQty))); }}
                       style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#2C3338",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{pz.l} <span style={{color:"#8A949B",fontWeight:600}}>{pz.g} g</span></button>;
                   })}
                 </div>
               ) : (
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                   {presets.map(function(g){
-                    var on = grNum === g;
-                    return <button key={g} onClick={function(){ setPBase(g); setAddGr(String(g)); }}
+                    var on = pBase === g;
+                    return <button key={g} onClick={function(){ setPBase(g); setAddGr(String(Math.round(g * pSize * pQty))); }}
                       style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g} g</button>;
                   })}
                 </div>
@@ -8052,11 +8053,17 @@ function DiarioView(props) {
                 <div style={{display:"flex",background:"#E2EEF5",borderRadius:10,padding:3,flex:1}}>
                   {[{l:"Piccola",f:0.75},{l:"Media",f:1},{l:"Grande",f:1.35}].map(function(sz){
                     var on = pSize === sz.f;
-                    return <button key={sz.l} onClick={function(){ var b = pBase>0?pBase:(grNum||100); setPBase(b); setPSize(sz.f); setAddGr(String(Math.round(b * sz.f))); }}
+                    return <button key={sz.l} onClick={function(){ var b = pBase>0?pBase:(grNum||100); setPBase(b); setPSize(sz.f); setAddGr(String(Math.round(b * sz.f * pQty))); }}
                       style={{flex:1,border:"none",borderRadius:8,padding:"6px 0",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",
                         background:on?"#fff":"transparent",color:on?"#2F6586":"#7C93A3",boxShadow:on?"0 1px 4px rgba(20,40,55,.1)":"none"}}>{sz.l}</button>;
                   })}
                 </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:11,color:"#8A949B",fontWeight:700,flex:1}}>Quante porzioni?</span>
+                <button onClick={function(){ var q=Math.max(1,pQty-1); var b=pBase>0?pBase:(grNum||100); setPBase(b); setPQty(q); setAddGr(String(Math.round(b*pSize*q))); }} style={stepBtn}>−</button>
+                <span style={{minWidth:26,textAlign:"center",fontSize:15,fontWeight:800,color:"#2C3338"}}>{pQty}</span>
+                <button onClick={function(){ var q=pQty+1; var b=pBase>0?pBase:(grNum||100); setPBase(b); setPQty(q); setAddGr(String(Math.round(b*pSize*q))); }} style={stepBtn}>+</button>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <button onClick={function(){ setAddGr(String(Math.max(0, grNum-10))); }} style={stepBtn}>−</button>
