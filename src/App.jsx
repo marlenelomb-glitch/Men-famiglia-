@@ -5309,6 +5309,37 @@ function porzioneStdIng(it, fallback) {
   if(it && PORZ_STD[it.cat]) return PORZ_STD[it.cat];
   return fallback || 100;
 }
+
+var PORZIONI_ID = {
+  pizza:[{l:"Trancio",g:150},{l:"Pizzetta",g:100},{l:"Pizza intera",g:330}],
+  focaccia:[{l:"Pezzo",g:100},{l:"Teglia",g:250}],
+  piadina:[{l:"1 piadina",g:120}],
+  pinsa:[{l:"1 pinsa",g:200}]
+};
+var PORZIONI_CAT = {
+  pasta:[{l:"Piatto",g:80},{l:"Abbondante",g:120},{l:"Mezzo",g:50}],
+  riso:[{l:"Piatto",g:80},{l:"Abbondante",g:120}],
+  cereali:[{l:"Porzione",g:70}],
+  tuberi:[{l:"Porzione",g:200},{l:"Piccola",g:120}],
+  pane:[{l:"Fetta",g:50},{l:"Panino",g:70},{l:"Michetta",g:60}],
+  colazione:[{l:"Porzione",g:40}],
+  carne:[{l:"Fetta",g:120},{l:"Porzione",g:150},{l:"Piccola",g:100}],
+  "carne bianca":[{l:"Fetta",g:120},{l:"Porzione",g:150},{l:"Piccola",g:100}],
+  "carne rossa":[{l:"Fetta",g:120},{l:"Porzione",g:150},{l:"Piccola",g:100}],
+  pesce:[{l:"Filetto",g:150},{l:"Piccolo",g:100}],
+  uova:[{l:"1 uovo",g:60},{l:"2 uova",g:120}],
+  legumi:[{l:"Porzione",g:150},{l:"Abbondante",g:200}],
+  latticini:[{l:"Vasetto",g:125},{l:"Porzione",g:100}],
+  affettati:[{l:"Fette",g:50},{l:"Porzione",g:80}]
+};
+function porzioniPer(it) {
+  if(!it) return [];
+  if(PORZIONI_ID[it.id]) return PORZIONI_ID[it.id];
+  if(it.cat && PORZIONI_CAT[it.cat]) return PORZIONI_CAT[it.cat];
+  if(typeof VERDURE !== "undefined" && VERDURE.some(function(x){ return x.id === it.id; })) return [{l:"Contorno",g:150},{l:"Abbondante",g:200}];
+  if(typeof FRUTTA !== "undefined" && FRUTTA.some(function(x){ return x.id === it.id; })) return [{l:"1 frutto",g:150},{l:"Porzione",g:120}];
+  return [{l:"Porzione", g:porzioneStdIng(it, 100)}];
+}
 function grammiField(scelta, field, it, fallback) {
   var g = scelta && scelta.grammi ? scelta.grammi[field] : null;
   var n = parseInt(g, 10);
@@ -7977,6 +8008,7 @@ function DiarioView(props) {
           var grNum = parseInt(addGr, 10) || 0;
           var stdPorz = alimMatch ? porzioneStdIng(alimMatch, 100) : 100;
           var kcalAuto = (alimMatch && alimMatch.kcal_p && grNum > 0) ? Math.round(alimMatch.kcal_p * grNum / 100) : null;
+          var porzioni = alimMatch ? porzioniPer(alimMatch) : [];
           var presets = [50, 100, 150, 200];
           var gramInput = {padding:"9px 10px",borderRadius:11,border:"1px solid #E3EAEE",fontSize:14,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif"};
           var stepBtn = {width:34,height:34,borderRadius:10,border:"1px solid #E3EAEE",background:"#fff",color:"#2F6586",fontSize:18,cursor:"pointer",flexShrink:0,fontFamily:"'Nunito',system-ui,sans-serif"};
@@ -7991,14 +8023,24 @@ function DiarioView(props) {
               {alimMatch ? (
                 <div style={{fontSize:11,color:"#2F6586",fontWeight:700}}>Trovato: {alimMatch.nome} · {alimMatch.kcal_p} kcal per 100 g</div>
               ) : null}
-              <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Quanto? (grammi)</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                {presets.concat((alimMatch && presets.indexOf(stdPorz) < 0) ? [stdPorz] : []).map(function(g){
-                  var on = grNum === g;
-                  return <button key={g} onClick={function(){ setAddGr(String(g)); }}
-                    style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g} g{alimMatch&&g===stdPorz?" · porzione":""}</button>;
-                })}
-              </div>
+              <div style={{fontSize:11,color:"#8A949B",fontWeight:700}}>Quanto?</div>
+              {porzioni.length > 0 ? (
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {porzioni.map(function(pz, pi){
+                    var on = grNum === pz.g;
+                    return <button key={pi} onClick={function(){ setAddGr(String(pz.g)); }}
+                      style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#2C3338",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{pz.l} <span style={{color:"#8A949B",fontWeight:600}}>{pz.g} g</span></button>;
+                  })}
+                </div>
+              ) : (
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {presets.map(function(g){
+                    var on = grNum === g;
+                    return <button key={g} onClick={function(){ setAddGr(String(g)); }}
+                      style={{border:"1.5px solid "+(on?"#2F6586":"#E3EAEE"),background:on?"#E2EEF5":"#fff",color:on?"#2F6586":"#8A949B",borderRadius:20,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{g} g</button>;
+                  })}
+                </div>
+              )}
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <button onClick={function(){ setAddGr(String(Math.max(0, grNum-10))); }} style={stepBtn}>−</button>
                 <input inputMode="numeric" value={addGr} onChange={function(e){setAddGr(e.target.value.replace(/[^0-9]/g,""));}} placeholder="grammi"
