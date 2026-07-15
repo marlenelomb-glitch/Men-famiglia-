@@ -239,6 +239,52 @@ function aiOpzioniCena(profili, giorno) {
   return chiamaAI(AI_SYSTEM, prompt, 500);
 }
 
+function aiLeggiRicettaFoto(dataUrl) {
+  if(!ANTHROPIC_KEY) return Promise.reject(new Error("Chiave AI non configurata (VITE_ANTHROPIC_KEY)"));
+  var m = /^data:(image\/[a-z]+);base64,(.*)$/i.exec(dataUrl || "");
+  if(!m) return Promise.reject(new Error("Foto non valida"));
+  var content = [
+    { type: "image", source: { type: "base64", media_type: m[1].toLowerCase(), data: m[2] } },
+    { type: "text", text:
+      "Questa immagine e' una ricetta (foto, screenshot da internet o da un social). " +
+      "Estrai la ricetta e rispondi SOLO con un oggetto JSON, senza altro testo, con questi campi: " +
+      "\"titolo\" (nome del piatto), " +
+      "\"ingredienti\" (elenco degli ingredienti con le quantita', uno per riga separati da a-capo), " +
+      "\"note\" (i passaggi di preparazione, in modo sintetico e ordinato). " +
+      "Scrivi in italiano. Se un dato non c'e' nella foto, lascia il campo con stringa vuota. " +
+      "Non inventare ingredienti o passaggi non presenti." }
+  ];
+  return fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": ANTHROPIC_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      model: AI_MODEL,
+      max_tokens: 1500,
+      system: "Sei un assistente che legge ricette dalle foto e le trascrive in italiano in modo fedele e ordinato.",
+      messages: [{ role: "user", content: content }]
+    })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data && data.error) throw new Error((data.error && data.error.message) || "Errore AI");
+    var t = "";
+    if(data && data.content) data.content.forEach(function(b){ if(b.type === "text") t += b.text; });
+    var s = t.trim();
+    var i1 = s.indexOf("{"), i2 = s.lastIndexOf("}");
+    if(i1 >= 0 && i2 > i1) s = s.slice(i1, i2 + 1);
+    var obj;
+    try { obj = JSON.parse(s); } catch(e){ throw new Error("Risposta non leggibile"); }
+    return {
+      titolo: (obj.titolo || "").toString().trim(),
+      ingredienti: (obj.ingredienti || "").toString().trim(),
+      note: (obj.note || "").toString().trim()
+    };
+  });
+}
+
 // ── Notifica nuove iscrizioni (Web3Forms) ───────────────────
 var WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY || "";
 
@@ -945,6 +991,8 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
   const [nuovaRicetta, setNuovaRicetta] = useState({
     titolo:"", fonte:"", note:"", ingredienti:"", foto:null
   });
+  const [leggendoFoto, setLeggendoFoto] = useState(false);
+  const [errFoto, setErrFoto] = useState(null);
   const [filtroFonte, setFiltroFonte] = useState("tutte");
 
   const caricaLive = () => {
@@ -1308,8 +1356,11 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
 
             {showAddRicetta && (
               <div style={{background:"#FBE7EC",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#C2355A",marginBottom:8}}>
-                  Nuova ricetta da Instagram
+                <div style={{fontSize:10,fontWeight:700,color:"#C2355A",marginBottom:4}}>
+                  Nuova ricetta
+                </div>
+                <div style={{fontSize:9,color:"#8A949B",marginBottom:8,lineHeight:1.4}}>
+                  Scrivila a mano, oppure aggiungi una foto (anche uno screenshot dal web) e premi "Leggi la ricetta dalla foto".
                 </div>
                 <input placeholder="Nome ricetta"
                   value={nuovaRicetta.titolo}
@@ -1346,7 +1397,7 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                       <img src={nuovaRicetta.foto} alt="foto"
                         style={{width:"100%",height:140,objectFit:"cover",
                           borderRadius:10,display:"block"}}/>
-                      <button onClick={()=>setNuovaRicetta(p=>({...p,foto:null}))}
+                      <button onClick={()=>{setNuovaRicetta(p=>({...p,foto:null})); setErrFoto(null);}}
                         style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,.5)",
                           color:"#fff",border:"none",borderRadius:"50%",
                           width:24,height:24,cursor:"pointer",fontSize:12,fontWeight:700}}>
@@ -1389,7 +1440,41 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                         }}/>
                     </label>
                   )}
-                </div>                <button onClick={()=>{
+                </div>
+
+                {nuovaRicetta.foto && (
+                  <button onClick={()=>{
+                      if(!nuovaRicetta.foto) return;
+                      if(!aiAttiva()){ setErrFoto("L'assistente AI non e ancora attivo. Va aggiunta la chiave VITE_ANTHROPIC_KEY su Vercel."); return; }
+                      setLeggendoFoto(true); setErrFoto(null);
+                      aiLeggiRicettaFoto(nuovaRicetta.foto).then(function(r){
+                        setNuovaRicetta(p=>({...p,
+                          titolo: (p.titolo && p.titolo.trim()) ? p.titolo : r.titolo,
+                          ingredienti: r.ingredienti || p.ingredienti,
+                          note: r.note || p.note
+                        }));
+                        setLeggendoFoto(false);
+                      }, function(){
+                        setErrFoto("Non sono riuscita a leggere la ricetta. Prova con una foto piu nitida o piu vicina al testo.");
+                        setLeggendoFoto(false);
+                      });
+                    }}
+                    disabled={leggendoFoto}
+                    style={{width:"100%",padding:"8px",borderRadius:10,border:"1.5px solid #6BA6C9",
+                      background:"#E2EEF5",color:"#2F6586",fontSize:11,fontWeight:700,
+                      cursor:leggendoFoto?"default":"pointer",marginBottom:8,opacity:leggendoFoto?0.6:1,
+                      fontFamily:"'Nunito',system-ui,sans-serif"}}>
+                    {leggendoFoto?"Sto leggendo la ricetta...":"Leggi la ricetta dalla foto"}
+                  </button>
+                )}
+                {errFoto && (
+                  <div style={{background:"#FBE7EC",color:"#C2355A",fontSize:10,fontWeight:600,
+                    borderRadius:8,padding:"7px 9px",marginBottom:8,lineHeight:1.4}}>
+                    {errFoto}
+                  </div>
+                )}
+
+                <button onClick={()=>{
                     if(!nuovaRicetta.titolo.trim()) return;
                     setRicetteIG(prev=>[{
                       id:"r"+Date.now(),
@@ -1401,6 +1486,7 @@ function TabIdee({profili, dispensa, ricetteIG, setRicetteIG, pagine, setPagine}
                       data:new Date().toLocaleDateString("it-IT")
                     },...prev]);
                     setNuovaRicetta({titolo:"",fonte:"",ingredienti:"",note:"",foto:null});
+                    setErrFoto(null); setLeggendoFoto(false);
                     setShowAddRicetta(false);
                   }}
                   style={{width:"100%",padding:"8px",borderRadius:10,border:"none",
