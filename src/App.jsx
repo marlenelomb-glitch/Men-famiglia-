@@ -2155,6 +2155,8 @@ var CARBOIDRATI = [
   {id:"patatine_f",nome:"Patatine fritte",cat:"tuberi",emoji:"?",kcal_p:312,prot_p:3.4,carb_p:41,phe_p:150,gsat_p:2,na_p:210,stagione:"tutto"},
   {id:"patatine_c",nome:"Patatine in busta",cat:"tuberi",emoji:"?",kcal_p:536,prot_p:6,carb_p:53,phe_p:250,gsat_p:3,na_p:530,stagione:"tutto"},
   {id:"riso_venere",nome:"Riso venere",cat:"riso",emoji:"?",kcal_p:340,prot_p:8,carb_p:72,phe_p:420,gsat_p:0.3,na_p:5,stagione:"tutto"},
+  {id:"fette_bisc",nome:"Fette biscottate",cat:"colazione",emoji:"?",kcal_p:410,prot_p:11,carb_p:74,phe_p:500,gsat_p:1,na_p:400,stagione:"tutto"},
+  {id:"cereali_col",nome:"Cereali (fiocchi)",cat:"colazione",emoji:"?",kcal_p:375,prot_p:8,carb_p:78,phe_p:400,gsat_p:1,na_p:200,stagione:"tutto"},
 ];
 
 var PROTEINE = [
@@ -2201,6 +2203,7 @@ var PROTEINE = [
   {id:"latte_soia",nome:"Latte di soia",cat:"latticini",emoji:"?",kcal_p:42,prot_p:3.3,carb_p:2,phe_p:150,gsat_p:0.3,na_p:30,piramide:"latticini",freq:"libero"},
   {id:"latte_mandorla",nome:"Latte di mandorla",cat:"latticini",emoji:"?",kcal_p:24,prot_p:0.6,carb_p:3,phe_p:25,gsat_p:0.1,na_p:60,piramide:"latticini",freq:"libero"},
   {id:"latte_avena",nome:"Latte di avena",cat:"latticini",emoji:"?",kcal_p:47,prot_p:1,carb_p:7,phe_p:40,gsat_p:0.2,na_p:40,piramide:"latticini",freq:"libero"},
+  {id:"sottilette",nome:"Formaggio a fette",cat:"latticini",emoji:"?",kcal_p:280,prot_p:16,carb_p:6,phe_p:800,gsat_p:14,na_p:1300,piramide:"latticini",freq:"limitato"},
 ];
 
 var VERDURE = [
@@ -2286,6 +2289,9 @@ var DOLCIUMI = [
   {id:"miele",nome:"Miele",cat:"dolce",kcal_p:304,prot_p:0.3,carb_p:82,phe_p:15,gsat_p:0,na_p:4},
   {id:"marmellata",nome:"Marmellata",cat:"dolce",kcal_p:250,prot_p:0.4,carb_p:60,phe_p:10,gsat_p:0,na_p:20},
   {id:"nutella",nome:"Crema alle nocciole",cat:"dolce",kcal_p:539,prot_p:6,carb_p:57,phe_p:250,gsat_p:11,na_p:41},
+  {id:"cioccolato",nome:"Cioccolato",cat:"dolce",kcal_p:540,prot_p:6,carb_p:55,phe_p:300,gsat_p:19,na_p:24},
+  {id:"gelato",nome:"Gelato",cat:"dolce",kcal_p:200,prot_p:4,carb_p:24,phe_p:180,gsat_p:6,na_p:80},
+  {id:"merendina",nome:"Merendina",cat:"dolce",kcal_p:400,prot_p:6,carb_p:55,phe_p:250,gsat_p:6,na_p:250},
 ];
 
 var BEVANDE = [
@@ -2297,6 +2303,9 @@ var BEVANDE = [
   {id:"cioccolata_c",nome:"Cioccolata calda",cat:"bevande",kcal_p:90,prot_p:3,carb_p:15,phe_p:130,gsat_p:2.5,na_p:50},
   {id:"aranciata",nome:"Aranciata",cat:"bevande",kcal_p:38,prot_p:0,carb_p:9,phe_p:2,gsat_p:0,na_p:5},
   {id:"cola",nome:"Cola",cat:"bevande",kcal_p:42,prot_p:0,carb_p:11,phe_p:0,gsat_p:0,na_p:5},
+  {id:"tisana",nome:"Tisana",cat:"bevande",kcal_p:1,prot_p:0,carb_p:0.2,phe_p:1,gsat_p:0,na_p:1},
+  {id:"birra",nome:"Birra",cat:"bevande",kcal_p:43,prot_p:0.5,carb_p:3.6,phe_p:20,gsat_p:0,na_p:4},
+  {id:"vino",nome:"Vino",cat:"bevande",kcal_p:83,prot_p:0.1,carb_p:2.6,phe_p:15,gsat_p:0,na_p:4},
 ];
 
 var SPEZIE = [
@@ -5482,7 +5491,44 @@ var PORZIONI_ID = {
   zucchero:[{l:"Cucchiaino",g:5},{l:"Cucchiaio",g:12},{l:"Bustina",g:6},{l:"Zolletta",g:5}],
   miele:[{l:"Cucchiaino",g:7},{l:"Cucchiaio",g:20}],
   marmellata:[{l:"Cucchiaino",g:8},{l:"Cucchiaio",g:20}],
-  nutella:[{l:"Cucchiaino",g:8},{l:"Cucchiaio",g:20},{l:"Velo",g:15}]
+  nutella:[{l:"Cucchiaino",g:8},{l:"Cucchiaio",g:20},{l:"Velo",g:15}],
+  mele:[{l:"1 mela",g:150},{l:"Piccola",g:100}],
+  pere:[{l:"1 pera",g:150}],
+  arance:[{l:"1 arancia",g:150}],
+  pesche:[{l:"1 pesca",g:120}],
+  banana:[{l:"1 banana",g:120},{l:"Piccola",g:90}],
+  kiwi:[{l:"1 kiwi",g:80}],
+  albicocche:[{l:"1 albicocca",g:40},{l:"Alcune",g:120}],
+  mandarini:[{l:"1 mandarino",g:80},{l:"Due",g:160}],
+  prugne:[{l:"1 prugna",g:60},{l:"Alcune",g:150}],
+  fichi:[{l:"1 fico",g:50},{l:"Alcuni",g:150}],
+  cachi:[{l:"1 caco",g:150}],
+  fragole:[{l:"Ciotola",g:120},{l:"Manciata",g:60}],
+  ciliegie:[{l:"Ciotola",g:120},{l:"Manciata",g:60}],
+  mirtilli:[{l:"Ciotola",g:100},{l:"Manciata",g:50}],
+  lamponi:[{l:"Ciotola",g:100},{l:"Manciata",g:50}],
+  uva:[{l:"Grappolo",g:150},{l:"Chicchi",g:80}],
+  anguria:[{l:"Fetta",g:250},{l:"Porzione",g:150}],
+  melone:[{l:"Fetta",g:200},{l:"Porzione",g:150}],
+  ananas:[{l:"Fetta",g:120}],
+  melograno:[{l:"1 frutto",g:150}],
+  biscotti:[{l:"1 biscotto",g:8},{l:"Pochi",g:30},{l:"Porzione",g:40}],
+  fette_bisc:[{l:"1 fetta",g:8},{l:"2 fette",g:16},{l:"3 fette",g:24}],
+  cereali_col:[{l:"Ciotola",g:40},{l:"Cucchiaio",g:15}],
+  brioche:[{l:"1 pezzo",g:50}],
+  crackers:[{l:"1 cracker",g:5},{l:"Pacchetto",g:25}],
+  grissini:[{l:"1 grissino",g:5},{l:"Alcuni",g:20}],
+  mozzarella:[{l:"1 intera",g:125},{l:"Metà",g:60},{l:"Bocconcini",g:50}],
+  sottilette:[{l:"1 fetta",g:20},{l:"2 fette",g:40}],
+  yogurt_g:[{l:"Vasetto",g:150},{l:"Coppa",g:170}],
+  yogurt_b:[{l:"Vasetto",g:125},{l:"Porzione",g:100}],
+  cioccolato:[{l:"Quadretto",g:5},{l:"Fila",g:15},{l:"Barretta",g:25},{l:"Tavoletta",g:100}],
+  gelato:[{l:"Pallina",g:50},{l:"Coppetta",g:100},{l:"Cono",g:120},{l:"Vaschetta",g:250}],
+  merendina:[{l:"1 pezzo",g:35}],
+  patatine_c:[{l:"Pacchetto",g:25},{l:"Busta",g:100},{l:"Maxi",g:200}],
+  patatine_f:[{l:"Porzione",g:150},{l:"Piccola",g:100}],
+  birra:[{l:"Piccola",g:200},{l:"Media",g:400},{l:"Lattina",g:330}],
+  vino:[{l:"Bicchiere",g:125},{l:"Calice",g:150}]
 };
 var PORZIONI_CAT = {
   dolce:[{l:"Cucchiaino",g:6},{l:"Cucchiaio",g:15},{l:"Porzione",g:30}],
