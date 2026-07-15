@@ -2281,6 +2281,24 @@ var GRASSI = [
   {id:"olive",nome:"Olive",cat:"oli",kcal_p:145,prot_p:1,carb_p:6,phe_p:40,gsat_p:2,na_p:1500},
 ];
 
+var DOLCIUMI = [
+  {id:"zucchero",nome:"Zucchero",cat:"dolce",kcal_p:392,prot_p:0,carb_p:100,phe_p:0,gsat_p:0,na_p:0},
+  {id:"miele",nome:"Miele",cat:"dolce",kcal_p:304,prot_p:0.3,carb_p:82,phe_p:15,gsat_p:0,na_p:4},
+  {id:"marmellata",nome:"Marmellata",cat:"dolce",kcal_p:250,prot_p:0.4,carb_p:60,phe_p:10,gsat_p:0,na_p:20},
+  {id:"nutella",nome:"Crema alle nocciole",cat:"dolce",kcal_p:539,prot_p:6,carb_p:57,phe_p:250,gsat_p:11,na_p:41},
+];
+
+var BEVANDE = [
+  {id:"caffe",nome:"Caffè",cat:"bevande",kcal_p:2,prot_p:0.1,carb_p:0,phe_p:5,gsat_p:0,na_p:2},
+  {id:"te",nome:"Tè",cat:"bevande",kcal_p:1,prot_p:0,carb_p:0.2,phe_p:2,gsat_p:0,na_p:3},
+  {id:"camomilla",nome:"Camomilla",cat:"bevande",kcal_p:1,prot_p:0,carb_p:0.2,phe_p:1,gsat_p:0,na_p:1},
+  {id:"succo",nome:"Succo di frutta",cat:"bevande",kcal_p:46,prot_p:0.2,carb_p:11,phe_p:10,gsat_p:0,na_p:5},
+  {id:"spremuta",nome:"Spremuta d'arancia",cat:"bevande",kcal_p:45,prot_p:0.7,carb_p:9,phe_p:20,gsat_p:0,na_p:1},
+  {id:"cioccolata_c",nome:"Cioccolata calda",cat:"bevande",kcal_p:90,prot_p:3,carb_p:15,phe_p:130,gsat_p:2.5,na_p:50},
+  {id:"aranciata",nome:"Aranciata",cat:"bevande",kcal_p:38,prot_p:0,carb_p:9,phe_p:2,gsat_p:0,na_p:5},
+  {id:"cola",nome:"Cola",cat:"bevande",kcal_p:42,prot_p:0,carb_p:11,phe_p:0,gsat_p:0,na_p:5},
+];
+
 var SPEZIE = [
   {id:"basilico",nome:"Basilico",emoji:"?",cat:"erbe"},
   {id:"rosmarino",nome:"Rosmarino",emoji:"?",cat:"erbe"},
@@ -2894,7 +2912,7 @@ function catSpesa(item) {
 
 function SpesaItemsB(props) {
   var scelte=props.scelte, spesaCheck=props.spesaCheck, setSpesaCheck=props.setSpesaCheck;
-  var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+  var allDB=CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(DOLCIUMI).concat(BEVANDE).concat(ALIMENTI_CUSTOM);
   var cats={}; CATS_SPESA.forEach(function(c){cats[c.id]=[];});
   var seen={};
   function tryAdd(id){
@@ -5451,14 +5469,24 @@ function porzioneStdIng(it, fallback) {
   return fallback || 100;
 }
 
+var P_LATTE = [{l:"Tazza",g:250},{l:"Bicchiere",g:200},{l:"Tazzina",g:120}];
+var P_GRATT = [{l:"Cucchiaio",g:8},{l:"Cucchiaino",g:4},{l:"Manciata",g:15},{l:"Porzione",g:30}];
 var PORZIONI_ID = {
   pizza:[{l:"Pizza intera",g:350},{l:"Trancio",g:120},{l:"Pizzetta",g:100}],
   pizza_rossa:[{l:"Trancio",g:120},{l:"Pezzo",g:80},{l:"Teglia",g:300}],
   focaccia:[{l:"Pezzo",g:100},{l:"Teglia",g:250}],
   piadina:[{l:"1 piadina",g:120}],
-  pinsa:[{l:"1 pinsa",g:200}]
+  pinsa:[{l:"1 pinsa",g:200}],
+  parmigiano:P_GRATT, grana:P_GRATT,
+  latte:P_LATTE, latte_riso:P_LATTE, latte_soia:P_LATTE, latte_mandorla:P_LATTE, latte_avena:P_LATTE,
+  zucchero:[{l:"Cucchiaino",g:5},{l:"Cucchiaio",g:12},{l:"Bustina",g:6},{l:"Zolletta",g:5}],
+  miele:[{l:"Cucchiaino",g:7},{l:"Cucchiaio",g:20}],
+  marmellata:[{l:"Cucchiaino",g:8},{l:"Cucchiaio",g:20}],
+  nutella:[{l:"Cucchiaino",g:8},{l:"Cucchiaio",g:20},{l:"Velo",g:15}]
 };
 var PORZIONI_CAT = {
+  dolce:[{l:"Cucchiaino",g:6},{l:"Cucchiaio",g:15},{l:"Porzione",g:30}],
+  bevande:[{l:"Bicchiere",g:200},{l:"Tazza",g:200},{l:"Tazzina",g:50},{l:"Lattina",g:330}],
   pasta:[{l:"Piatto",g:80},{l:"Abbondante",g:120},{l:"Mezzo",g:50}],
   riso:[{l:"Piatto",g:80},{l:"Abbondante",g:120}],
   cereali:[{l:"Porzione",g:70}],
@@ -5496,7 +5524,7 @@ function grammiField(scelta, field, it, fallback) {
 
 var ALIMENTI_CUSTOM = [];
 function ingById(id) {
-  var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+  var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(DOLCIUMI).concat(BEVANDE).concat(ALIMENTI_CUSTOM);
   return all.find(function(x){ return x.id === id; });
 }
 
@@ -8053,7 +8081,7 @@ function DiarioView(props) {
   }
   function cercaAlim(nome) {
     var q = (""+(nome||"")).toLowerCase().trim(); if(q.length < 2) return null;
-    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(DOLCIUMI).concat(BEVANDE).concat(ALIMENTI_CUSTOM);
     var exact = null, part = null;
     all.forEach(function(it){
       if(!it || !it.kcal_p) return;
@@ -8065,7 +8093,7 @@ function DiarioView(props) {
   }
   function cercaAlimLista(nome) {
     var q = (""+(nome||"")).toLowerCase().trim(); if(q.length < 2) return [];
-    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(ALIMENTI_CUSTOM);
+    var all = CARBOIDRATI.concat(PROTEINE).concat(VERDURE).concat(FRUTTA).concat(SALSE).concat(GRASSI).concat(DOLCIUMI).concat(BEVANDE).concat(ALIMENTI_CUSTOM);
     var starts = [], contains = [];
     all.forEach(function(it){
       if(!it || !it.kcal_p) return;
