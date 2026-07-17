@@ -350,6 +350,15 @@ class ErrorBoundary extends Component {
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
 const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
 
+function indiceSettimana(d) {
+  return Math.round(lunediDi(d).getTime() / 86400000);
+}
+function rolloverScelte(corrente, prossima, gap) {
+  if(gap <= 0) return {corrente:corrente, prossima:prossima, cambiato:false};
+  if(gap === 1) return {corrente:prossima || {}, prossima:{}, cambiato:true};
+  return {corrente:{}, prossima:{}, cambiato:true};
+}
+
 const COLORI = ["#2F6586","#2F6586","#6BA6C9","#C2355A","#C2355A","#C2355A","#2F6586"];
 
 const PATOLOGIE_LIST = [
@@ -2157,6 +2166,12 @@ var CARBOIDRATI = [
   {id:"riso_venere",nome:"Riso venere",cat:"riso",emoji:"?",kcal_p:340,prot_p:8,carb_p:72,phe_p:420,gsat_p:0.3,na_p:5,stagione:"tutto"},
   {id:"fette_bisc",nome:"Fette biscottate",cat:"colazione",emoji:"?",kcal_p:410,prot_p:11,carb_p:74,phe_p:500,gsat_p:1,na_p:400,stagione:"tutto"},
   {id:"cereali_col",nome:"Cereali (fiocchi)",cat:"colazione",emoji:"?",kcal_p:375,prot_p:8,carb_p:78,phe_p:400,gsat_p:1,na_p:200,stagione:"tutto"},
+  {id:"riso_rosso",nome:"Riso rosso",cat:"riso",emoji:"?",kcal_p:350,prot_p:8,carb_p:74,phe_p:390,gsat_p:0.3,na_p:4,stagione:"tutto"},
+  {id:"bulgur",nome:"Bulgur",cat:"cereali",emoji:"?",kcal_p:350,prot_p:12,carb_p:70,phe_p:600,gsat_p:0.3,na_p:10,stagione:"tutto"},
+  {id:"miglio",nome:"Miglio",cat:"cereali",emoji:"?",kcal_p:360,prot_p:11,carb_p:73,phe_p:550,gsat_p:0.5,na_p:5,stagione:"tutto"},
+  {id:"saraceno",nome:"Grano saraceno",cat:"cereali",emoji:"?",kcal_p:343,prot_p:13,carb_p:71,phe_p:600,gsat_p:0.4,na_p:1,stagione:"tutto"},
+  {id:"mais_g",nome:"Mais in chicchi",cat:"cereali",emoji:"?",kcal_p:350,prot_p:9,carb_p:74,phe_p:380,gsat_p:0.6,na_p:35,stagione:"tutto"},
+  {id:"castagne",nome:"Castagne",cat:"tuberi",emoji:"?",kcal_p:160,prot_p:2,carb_p:34,phe_p:90,gsat_p:0.1,na_p:5,stagione:"autunno"},
 ];
 
 var PROTEINE = [
@@ -2204,6 +2219,17 @@ var PROTEINE = [
   {id:"latte_mandorla",nome:"Latte di mandorla",cat:"latticini",emoji:"?",kcal_p:24,prot_p:0.6,carb_p:3,phe_p:25,gsat_p:0.1,na_p:60,piramide:"latticini",freq:"libero"},
   {id:"latte_avena",nome:"Latte di avena",cat:"latticini",emoji:"?",kcal_p:47,prot_p:1,carb_p:7,phe_p:40,gsat_p:0.2,na_p:40,piramide:"latticini",freq:"libero"},
   {id:"sottilette",nome:"Formaggio a fette",cat:"latticini",emoji:"?",kcal_p:280,prot_p:16,carb_p:6,phe_p:800,gsat_p:14,na_p:1300,piramide:"latticini",freq:"limitato"},
+  {id:"sgombro",nome:"Sgombro",cat:"pesce",emoji:"?",kcal_p:205,prot_p:19,carb_p:0,phe_p:750,gsat_p:4.0,na_p:90,piramide:"pesce",freq:"3/sett"},
+  {id:"sardine",nome:"Sardine",cat:"pesce",emoji:"?",kcal_p:208,prot_p:25,carb_p:0,phe_p:980,gsat_p:3.0,na_p:100,piramide:"pesce",freq:"3/sett"},
+  {id:"branzino",nome:"Branzino",cat:"pesce",emoji:"?",kcal_p:100,prot_p:18,carb_p:0,phe_p:710,gsat_p:0.6,na_p:70,piramide:"pesce",freq:"3/sett"},
+  {id:"vitello",nome:"Vitello",cat:"carne rossa",emoji:"?",kcal_p:172,prot_p:21,carb_p:0,phe_p:850,gsat_p:2.0,na_p:80,piramide:"carne_rossa",limit:1,freq:"1/sett"},
+  {id:"coniglio",nome:"Coniglio",cat:"carne bianca",emoji:"?",kcal_p:165,prot_p:21,carb_p:0,phe_p:840,gsat_p:2.0,na_p:50,piramide:"carne",freq:"3/sett"},
+  {id:"fesa_tacchino",nome:"Fesa di tacchino",cat:"affettati",emoji:"?",kcal_p:110,prot_p:21,carb_p:1,phe_p:840,gsat_p:0.4,na_p:900,piramide:"carne",freq:"libero"},
+  {id:"tempeh",nome:"Tempeh",cat:"legumi",emoji:"?",kcal_p:190,prot_p:19,carb_p:9,phe_p:900,gsat_p:1.5,na_p:10,piramide:"legumi",freq:"3/sett"},
+  {id:"edamame",nome:"Edamame",cat:"legumi",emoji:"?",kcal_p:120,prot_p:11,carb_p:9,phe_p:600,gsat_p:0.6,na_p:6,piramide:"legumi",freq:"3/sett"},
+  {id:"piselli_p",nome:"Piselli proteici",cat:"legumi",emoji:"?",kcal_p:81,prot_p:5.4,carb_p:14,phe_p:230,gsat_p:0.1,na_p:5,piramide:"legumi",freq:"3/sett"},
+  {id:"scamorza",nome:"Scamorza",cat:"latticini",emoji:"?",kcal_p:300,prot_p:25,carb_p:1,phe_p:1250,gsat_p:13,na_p:600,piramide:"latticini",freq:"libero"},
+  {id:"primosale",nome:"Primosale",cat:"latticini",emoji:"?",kcal_p:253,prot_p:18,carb_p:1,phe_p:900,gsat_p:11,na_p:400,piramide:"latticini",freq:"libero"},
 ];
 
 var VERDURE = [
@@ -2235,6 +2261,10 @@ var VERDURE = [
   {id:"verza",nome:"Verza",emoji:"?",stagione:"inverno",kcal_p:27,prot_p:2,carb_p:5,phe_p:60,gsat_p:0,na_p:18},
   {id:"cavolini",nome:"Cavolini di Bruxelles",emoji:"?",stagione:"inverno",kcal_p:43,prot_p:3.4,carb_p:9,phe_p:130,gsat_p:0.1,na_p:25},
   {id:"barbabietola",nome:"Barbabietola",emoji:"?",stagione:"autunno",kcal_p:43,prot_p:1.6,carb_p:10,phe_p:50,gsat_p:0,na_p:78},
+  {id:"cavolo_c",nome:"Cavolo cappuccio",emoji:"?",stagione:"autunno,inverno",kcal_p:25,prot_p:1.3,carb_p:6,phe_p:60,gsat_p:0.0,na_p:18},
+  {id:"porri",nome:"Porri",emoji:"?",stagione:"inverno",kcal_p:61,prot_p:1.5,carb_p:14,phe_p:65,gsat_p:0.1,na_p:20},
+  {id:"carciofi",nome:"Carciofi",emoji:"?",stagione:"primavera",kcal_p:47,prot_p:3.3,carb_p:11,phe_p:140,gsat_p:0.0,na_p:94},
+  {id:"ravanelli",nome:"Ravanelli",emoji:"?",stagione:"primavera",kcal_p:16,prot_p:0.7,carb_p:3,phe_p:30,gsat_p:0.0,na_p:39},
 ];
 
 var FRUTTA = [
@@ -2258,6 +2288,10 @@ var FRUTTA = [
   {id:"lamponi",nome:"Lamponi",emoji:"?",stagione:"estate",kcal_p:52,prot_p:1.2,carb_p:12,phe_p:30,gsat_p:0.0,na_p:1},
   {id:"melograno",nome:"Melograno",emoji:"?",stagione:"autunno",kcal_p:83,prot_p:1.7,carb_p:19,phe_p:40,gsat_p:0.0,na_p:3},
   {id:"cachi",nome:"Cachi",emoji:"?",stagione:"autunno",kcal_p:70,prot_p:0.6,carb_p:18,phe_p:20,gsat_p:0.0,na_p:1},
+  {id:"mango",nome:"Mango",emoji:"?",stagione:"tutto",kcal_p:60,prot_p:0.8,carb_p:15,phe_p:25,gsat_p:0.1,na_p:1},
+  {id:"more",nome:"More",emoji:"?",stagione:"estate",kcal_p:43,prot_p:1.4,carb_p:10,phe_p:45,gsat_p:0.0,na_p:1},
+  {id:"pompelmo",nome:"Pompelmo",emoji:"?",stagione:"inverno",kcal_p:42,prot_p:0.8,carb_p:11,phe_p:25,gsat_p:0.0,na_p:0},
+  {id:"avocado",nome:"Avocado",emoji:"?",stagione:"tutto",kcal_p:160,prot_p:2,carb_p:9,phe_p:90,gsat_p:2.1,na_p:7},
 ];
 
 var SALSE = [
@@ -9913,12 +9947,31 @@ export default function App() {
       }
     }, function(e){ console.error("Supabase: profiles errore", e); });
     supabase.from("builder_scelte").select("*").eq("family_id",fid).then(function(rows){
+      var q={};var p={};
       if(rows&&rows.length>0){
-        var q={};var p={};
         rows.forEach(function(r){var k=r.giorno+"-"+r.pasto;if(r.settimana===0)q[k]=r.dati;else p[k]=r.dati;});
+      }
+      supabase.from("app_state").select("*").eq("family_id",fid).eq("chiave","builderWeek").then(function(arows){
+        var nowW = indiceSettimana(new Date());
+        var anchor = leggiAnchor(arows);
+        if(anchor===null){
+          salvaAnchor(fid, nowW);
+        } else {
+          var gap = Math.round((nowW - anchor) / 7);
+          if(gap>=1){
+            var res = rolloverScelte(q, p, gap);
+            q = res.corrente; p = res.prossima;
+            riscriviBuilderSupabase(fid, q);
+            salvaAnchor(fid, nowW);
+          }
+        }
         setBuilderScelte(q);saveLS("builderScelte",q);
         setBuilderScelteProssima(p);saveLS("builderScelteProssima",p);
-      }
+      }, function(e){
+        console.error("Supabase: builderWeek errore", e);
+        setBuilderScelte(q);saveLS("builderScelte",q);
+        setBuilderScelteProssima(p);saveLS("builderScelteProssima",p);
+      });
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
@@ -9943,6 +9996,32 @@ export default function App() {
   function savePastoToSupabase(sett,giorno,pasto,dati) {
     if(!familyId)return;
     supabase.from("builder_scelte").upsert({family_id:familyId,settimana:sett,giorno:giorno,pasto:pasto,dati:dati,updated_at:new Date().toISOString()}, {onConflict:"family_id,settimana,giorno,pasto"});
+  }
+
+  function leggiAnchor(arows) {
+    if(arows && arows.length && arows[0].dati && typeof arows[0].dati.week === "number") return arows[0].dati.week;
+    return null;
+  }
+
+  function salvaAnchor(fid, week) {
+    saveLS("builderWeek", {week:week});
+    if(fid) supabase.from("app_state").upsert(
+      {family_id:fid, chiave:"builderWeek", dati:{week:week}, updated_at:new Date().toISOString()},
+      {onConflict:"family_id,chiave"}
+    );
+  }
+
+  function riscriviBuilderSupabase(fid, corrente) {
+    if(!fid) return;
+    supabase.from("builder_scelte").delete().eq("family_id",fid).then(function(){
+      var righe = [];
+      Object.keys(corrente).forEach(function(k){
+        var i = k.indexOf("-");
+        if(i < 0) return;
+        righe.push({family_id:fid, settimana:0, giorno:k.slice(0,i), pasto:k.slice(i+1), dati:corrente[k], updated_at:new Date().toISOString()});
+      });
+      if(righe.length) supabase.from("builder_scelte").insert(righe);
+    }, function(e){ console.error("Supabase: rollover builder_scelte errore", e); });
   }
 
   function savePesoToSupabase(nome,data,valore) {
@@ -10088,6 +10167,23 @@ export default function App() {
   const [menuOverride, setMenuOverride] = useState(loadLS("menuOverride", {}));
   const [builderScelte, setBuilderScelte] = useState(loadLS("builderScelte", {}));
   const [builderScelteProssima, setBuilderScelteProssima] = useState(loadLS("builderScelteProssima", {}));
+
+  useEffect(function(){
+    if(sbSession) return;
+    var nowW = indiceSettimana(new Date());
+    var a = loadLS("builderWeek", null);
+    var anchor = (a && typeof a.week === "number") ? a.week : null;
+    if(anchor===null){ saveLS("builderWeek", {week:nowW}); return; }
+    var gap = Math.round((nowW - anchor) / 7);
+    if(gap<1) return;
+    var q = loadLS("builderScelte", {});
+    var p = loadLS("builderScelteProssima", {});
+    var res = rolloverScelte(q, p, gap);
+    setBuilderScelte(res.corrente); saveLS("builderScelte", res.corrente);
+    setBuilderScelteProssima(res.prossima); saveLS("builderScelteProssima", res.prossima);
+    saveLS("builderWeek", {week:nowW});
+  }, []);
+
   const [giorniFuori, setGiorniFuori] = useState(loadLS("giorniFuori", {}));
   const [pesoLog, setPesoLog] = useState(loadLS("pesoLog", {}));
   const [dispensa, setDispensa] = useState(loadLS("dispensa", []));
