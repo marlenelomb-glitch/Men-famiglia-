@@ -1,0 +1,11 @@
+# Ammirato Marmi - Gestionale
+# Protezione file sensibili (config e schema non devono essere scaricabili).
+# NB: install.php resta accessibile per l'installazione; eliminarlo dopo l'uso.
+
+<FilesMatch "^(config\.php|db\.php|schema\.sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Impedisce la navigazione delle directory
+Options -Indexes

@@ -1,0 +1,58 @@
+name: Deploy su Aruba (FTP)
+
+# Ogni push aggiorna automaticamente il sito su Aruba.
+# Si puo' anche avviare a mano dalla scheda "Actions" di GitHub (workflow_dispatch).
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      # Inserisce la vera password del database (presa dai Secret di GitHub)
+      # al posto del segnaposto in Gestionale/db.php, solo durante il deploy.
+      - name: Imposta password database
+        env:
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: |
+          python3 - <<'PY'
+          import os
+          f = "Gestionale/db.php"
+          s = open(f, encoding="utf-8").read()
+          s = s.replace("INSERISCI_QUI_LA_PASSWORD_DB", os.environ.get("DB_PASS", ""))
+          open(f, "w", encoding="utf-8").write(s)
+          print("Password database inserita per il deploy.")
+          PY
+
+      # Carica i file su Aruba via FTP.
+      - name: Deploy FTP su Aruba
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          # Dati di accesso FTP: impostali nei Secret del repository (vedi guida).
+          server:   ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Protocollo sicuro. Se Aruba desse errore di connessione, cambia in: ftp
+          protocol: ftps
+          port: 21
+          # Cartella del progetto da caricare (tutta la radice del repository).
+          local-dir: ./
+          # Cartella pubblica su Aruba. Di solito e' la radice ("./").
+          # Se il tuo spazio pubblica da una sottocartella (es. /www/), scrivila qui.
+          server-dir: ./
+          # File che NON devono essere caricati/sovrascritti sul server.
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/install.php
+            **/schema.sql
+            **/README.md
+            **/RESOCONTO*.md
+            **/*.zip
+            **/.ftp-deploy-sync-state.json

@@ -1,0 +1,181 @@
+/* ==========================================================================
+   Ammirato Marmi - Sito vetrina
+   vetrina.css - Stile lusso elegante (crema / nero / oro / pietra)
+   ========================================================================== */
+
+:root {
+  --crema: #FAF8F5;
+  --nero: #1C1916;
+  --oro: #8C7B5E;
+  --oro-chiaro: #a8946f;
+  --pietra: #B5AFA7;
+  --pietra-chiara: #e8e4de;
+  --bianco: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+
+body {
+  background: var(--crema);
+  color: var(--nero);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; line-height: 1.15; }
+
+a { color: inherit; text-decoration: none; }
+
+.wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+.eyebrow {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 3px;
+  color: var(--oro); font-weight: 600; margin-bottom: 14px;
+}
+
+/* ------------------------------------------------------------- Navbar */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(28,25,22,0.0);
+  transition: background .3s ease, box-shadow .3s ease;
+}
+.nav.scrolled { background: var(--nero); box-shadow: 0 2px 20px rgba(0,0,0,0.25); }
+.nav-inner { display: flex; align-items: center; height: 76px; }
+.nav .logo { font-family: 'Playfair Display', serif; font-size: 22px; letter-spacing: 2px; color: var(--crema); }
+.nav .logo small { display: block; font-family: 'DM Sans', sans-serif; font-size: 9px; letter-spacing: 4px; color: var(--oro); text-transform: uppercase; margin-top: -2px; }
+.nav-links { margin-left: auto; display: flex; gap: 32px; align-items: center; }
+.nav-links a { color: var(--crema); font-size: 14px; letter-spacing: .5px; transition: color .2s; }
+.nav-links a:hover { color: var(--oro-chiaro); }
+.nav-links a.cta { border: 1px solid var(--oro); padding: 9px 20px; border-radius: 4px; color: var(--oro-chiaro); }
+.nav-links a.cta:hover { background: var(--oro); color: var(--nero); }
+.nav-toggle { display: none; margin-left: auto; background: none; border: none; color: var(--crema); font-size: 24px; cursor: pointer; }
+
+/* ------------------------------------------------------------- Hero */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  position: relative;
+  color: var(--crema);
+  background:
+    linear-gradient(rgba(20,18,16,0.72), rgba(20,18,16,0.82)),
+    repeating-linear-gradient(115deg, #2a2621 0px, #35302a 2px, #2a2621 5px, #3a342d 9px, #2a2621 14px);
+  overflow: hidden;
+}
+.hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 40%, rgba(140,123,94,0.18), transparent 60%);
+}
+.hero-content { position: relative; z-index: 2; max-width: 720px; }
+.hero h1 { font-size: clamp(40px, 7vw, 78px); color: var(--crema); margin-bottom: 20px; }
+.hero h1 span { color: var(--oro-chiaro); font-style: italic; }
+.hero p.sub { font-size: clamp(17px, 2.2vw, 22px); color: var(--pietra-chiara); max-width: 560px; margin-bottom: 34px; font-weight: 300; }
+.hero .anno { display: inline-block; border: 1px solid var(--oro); border-radius: 100px; padding: 6px 18px; font-size: 13px; letter-spacing: 2px; color: var(--oro-chiaro); margin-bottom: 28px; text-transform: uppercase; }
+
+.btn {
+  display: inline-block; background: var(--oro); color: var(--nero);
+  padding: 14px 32px; border-radius: 4px; font-weight: 600;
+  font-size: 15px; letter-spacing: .5px; transition: all .2s ease; border: 1px solid var(--oro);
+}
+.btn:hover { background: transparent; color: var(--oro-chiaro); }
+.btn-ghost { background: transparent; color: var(--crema); border-color: var(--pietra); }
+.btn-ghost:hover { border-color: var(--oro); color: var(--oro-chiaro); }
+.hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+
+/* ------------------------------------------------------------- Sezioni */
+section { padding: 100px 0; }
+.section-head { max-width: 640px; margin-bottom: 54px; }
+.section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+.section-head h2 { font-size: clamp(30px, 4.5vw, 46px); margin-bottom: 16px; }
+.section-head p { color: #6b675f; font-size: 17px; }
+
+/* Storia */
+.storia { background: var(--bianco); }
+.storia-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; align-items: center; }
+.storia-text p { margin-bottom: 18px; color: #4a463f; }
+.storia-figure {
+  aspect-ratio: 4/5; border-radius: 8px; position: relative; overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(140,123,94,0.15), transparent),
+    repeating-linear-gradient(60deg, #ece7e0 0px, #f4f0ea 3px, #e6e0d8 7px, #f0ebe4 12px, #ece7e0 18px);
+  border: 1px solid var(--pietra-chiara);
+  display: flex; align-items: flex-end; padding: 26px;
+}
+.storia-figure .cap { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--nero); }
+.stats { display: flex; gap: 40px; margin-top: 30px; flex-wrap: wrap; }
+.stat b { font-family: 'Playfair Display', serif; font-size: 42px; color: var(--oro); display: block; line-height: 1; }
+.stat span { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--pietra); }
+
+/* Lavorazioni */
+.lavorazioni-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.lav-card {
+  background: var(--bianco); border: 1px solid var(--pietra-chiara);
+  border-radius: 8px; padding: 34px 28px; transition: transform .25s ease, box-shadow .25s ease;
+}
+.lav-card:hover { transform: translateY(-4px); box-shadow: 0 14px 40px rgba(28,25,22,0.10); border-color: var(--oro); }
+.lav-card .n { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--oro); letter-spacing: 2px; }
+.lav-card h3 { font-size: 23px; margin: 12px 0 10px; }
+.lav-card p { color: #6b675f; font-size: 15px; }
+
+/* Galleria */
+.galleria { background: var(--nero); color: var(--crema); }
+.galleria .section-head h2 { color: var(--crema); }
+.galleria .section-head p { color: var(--pietra); }
+.gal-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 200px; gap: 14px; }
+.gal-item {
+  border-radius: 6px; overflow: hidden; position: relative;
+  background: repeating-linear-gradient(45deg, #2c2822 0px, #3a352d 4px, #2c2822 9px, #423b31 15px, #2c2822 22px);
+  display: flex; align-items: flex-end; padding: 16px; border: 1px solid rgba(255,255,255,0.06);
+}
+.gal-item.big { grid-column: span 2; grid-row: span 2; }
+.gal-item .lbl { font-size: 13px; letter-spacing: 1px; color: var(--pietra-chiara); text-transform: uppercase; z-index: 2; }
+.gal-item::after { content: ''; position: absolute; inset: 0; background: linear-gradient(transparent 50%, rgba(0,0,0,0.5)); }
+.gal-item .lbl { position: relative; }
+.gal-note { text-align: center; color: var(--pietra); font-size: 13px; margin-top: 22px; font-style: italic; }
+
+/* Contatti */
+.contatti { background: var(--bianco); }
+.contatti-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+.info-list { list-style: none; }
+.info-list li { display: flex; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--pietra-chiara); }
+.info-list .k { font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--oro); min-width: 90px; padding-top: 3px; font-weight: 600; }
+.info-list .v { font-size: 16px; color: var(--nero); }
+.info-list a.v:hover { color: var(--oro); }
+.map-box { border-radius: 8px; overflow: hidden; border: 1px solid var(--pietra-chiara); min-height: 340px; }
+.map-box iframe { width: 100%; height: 100%; min-height: 340px; border: 0; display: block; }
+
+/* Footer */
+.footer { background: var(--nero); color: var(--pietra-chiara); padding: 60px 0 30px; }
+.footer-grid { display: flex; justify-content: space-between; gap: 40px; flex-wrap: wrap; margin-bottom: 40px; }
+.footer .logo { font-family: 'Playfair Display', serif; font-size: 22px; letter-spacing: 2px; color: var(--crema); }
+.footer .logo small { display: block; font-size: 9px; letter-spacing: 4px; color: var(--oro); text-transform: uppercase; }
+.footer p { font-size: 14px; color: var(--pietra); max-width: 320px; margin-top: 14px; }
+.footer-col h4 { font-family: 'DM Sans', sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; color: var(--oro); margin-bottom: 14px; }
+.footer-col a { display: block; font-size: 14px; color: var(--pietra-chiara); padding: 4px 0; }
+.footer-col a:hover { color: var(--oro-chiaro); }
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px;
+  display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  font-size: 13px; color: var(--pietra);
+}
+.footer-bottom a.riservata { color: var(--pietra); opacity: .8; }
+.footer-bottom a.riservata:hover { color: var(--oro-chiaro); opacity: 1; }
+
+/* ------------------------------------------------------------- Responsive */
+@media (max-width: 900px) {
+  .storia-grid, .contatti-grid { grid-template-columns: 1fr; gap: 34px; }
+  .lavorazioni-grid { grid-template-columns: repeat(2, 1fr); }
+  .gal-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .nav-links { display: none; position: absolute; top: 76px; left: 0; right: 0; background: var(--nero); flex-direction: column; gap: 0; padding: 10px 0; }
+  .nav-links.open { display: flex; }
+  .nav-links a { padding: 14px 24px; width: 100%; }
+  .nav-links a.cta { margin: 10px 24px; text-align: center; }
+  .nav-toggle { display: block; }
+  .lavorazioni-grid, .gal-grid { grid-template-columns: 1fr; }
+  .gal-item.big { grid-column: span 1; grid-row: span 1; }
+  section { padding: 70px 0; }
+}
