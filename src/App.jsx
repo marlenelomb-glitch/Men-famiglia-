@@ -5639,6 +5639,27 @@ function pastoUnificato(builder, menu, giorno, pasto) {
   return null;
 }
 
+function calcMangiaCasa(piani, giorniFuori, dataRef, pid, gFull, gShort, weekday, pasto) {
+  var gf = giorniFuori || {};
+  var sf = gf[gFull];
+  var isF = sf ? (typeof sf.has === "function" ? sf.has(pid) : (Array.isArray(sf) ? sf.indexOf(pid) >= 0 : false)) : false;
+  if(isF) return false;
+  var fuoriCasa = false;
+  (piani || []).forEach(function(pl){
+    if(!pl || pl.membroId !== pid) return;
+    var wk = settimanaPianoNum(pl, dataRef || new Date());
+    var w = (pl.settimane || {})[wk];
+    var d = (w && w.giorni) ? w.giorni[gShort] : null;
+    if(!d) return;
+    if(pl.tipo === "mensa") { if(weekday && pasto === "Pranzo" && d.pranzo && (""+d.pranzo).trim()) fuoriCasa = true; }
+    else if(pl.tipo === "membro") {
+      var qualcosa = Object.keys(d).some(function(k){ return d[k] && (""+d[k]).trim(); });
+      if(qualcosa) fuoriCasa = true;
+    }
+  });
+  return !fuoriCasa;
+}
+
 function IscrittiView(props) {
   var setTab = props.setTab || function(){};
   var s_lista = useState([]); var lista = s_lista[0]; var setLista = s_lista[1];
@@ -6877,6 +6898,9 @@ function ListaSpesaView(props) {
   var builder = props.builder || {};
   var menu = props.menu || {};
   var ospiti = props.ospiti || {};
+  var profili = props.profili || {};
+  var giorniFuori = props.giorniFuori || {};
+  var piani = (props.piani && props.piani.lista) ? props.piani.lista : [];
   var ospSett = ospiti[isoDay(lunediSettimana())] || {};
   var ospTot = Object.keys(ospSett).reduce(function(s,d){ var r = ospSett[d]; return s + (typeof r === "number" ? r : (r && r.n) || 0); }, 0);
   var ospRestr = [];
@@ -6917,41 +6941,108 @@ function ListaSpesaView(props) {
     setSpesa(normSpesa(spesa).filter(function(x){ return !x.fatto; }));
   }
 
+  function personeCasaPasto(gFull, gShort, weekday, pasto, dRef) {
+    var n = 0;
+    Object.keys(profili || {}).forEach(function(pid){
+      if(calcMangiaCasa(piani, giorniFuori, dRef, pid, gFull, gShort, weekday, pasto)) n++;
+    });
+    return n;
+  }
   function generaDallaSettimana() {
+    var GG_FULL = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
+    var DEF_G = {carbo:80, proteina:120, verdura:150, verdura2:150, frutta:120, latticino:100, salsa:10};
+    var lun = lunediSettimana();
+    var nMembri = Object.keys(profili || {}).length;
     var attuali = normSpesa(spesa);
     var esistenti = attuali.map(function(x){ return x.nome.toLowerCase(); });
-    var nuovi = []; var visti = {};
-    function aggiungiVoce(nomeV, catV){
+    var nuovi = []; var visti = {}; var gramMap = {}; var persMap = {};
+    function aggiungiVoce(nomeV, catV, grams, persone){
       var key = (""+(nomeV||"")).toLowerCase().trim();
-      if(!key || esistenti.indexOf(key) >= 0 || visti[key]) return;
-      visti[key] = true;
-      nuovi.push({nome:nomeV, cat:catV || catDaParola(nomeV), fatto:false});
+      if(!key || esistenti.indexOf(key) >= 0) return;
+      if(!visti[key]){
+        visti[key] = true;
+        nuovi.push({nome:nomeV, cat:catV || catDaParola(nomeV), fatto:false});
+        gramMap[key] = 0; persMap[key] = 0;
+      }
+      if(grams && grams > 0) gramMap[key] += grams;
+      if(persone && persone > persMap[key]) persMap[key] = persone;
     }
-    function daId(id){ var info = lookupIngSpesa(id); if(info) aggiungiVoce(info.nome, info.cat); }
-    function daNomePiatto(nomeP){ tokensDaNome(nomeP||"").forEach(function(t){ aggiungiVoce(t, catDaParola(t)); }); }
-    function daRicon(arr){ (arr||[]).forEach(function(r){ if(!r) return; if(r.id) daId(r.id); else if(r.nome) aggiungiVoce(r.nome, catDaParola(r.nome)); }); }
-    function daPiatto(d){
+    function daId(id, grams, persone){ var info = lookupIngSpesa(id); if(info) aggiungiVoce(info.nome, info.cat, grams, persone); }
+    function daNomePiatto(nomeP, persone){ tokensDaNome(nomeP||"").forEach(function(t){ aggiungiVoce(t, catDaParola(t), 0, persone); }); }
+    function daRicon(arr, persone){ (arr||[]).forEach(function(r){ if(!r) return; if(r.id) daId(r.id, 0, persone); else if(r.nome) aggiungiVoce(r.nome, catDaParola(r.nome), 0, persone); }); }
+    function daPiatto(d, persone){
       if(!d || !(""+(d.nome||"")).trim()) return;
-      if(d.riconosciuti && d.riconosciuti.length) daRicon(d.riconosciuti);
-      else daNomePiatto(d.nome);
+      if(d.riconosciuti && d.riconosciuti.length) daRicon(d.riconosciuti, persone);
+      else daNomePiatto(d.nome, persone);
+    }
+    function contesto(k){
+      var di = k.indexOf("-");
+      if(di < 0) return null;
+      var giorno = k.slice(0, di); var pasto = k.slice(di + 1);
+      var idx = GG_FULL.indexOf(giorno);
+      if(idx < 0) return {giorno:giorno, pasto:pasto, idx:-1, scala:false};
+      var dRef = new Date(lun); dRef.setDate(lun.getDate() + idx);
+      return {giorno:giorno, pasto:pasto, idx:idx, gShort:GIORNI7[idx], weekday:idx <= 4, dRef:dRef, scala:nMembri > 0};
     }
     Object.keys(builder).forEach(function(k){
       var s = builder[k];
       if(!s) return;
-      ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ if(s[f]) daId(s[f]); });
+      var c = contesto(k);
+      if(!c) return;
+      var nCasa = c.scala ? personeCasaPasto(c.giorno, c.gShort, c.weekday, c.pasto, c.dRef) : 0;
+      if(c.scala && nCasa <= 0) return;
+      var persNota = c.scala ? nCasa : 0;
+      ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){
+        if(!s[f]) return;
+        var it = ingById(s[f]);
+        var grams = (c.scala && it) ? grammiField(s, f, it, DEF_G[f]) * nCasa : 0;
+        daId(s[f], grams, persNota);
+      });
       var pu = s.piattoUnico;
       if(pu){
-        daPiatto(pu);
-        (pu.altri||[]).forEach(daPiatto);
+        if(c.scala){
+          var altriMembri = {};
+          (pu.altri||[]).forEach(function(dd){ (dd.membri||[]).forEach(function(mid){ altriMembri[mid] = true; }); });
+          var puFuori = {}; (pu.fuori||[]).forEach(function(mid){ puFuori[mid] = true; });
+          var nBase = 0;
+          Object.keys(profili||{}).forEach(function(pid){
+            if(!calcMangiaCasa(piani, giorniFuori, c.dRef, pid, c.giorno, c.gShort, c.weekday, c.pasto)) return;
+            if(altriMembri[pid] || puFuori[pid]) return;
+            nBase++;
+          });
+          if(nBase > 0) daPiatto(pu, nBase);
+          (pu.altri||[]).forEach(function(dd){
+            var nAlt = 0;
+            (dd.membri||[]).forEach(function(mid){ if(calcMangiaCasa(piani, giorniFuori, c.dRef, mid, c.giorno, c.gShort, c.weekday, c.pasto)) nAlt++; });
+            if(nAlt > 0) daPiatto(dd, nAlt);
+          });
+        } else {
+          daPiatto(pu, 0);
+          (pu.altri||[]).forEach(function(dd){ daPiatto(dd, 0); });
+        }
       }
-      (s.piu||[]).forEach(daPiatto);
+      (s.piu||[]).forEach(function(d){ daPiatto(d, persNota); });
     });
     Object.keys(menu).forEach(function(k){
       var cell = menu[k];
       if(!cell || !cell.pastoId || !DB_PASTI[cell.pastoId]) return;
-      tokensDaNome(DB_PASTI[cell.pastoId].nome).forEach(function(t){
-        aggiungiVoce(t, catDaParola(t));
-      });
+      var c = contesto(k);
+      var persNota = 0;
+      if(c && c.scala){
+        var nCasa2 = personeCasaPasto(c.giorno, c.gShort, c.weekday, c.pasto, c.dRef);
+        if(nCasa2 <= 0) return;
+        persNota = nCasa2;
+      }
+      daNomePiatto(DB_PASTI[cell.pastoId].nome, persNota);
+    });
+    nuovi.forEach(function(v){
+      var key = v.nome.toLowerCase().trim();
+      if(gramMap[key] && gramMap[key] > 0){
+        var g = gramMap[key];
+        v.nota = (g >= 1000) ? ("circa " + (Math.round(g / 100) / 10) + " kg") : ("circa " + (Math.round(g / 10) * 10) + " g");
+      } else if(persMap[key] > 0){
+        v.nota = "per " + persMap[key] + (persMap[key] === 1 ? " persona" : " persone");
+      }
     });
     if(nuovi.length) { setSpesa(attuali.concat(nuovi)); setMsg(nuovi.length + " articoli aggiunti dalla settimana"); }
     else setMsg("Nessun nuovo articolo dal menu della settimana");
@@ -7771,7 +7862,8 @@ function ProvvisteView(props) {
         })}
       </div>
       {seg==="spesa" && (
-        <ListaSpesaView spesa={props.spesa} setSpesa={props.setSpesa} builder={props.builder} menu={props.menu} ospiti={props.ospiti} embedded={true}/>
+        <ListaSpesaView spesa={props.spesa} setSpesa={props.setSpesa} builder={props.builder} menu={props.menu} ospiti={props.ospiti}
+          profili={props.profili} giorniFuori={props.giorniFuori} piani={props.piani} embedded={true}/>
       )}
       {seg==="dispensa" && (
         <DispensaView dispensa={props.dispensa} setDispensa={props.setDispensa} spesa={props.spesa} setSpesa={props.setSpesa} embedded={true} mobileFisso="dispensa"/>
@@ -8101,6 +8193,8 @@ function DiarioView(props) {
   var profili = props.profili || {};
   var diario = props.diario || {};
   var setDiario = props.setDiario || function(){};
+  var piani = (props.piani && props.piani.lista) ? props.piani.lista : [];
+  var giorniFuori = props.giorniFuori || {};
   var vals = Object.values(profili);
 
   var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
@@ -8122,6 +8216,7 @@ function DiarioView(props) {
   var viewDate = new Date(); viewDate.setHours(0,0,0,0); viewDate.setDate(viewDate.getDate()+dayOff);
   var dateKey = viewDate.getFullYear() + "-" + ("0"+(viewDate.getMonth()+1)).slice(-2) + "-" + ("0"+viewDate.getDate()).slice(-2);
   var ordine = ["Colazione","Spuntino","Pranzo","Merenda","Cena"];
+  var GIORNI_FULL_D = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var GG_D = ["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
   var MESI_D = ["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
   function labelGiornoD(){ if(dayOff===0) return "Oggi"; if(dayOff===-1) return "Ieri"; if(dayOff===1) return "Domani"; return GG_D[viewDate.getDay()]+" "+viewDate.getDate()+" "+MESI_D[viewDate.getMonth()]; }
@@ -8143,6 +8238,67 @@ function DiarioView(props) {
     var nd = Object.assign({}, diario);
     nd[dateKey] = g;
     setDiario(nd);
+  }
+  function badgeMenu(stato) {
+    if(stato === "fuori") return {bg:"#FBE7EC",tx:"#C2355A",ic:"ti-door-exit",label:"Fuori"};
+    if(stato === "mensa") return {bg:"#F6ECD9",tx:"#8A5A12",ic:"ti-school",label:"Mensa"};
+    if(stato === "dieta") return {bg:"#E2EEF5",tx:"#2F6586",ic:"ti-salad",label:"Dieta"};
+    if(stato === "altri") return {bg:"#E2EEF5",tx:"#2F6586",ic:"ti-tools-kitchen-2",label:"Suo piatto"};
+    return {bg:"#E2EEF5",tx:"#2F6586",ic:"ti-home",label:"Casa"};
+  }
+  function membroFuoriGiorno(gFull) {
+    var sf = giorniFuori[gFull];
+    if(!sf) return false;
+    if(typeof sf.has === "function") return sf.has(mkey);
+    if(Array.isArray(sf)) return sf.indexOf(mkey) >= 0;
+    return false;
+  }
+  function proposteMenu() {
+    if(!membro) return {fuori:false, righe:[]};
+    var idx = (viewDate.getDay()+6)%7;
+    var gFull = GIORNI_FULL_D[idx];
+    var gShort = GIORNI7[idx];
+    var weekday = idx <= 4;
+    if(membroFuoriGiorno(gFull)) return {fuori:true, righe:[]};
+    var pMensa = {}; var pDieta = {};
+    piani.forEach(function(pl){
+      if(!pl || pl.membroId !== mkey) return;
+      var wk = settimanaPianoNum(pl, viewDate);
+      var w = (pl.settimane || {})[wk];
+      var d = (w && w.giorni) ? w.giorni[gShort] : null;
+      if(!d) return;
+      if(pl.tipo === "mensa") {
+        if(weekday && d.pranzo && (""+d.pranzo).trim()) pMensa["Pranzo"] = (""+d.pranzo).trim();
+      } else if(pl.tipo === "membro") {
+        var map = {colazione:"Colazione", pranzo:"Pranzo", spuntino:"Spuntino", cena:"Cena"};
+        Object.keys(map).forEach(function(k){ if(d[k] && (""+d[k]).trim()) pDieta[map[k]] = (""+d[k]).trim(); });
+      }
+    });
+    var righe = [];
+    ordine.forEach(function(m){
+      if(pMensa[m]) { var e1 = riconosciPasto(pMensa[m]); righe.push({pasto:m, stato:"mensa", nome:pMensa[m], kcal:e1.kcal||0, prot:e1.prot||0, stima:true}); return; }
+      if(pDieta[m]) { var e2 = riconosciPasto(pDieta[m]); righe.push({pasto:m, stato:"dieta", nome:pDieta[m], kcal:e2.kcal||0, prot:e2.prot||0, stima:true}); return; }
+      var b = builder[gFull+"-"+m];
+      var pu = b && b.piattoUnico;
+      if(pu && pu.nome && (""+pu.nome).trim()) {
+        if((pu.fuori||[]).indexOf(mkey) >= 0) { righe.push({pasto:m, stato:"fuori"}); return; }
+        var alt = null;
+        (pu.altri||[]).forEach(function(dd){ if((dd.membri||[]).indexOf(mkey) >= 0) alt = dd; });
+        if(alt && (""+alt.nome).trim()) { righe.push({pasto:m, stato:"altri", nome:(""+alt.nome).trim(), kcal:parseInt(alt.kcal,10)||0, prot:parseInt(alt.prot,10)||0}); return; }
+      }
+      var info = pastoUnificato(builder, menu, gFull, m);
+      if(info && info.nome) righe.push({pasto:m, stato:"casa", nome:info.nome, kcal:info.kcal||0, prot:info.prot||0});
+    });
+    return {fuori:false, righe:righe};
+  }
+  function giaSegnato(m, nome) {
+    return items.some(function(x){ return x.pasto === m && (""+x.nome).trim().toLowerCase() === (""+nome).trim().toLowerCase(); });
+  }
+  function segnaProposta(r) {
+    if(!r || !r.nome) return;
+    var id = "e" + now.getTime() + "_" + items.length + "_" + r.pasto;
+    var voce = {id:id, pasto:r.pasto, nome:r.nome, kcal:r.kcal||0, prot:r.prot||0, carb:0, gr:0};
+    salvaRec({items: items.concat([voce]), acqua:acqua});
   }
   function riconosciComposto(nome) {
     if(typeof riconosciPasto !== "function") return null;
@@ -8298,6 +8454,64 @@ function DiarioView(props) {
           <div style={{marginTop:9,fontSize:11,color:"#8A949B",fontWeight:600}}>Limite proteine per {membro?membro.nome:""}: {protMax} g al giorno.</div>
         ) : null)}
       </div>
+
+      {(function(){
+        var pm = proposteMenu();
+        return (
+          <div>
+            <div className="cap" style={{marginBottom:8}}>{dayOff===0 ? "Dal menu di oggi" : ("Dal menu · "+labelGiornoD())}</div>
+            <div className="mf-card flush">
+              {pm.fuori ? (
+                <div className="mf-row">
+                  <div className="mf-ic" style={{background:"#FBE7EC",color:"#C2355A"}}><i className="ti ti-door-exit"/></div>
+                  <div style={{flex:1,fontSize:13,color:"#8A949B"}}>{membro?membro.nome:""} mangia fuori {dayOff===0?"oggi":"questo giorno"}. Nessun pasto di casa da segnare.</div>
+                </div>
+              ) : (pm.righe.length===0 ? (
+                <div className="mf-row">
+                  <div className="mf-ic" style={{background:"transparent",border:"1.5px dashed #CADCE8",color:"#8A949B"}}><i className="ti ti-calendar-off"/></div>
+                  <div style={{flex:1,fontSize:13,color:"#8A949B"}}>Niente pianificato nel menu per questo giorno. Pianifica pranzo e cena nel Builder.</div>
+                </div>
+              ) : pm.righe.map(function(r){
+                if(r.stato==="fuori") {
+                  return (
+                    <div key={r.pasto} className="mf-row">
+                      <div className="mf-ic" style={{background:"#FBE7EC",color:"#C2355A"}}><i className="ti ti-door-exit"/></div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:500}}>{r.pasto}</div>
+                        <div style={{fontSize:11,color:"#8A949B"}}>Fuori casa · niente da segnare</div>
+                      </div>
+                    </div>
+                  );
+                }
+                var b = badgeMenu(r.stato);
+                var fatto = giaSegnato(r.pasto, r.nome);
+                return (
+                  <div key={r.pasto} className="mf-row">
+                    <div className="mf-ic"><i className={"ti "+(ICONE_PASTO[r.pasto]||"ti-tools-kitchen-2")}/></div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.nome}</div>
+                      <div style={{fontSize:11,color:"#8A949B",display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginTop:2}}>
+                        <span style={{fontWeight:800,padding:"1px 7px",borderRadius:20,background:b.bg,color:b.tx,display:"inline-flex",alignItems:"center",gap:4}}><i className={"ti "+b.ic} style={{fontSize:11}}/>{b.label}</span>
+                        <span>{r.pasto}</span>
+                        {r.kcal ? <span>· {r.stima?"~":""}{r.kcal} kcal</span> : null}
+                        {r.prot ? <span>· {r.stima?"~":""}{r.prot}g prot</span> : null}
+                      </div>
+                    </div>
+                    {fatto ? (
+                      <span style={{fontSize:12,fontWeight:800,color:"#2F6586",display:"flex",alignItems:"center",gap:4,flexShrink:0}}><i className="ti ti-check" style={{fontSize:15}}/>Segnato</span>
+                    ) : (
+                      <button onClick={function(){ segnaProposta(r); }}
+                        style={{flexShrink:0,padding:"7px 12px",borderRadius:11,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",display:"flex",alignItems:"center",gap:5}}>
+                        <i className="ti ti-plus" style={{fontSize:15}}/>Segna
+                      </button>
+                    )}
+                  </div>
+                );
+              }))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div>
         <div className="cap" style={{marginBottom:8}}>{dayOff===0?"Mangiato oggi":("Mangiato · "+labelGiornoD())}</div>
@@ -8875,23 +9089,7 @@ function HomeView(props) {
     return "casa";
   }
   function mangiaCasaPasto(pid, gFull, gShort2, weekday, pasto) {
-    var sf = giorniFuori[gFull];
-    var isF = sf ? (typeof sf.has === "function" ? sf.has(pid) : (Array.isArray(sf) ? sf.indexOf(pid) >= 0 : false)) : false;
-    if(isF) return false;
-    var fuoriCasa = false;
-    pianiLista.forEach(function(pl){
-      if(!pl || pl.membroId !== pid) return;
-      var wk = settimanaPianoNum(pl, now);
-      var w = (pl.settimane || {})[wk];
-      var d = (w && w.giorni) ? w.giorni[gShort2] : null;
-      if(!d) return;
-      if(pl.tipo === "mensa") { if(weekday && pasto === "Pranzo" && d.pranzo && (""+d.pranzo).trim()) fuoriCasa = true; }
-      else if(pl.tipo === "membro") {
-        var qualcosa = Object.keys(d).some(function(k){ return d[k] && (""+d[k]).trim(); });
-        if(qualcosa) fuoriCasa = true;
-      }
-    });
-    return !fuoriCasa;
+    return calcMangiaCasa(pianiLista, giorniFuori, now, pid, gFull, gShort2, weekday, pasto);
   }
   function patologiaMembro(p) {
     var pid2 = p.patologia;
@@ -10592,6 +10790,7 @@ export default function App() {
         {tab==="diario" && (
           <div style={{display:"flex",flexDirection:"column",gap:18}}>
             <DiarioView menu={menu} builder={builderScelte} profili={profili}
+              piani={piani} giorniFuori={giorniFuori}
               diario={diarioLog} setDiario={setDiarioLogLS}/>
             <div style={{borderTop:"1px solid #E3EAEE",paddingTop:4}}/>
             <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
@@ -10629,7 +10828,8 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ProvvisteView dispensa={dispensa} setDispensa={setDispensaLS} spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}/>
+          <ProvvisteView dispensa={dispensa} setDispensa={setDispensaLS} spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}
+            profili={profili} giorniFuori={giorniFuori} piani={piani}/>
         )}
         {tab==="mealprep" && (
           <TabMealPrep mealPrep={mealPrep} setMealPrep={setMealPrepLS}
