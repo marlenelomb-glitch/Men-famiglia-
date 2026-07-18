@@ -3751,6 +3751,19 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                               </div>
                             );
                           })}
+                          {altriValidi(s).map(function(d,ai){
+                            var chi = (d.membri||[]).map(function(mid){ var pm=profili[mid]; return pm?(""+(pm.nome||"")).split(" ")[0]:""; }).filter(Boolean).join(", ");
+                            return (
+                              <div key={"alt"+ai} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("persona"); apriPicker(GRUPPI_BOARD[0]); }}
+                                style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer"}}>
+                                <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:"#F6ECD9",color:"#8A5A12"}}><i className="ti ti-user"/></div>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#8A5A12",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{(""+d.nome).trim()}</div>
+                                  {chi?<div style={{fontSize:10,color:"#8A5A12",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{chi}</div>:null}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })}
