@@ -348,7 +348,6 @@ class ErrorBoundary extends Component {
 }
 
 const DAYS = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
-const MEALS = ["Colazione","Pranzo","Spuntino","Merenda","Cena","Extra"];
 
 function indiceSettimana(d) {
   return Math.round(lunediDi(d).getTime() / 86400000);
@@ -481,109 +480,9 @@ function ingredienteVietato(ing, vietati) {
 var VIETATO_SHORT = {glutine:"glutine", latticini:"lattosio", carne:"carne", carne_rossa:"carne rossa", pesce:"pesce", crostacei:"crostacei", uova:"uova", legumi:"legumi", frutta_secca:"fr. secca", miele:"miele", alcol:"alcol"};
 function vietatoShort(tag) { return VIETATO_SHORT[tag] || tag; }
 
-const DB_PASTI = {
-  c1:{nome:"Yogurt + frutta + cereali",emoji:"?",tipo:"Colazione",
-    adulta:{kcal:220,prot:14,piatto:"Yogurt greco 150g + frutta + 30g avena"},
-    adulto:{kcal:280,prot:18,piatto:"Yogurt greco 200g + frutta + 40g avena"},
-    bimbo:{kcal:200,prot:7,piatto:"Yogurt intero 125g + banana + avena 25g"},
-    apro:{kcal:250,prot:1,piatto:"Yogurt apr 150g + frutta + cereali apr"},
-    neo:{kcal:90,prot:2,piatto:"Yogurt intero 60g + banana schiacciata"}},
-  c2:{nome:"Pane + ricotta + frutta",emoji:"?",tipo:"Colazione",
-    adulta:{kcal:230,prot:11,piatto:"2 fette pane int + 60g ricotta + fragole"},
-    adulto:{kcal:310,prot:14,piatto:"3 fette pane + 80g ricotta + frutta"},
-    bimbo:{kcal:210,prot:9,piatto:"2 fette pane + 50g ricotta + fragole"},
-    apro:{kcal:220,prot:1,piatto:"2 fette pane apr + marmellata + olio"},
-    neo:{kcal:85,prot:3,piatto:"Pane morbido 15g + ricotta 30g"}},
-  p1:{nome:"Pasta al pomodoro",emoji:"?",tipo:"Pranzo",
-    adulta:{kcal:330,prot:10,piatto:"70g pasta int + pomodoro fresco + basilico"},
-    adulto:{kcal:410,prot:13,piatto:"90g pasta + pomodoro + olio EVO"},
-    bimbo:{kcal:360,prot:11,piatto:"80g pasta + pomodoro + parmigiano"},
-    apro:{kcal:390,prot:2,piatto:"80g pasta apr + pomodoro + 2c olio EVO"},
-    neo:{kcal:120,prot:3,piatto:"40g pastina + pomodoro cotto passato"}},
-  p2:{nome:"Riso con pollo e verdure",emoji:"?",tipo:"Pranzo",
-    adulta:{kcal:360,prot:28,piatto:"70g riso + 90g pollo + verdure + olio"},
-    adulto:{kcal:450,prot:35,piatto:"90g riso + 120g pollo + verdure"},
-    bimbo:{kcal:350,prot:22,piatto:"75g riso + 70g pollo + verdure"},
-    apro:{kcal:400,prot:2,piatto:"80g riso apr + verdure abbondanti + olio"},
-    neo:{kcal:150,prot:8,piatto:"40g riso + 30g pollo tritato + verdure"}},
-  p3:{nome:"Pasta con salmone e zucchine",emoji:"?",tipo:"Pranzo",
-    adulta:{kcal:380,prot:26,piatto:"70g pasta + 80g salmone + zucchine"},
-    adulto:{kcal:460,prot:32,piatto:"90g pasta + 100g salmone + zucchine"},
-    bimbo:{kcal:370,prot:20,piatto:"80g pasta + 60g salmone + zucchine"},
-    apro:{kcal:400,prot:2,piatto:"80g pasta apr + zucchine + olio"},
-    neo:{kcal:155,prot:9,piatto:"40g pastina + salmone 30g + zucchine"}},
-  p4:{nome:"Orzo con tacchino e pomodori",emoji:"?",tipo:"Pranzo",
-    adulta:{kcal:360,prot:29,piatto:"70g orzo + 90g tacchino + pomodori"},
-    adulto:{kcal:450,prot:36,piatto:"90g orzo + 110g tacchino + pomodori"},
-    bimbo:{kcal:350,prot:22,piatto:"75g orzo + 70g tacchino + pomodori"},
-    apro:{kcal:400,prot:2,piatto:"80g riso apr + pomodori + olio"},
-    neo:{kcal:148,prot:8,piatto:"40g pastina + 30g tacchino + pomodoro"}},
-  p5:{nome:"Pasta con ceci e pomodoro",emoji:"?",tipo:"Pranzo",
-    adulta:{kcal:350,prot:16,piatto:"65g pasta + 80g ceci + pomodori"},
-    adulto:{kcal:440,prot:20,piatto:"85g pasta + 100g ceci + pomodori"},
-    bimbo:{kcal:365,prot:15,piatto:"75g pasta + 70g ceci + pomodoro"},
-    apro:{kcal:395,prot:2,piatto:"80g pasta apr + pomodori + olio"},
-    neo:{kcal:150,prot:6,piatto:"40g pastina + ceci passati 30g"}},
-  ce1:{nome:"Merluzzo con patate e fagiolini",emoji:"?",tipo:"Cena",
-    adulta:{kcal:285,prot:25,piatto:"120g merluzzo + 100g patate + fagiolini"},
-    adulto:{kcal:365,prot:31,piatto:"150g merluzzo + 130g patate + fagiolini"},
-    bimbo:{kcal:285,prot:19,piatto:"80g merluzzo + 100g patate + fagiolini"},
-    apro:{kcal:380,prot:3,piatto:"Patate + fagiolini + pane apr + olio"},
-    neo:{kcal:128,prot:9,piatto:"50g merluzzo + 40g patate schiacciate"}},
-  ce2:{nome:"Pollo con riso e spinaci",emoji:"?",tipo:"Cena",
-    adulta:{kcal:350,prot:30,piatto:"100g pollo + 60g riso + spinaci"},
-    adulto:{kcal:445,prot:37,piatto:"130g pollo + 80g riso + spinaci"},
-    bimbo:{kcal:338,prot:23,piatto:"80g pollo + 60g riso + spinaci"},
-    apro:{kcal:350,prot:3,piatto:"60g riso apr + spinaci abbondanti + olio"},
-    neo:{kcal:138,prot:9,piatto:"30g riso + 35g pollo tritato + spinaci"}},
-  ce3:{nome:"Salmone con patate e broccoli",emoji:"?",tipo:"Cena",
-    adulta:{kcal:338,prot:27,piatto:"120g salmone + 100g patate + broccoli"},
-    adulto:{kcal:422,prot:33,piatto:"150g salmone + 120g patate + broccoli"},
-    bimbo:{kcal:312,prot:20,piatto:"80g salmone + patate + broccoli"},
-    apro:{kcal:388,prot:3,piatto:"Patate + broccoli + pane apr + olio"},
-    neo:{kcal:153,prot:9,piatto:"50g salmone + 40g patate + broccoli"}},
-  ce4:{nome:"Uova con patate e spinaci",emoji:"?",tipo:"Cena",
-    adulta:{kcal:292,prot:17,piatto:"2 uova + 100g patate al forno + spinaci"},
-    adulto:{kcal:388,prot:24,piatto:"3 uova + 130g patate + spinaci"},
-    bimbo:{kcal:282,prot:16,piatto:"2 uova + patate + spinaci"},
-    apro:{kcal:382,prot:3,piatto:"Patate + spinaci + pane apr + olio"},
-    neo:{kcal:113,prot:5,piatto:"1 tuorlo + 40g patate + spinaci passati"}},
-  s1:{nome:"Yogurt e frutta",emoji:"?",tipo:"Spuntino",
-    adulta:{kcal:140,prot:10,piatto:"Yogurt greco 100g + pesca"},
-    adulto:{kcal:180,prot:12,piatto:"Yogurt greco 150g + banana"},
-    bimbo:{kcal:155,prot:6,piatto:"Yogurt intero 100g + frutta"},
-    apro:{kcal:260,prot:1,piatto:"Yogurt apr + frutta + miele"},
-    neo:{kcal:85,prot:2,piatto:"Yogurt intero 60g + frutta schiacciata"}},
-  m1:{nome:"Frutta + noci",emoji:"?",tipo:"Merenda",
-    adulta:{kcal:150,prot:3,piatto:"1 frutto + 15g noci"},
-    adulto:{kcal:200,prot:4,piatto:"1 frutto + 20g noci"},
-    bimbo:{kcal:165,prot:3,piatto:"1 frutto + 10g noci tritate"},
-    apro:{kcal:265,prot:2,piatto:"Frutta + 25g noci + biscotto apr"},
-    neo:{kcal:70,prot:1,piatto:"Frutta morbida 80g schiacciata"}},
-  e1:{nome:"Brodo vegetale",emoji:"?",tipo:"Extra",
-    adulta:{kcal:25,prot:1,piatto:"300ml brodo vegetale"},
-    adulto:{kcal:35,prot:1,piatto:"400ml brodo vegetale"},
-    bimbo:{kcal:60,prot:2,piatto:"200ml brodo + pastina 15g"},
-    apro:{kcal:60,prot:0,piatto:"300ml brodo + olio EVO"},
-    neo:{kcal:10,prot:0,piatto:"100ml brodo no sale"}},
-};
 
 function getColor(pid, profili) {
   return (profili[pid]||{}).colore || "#8A949B";
-}
-
-function buildMenu(week, profili) {
-  const keys = Object.keys(DB_PASTI);
-  const result = {};
-  DAYS.forEach((d,di) => {
-    MEALS.forEach((m,mi) => {
-      const filtered = keys.filter(k => DB_PASTI[k].tipo === m);
-      if(filtered.length === 0) return;
-      const idx = (di * MEALS.length + mi + week * 7) % filtered.length;
-      result[d+"-"+m] = {pastoId: filtered[idx], confermato:false, note:""};
-    });
-  });
-  return result;
 }
 
 function Bar({val, max, color}) {
@@ -3096,7 +2995,7 @@ function riconosciPasto(testo) {
   return {kcal:Math.round(kcal), prot:Math.round(prot), items:items};
 }
 
-function TabBuilder({menu, setMenuOverride, profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, modelliMenu, setModelliMenu, onSavePasto, onApriMensa}) {
+function TabBuilder({profili, builderScelte, setBuilderScelte, builderScelteProssima, setBuilderScelteProssima, mealPrep, dispensa, setMealPrep, alimentiCustom, setAlimentiCustom, giorniFuori, toggleFuori, piani, modelliMenu, setModelliMenu, onSavePasto, onApriMensa}) {
   var GIORNI_B = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
   var giorniFuoriB = giorniFuori || {};
   var toggleFuoriB = toggleFuori || function(){};
@@ -5219,7 +5118,6 @@ var GUEST_RESTR = [
 function restrLabel(id){ var r = GUEST_RESTR.find(function(x){ return x.id === id; }); return r ? r.l : id; }
 
 function MenuView(props) {
-  var menu = props.menu || {};
   var builder = props.builder || {};
   var setTab = props.setTab || function(){};
   var profili = props.profili || {};
@@ -5274,7 +5172,7 @@ function MenuView(props) {
       var extra = (pu.altri && pu.altri.length) ? (" (+"+pu.altri.length+")") : "";
       return (""+pu.nome).trim() + extra;
     }
-    var info = pastoUnificato(builder, menu, giorno, mealName);
+    var info = pastoUnificato(builder, giorno, mealName);
     return info ? info.nome : null;
   }
   function getReaz(day, mid) {
@@ -5497,12 +5395,6 @@ function MenuView(props) {
 
 var ICONE_PASTO = {Colazione:"ti-coffee", Spuntino:"ti-apple", Pranzo:"ti-tools-kitchen-2", Merenda:"ti-apple", Cena:"ti-soup"};
 
-function kcalPastoAdulto(id) {
-  var p = DB_PASTI[id];
-  if(p && p.adulto && typeof p.adulto.kcal === "number") return p.adulto.kcal;
-  return 0;
-}
-
 var PORZ_STD = {pasta:80,riso:80,cereali:70,tuberi:180,pane:60,colazione:50,
   "carne bianca":150,"carne rossa":150,pesce:150,uova:120,legumi:200,latticini:100,
   verdura:150,frutta:120};
@@ -5630,12 +5522,10 @@ function valoriPastoBuilder(scelta) {
   return {nome:nomi.join(", "), kcal:kcal, prot:prot};
 }
 
-function pastoUnificato(builder, menu, giorno, pasto) {
+function pastoUnificato(builder, giorno, pasto) {
   var b = (builder || {})[giorno + "-" + pasto];
   var vb = valoriPastoBuilder(b);
   if(vb) return {nome:vb.nome, kcal:vb.kcal, prot:vb.prot, fonte:"builder"};
-  var cell = (menu || {})[giorno + "-" + pasto];
-  if(cell && cell.pastoId && DB_PASTI[cell.pastoId]) return {nome:DB_PASTI[cell.pastoId].nome, kcal:kcalPastoAdulto(cell.pastoId), prot:0, fonte:"menu"};
   return null;
 }
 
@@ -6896,7 +6786,6 @@ function ListaSpesaView(props) {
   var spesa = props.spesa || [];
   var setSpesa = props.setSpesa || function(){};
   var builder = props.builder || {};
-  var menu = props.menu || {};
   var ospiti = props.ospiti || {};
   var profili = props.profili || {};
   var giorniFuori = props.giorniFuori || {};
@@ -7022,18 +6911,6 @@ function ListaSpesaView(props) {
         }
       }
       (s.piu||[]).forEach(function(d){ daPiatto(d, persNota); });
-    });
-    Object.keys(menu).forEach(function(k){
-      var cell = menu[k];
-      if(!cell || !cell.pastoId || !DB_PASTI[cell.pastoId]) return;
-      var c = contesto(k);
-      var persNota = 0;
-      if(c && c.scala){
-        var nCasa2 = personeCasaPasto(c.giorno, c.gShort, c.weekday, c.pasto, c.dRef);
-        if(nCasa2 <= 0) return;
-        persNota = nCasa2;
-      }
-      daNomePiatto(DB_PASTI[cell.pastoId].nome, persNota);
     });
     nuovi.forEach(function(v){
       var key = v.nome.toLowerCase().trim();
@@ -7862,7 +7739,7 @@ function ProvvisteView(props) {
         })}
       </div>
       {seg==="spesa" && (
-        <ListaSpesaView spesa={props.spesa} setSpesa={props.setSpesa} builder={props.builder} menu={props.menu} ospiti={props.ospiti}
+        <ListaSpesaView spesa={props.spesa} setSpesa={props.setSpesa} builder={props.builder} ospiti={props.ospiti}
           profili={props.profili} giorniFuori={props.giorniFuori} piani={props.piani} embedded={true}/>
       )}
       {seg==="dispensa" && (
@@ -8107,14 +7984,13 @@ function DispensaView(props) {
 }
 
 function CalorieView(props) {
-  var menu = props.menu || {};
   var builder = props.builder || {};
   var profili = props.profili || {};
   var now = new Date();
   var oggiIdx = (now.getDay()+6)%7;
   var oggiApp = DAYS[oggiIdx];
   function kcalPasto(giorno, m) {
-    var info = pastoUnificato(builder, menu, giorno, m);
+    var info = pastoUnificato(builder, giorno, m);
     return info ? info.kcal : 0;
   }
   var pasti = [
@@ -8188,7 +8064,6 @@ function CalorieView(props) {
 }
 
 function DiarioView(props) {
-  var menu = props.menu || {};
   var builder = props.builder || {};
   var profili = props.profili || {};
   var diario = props.diario || {};
@@ -8286,7 +8161,7 @@ function DiarioView(props) {
         (pu.altri||[]).forEach(function(dd){ if((dd.membri||[]).indexOf(mkey) >= 0) alt = dd; });
         if(alt && (""+alt.nome).trim()) { righe.push({pasto:m, stato:"altri", nome:(""+alt.nome).trim(), kcal:parseInt(alt.kcal,10)||0, prot:parseInt(alt.prot,10)||0}); return; }
       }
-      var info = pastoUnificato(builder, menu, gFull, m);
+      var info = pastoUnificato(builder, gFull, m);
       if(info && info.nome) righe.push({pasto:m, stato:"casa", nome:info.nome, kcal:info.kcal||0, prot:info.prot||0});
     });
     return {fuori:false, righe:righe};
@@ -9006,7 +8881,6 @@ function AnelloMacro(props) {
 
 function HomeView(props) {
   var profili = props.profili || {};
-  var menu = props.menu || {};
   var builder = props.builder || {};
   var dispensa = props.dispensa || [];
   var mealPrep = props.mealPrep || [];
@@ -9044,7 +8918,7 @@ function HomeView(props) {
   var ctWarm = {fontSize:11,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",color:"#8A5A12",marginBottom:11,display:"flex",alignItems:"center",gap:7};
   var warnRow = {background:"#F6ECD9",borderRadius:11,padding:"10px 12px",color:"#8A5A12",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:8};
 
-  function pastoInfo(m) { return pastoUnificato(builder, menu, gOggi, m); }
+  function pastoInfo(m) { return pastoUnificato(builder, gOggi, m); }
   var pranzoInfo = pastoInfo("Pranzo");
   var cenaInfo = pastoInfo("Cena");
 
@@ -9689,7 +9563,6 @@ function MenuCondiviso(props) {
   var s_load = useState(true); var loading = s_load[0]; var setLoading = s_load[1];
   var s_prof = useState({}); var profili = s_prof[0]; var setProfili = s_prof[1];
   var s_bld = useState({}); var builder = s_bld[0]; var setBuilder = s_bld[1];
-  var s_ovr = useState({}); var menuOverride = s_ovr[0]; var setMenuOverride = s_ovr[1];
   var s_fb = useState({}); var feedback = s_fb[0]; var setFeedback = s_fb[1];
   var s_osp = useState({}); var ospiti = s_osp[0]; var setOspiti = s_osp[1];
   var s_mid = useState(""); var midSel = s_mid[0]; var setMidSel = s_mid[1];
@@ -9706,7 +9579,6 @@ function MenuCondiviso(props) {
     }, function(){});
     supabase.from("app_state").select("*").eq("family_id", familyId).then(function(rows){
       (rows||[]).forEach(function(r){
-        if(r.chiave==="menuOverride" && r.dati) setMenuOverride(r.dati);
         if(r.chiave==="feedbackPasti" && r.dati) setFeedback(r.dati);
         if(r.chiave==="ospiti" && r.dati) setOspiti(r.dati);
         if(r.chiave==="piani" && r.dati) setPiani(r.dati);
@@ -9722,10 +9594,8 @@ function MenuCondiviso(props) {
   var vals = Object.values(profili);
   var membro = profili[midSel] || vals[0] || null;
   var mkey = membro ? membro.id : "";
-  var menuBase = buildMenu(0, profili);
-  var menu = Object.assign({}, menuBase, menuOverride);
 
-  function nomePasto(giorno, m){ var info = pastoUnificato(builder, menu, giorno, m); return info ? info.nome : null; }
+  function nomePasto(giorno, m){ var info = pastoUnificato(builder, giorno, m); return info ? info.nome : null; }
   function getReaz(day, mid){ var w = feedback[weekKey]; if(!w) return null; var dd = w[day]; if(!dd) return null; return dd[mid] || null; }
   function saveFeedback(nf){ setFeedback(nf); supabase.from("app_state").upsert({family_id:familyId, chiave:"feedbackPasti", dati:nf, updated_at:new Date().toISOString()}, {onConflict:"family_id,chiave"}); }
   function setReaz(day, mid, stato, nota){
@@ -10173,7 +10043,7 @@ export default function App() {
     }, function(e){ console.error("Supabase: builder_scelte errore", e); });
     supabase.from("app_state").select("*").eq("family_id",fid).then(function(rows){
       if(rows&&rows.length>0){
-        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, menuOverride:setMenuOverride, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, preferiti:setPreferiti, modelliMenu:setModelliMenu, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
+        var setters = {dispensa:setDispensa, spesa:setSpesa, mealPrep:setMealPrep, giorniFuori:setGiorniFuori, diarioLog:setDiarioLog, feedbackPasti:setFeedbackPasti, ospiti:setOspiti, piani:setPiani, medicine:setMedicine, noteGiorno:setNoteGiorno, preferiti:setPreferiti, modelliMenu:setModelliMenu, ricetteIG:setRicetteIG, pagineIG:setPagineIG, alimentiCustom:setAlimentiCustom, pianificazione:setPianificazione};
         rows.forEach(function(r){
           if(setters[r.chiave] && r.dati !== null && r.dati !== undefined){
             setters[r.chiave](r.dati); saveLS(r.chiave, r.dati);
@@ -10246,7 +10116,7 @@ export default function App() {
     Object.keys(profili||{}).forEach(function(pid){ if(profili[pid]){ nP++; supabase.from("profiles").upsert({family_id:fid, profile_id:pid, dati:profili[pid], updated_at:stamp}, {onConflict:"family_id,profile_id"}); } });
     Object.keys(builderScelte||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:0, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelte[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
     Object.keys(builderScelteProssima||{}).forEach(function(k){ var gp=k.split("-"); nB++; supabase.from("builder_scelte").upsert({family_id:fid, settimana:1, giorno:gp[0], pasto:gp.slice(1).join("-"), dati:builderScelteProssima[k], updated_at:stamp}, {onConflict:"family_id,settimana,giorno,pasto"}); });
-    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, menuOverride:menuOverride, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, preferiti:preferiti, modelliMenu:modelliMenu, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
+    var stateMap = {dispensa:dispensa, spesa:spesa, mealPrep:mealPrep, giorniFuori:giorniFuori, diarioLog:diarioLog, feedbackPasti:feedbackPasti, ospiti:ospiti, piani:piani, medicine:medicine, noteGiorno:noteGiorno, preferiti:preferiti, modelliMenu:modelliMenu, ricetteIG:ricetteIG, pagineIG:pagineIG, alimentiCustom:alimentiCustom, pianificazione:pianificazione};
     Object.keys(stateMap).forEach(function(k){ nS++; supabase.from("app_state").upsert({family_id:fid, chiave:k, dati:stateMap[k], updated_at:stamp}, {onConflict:"family_id,chiave"}); });
     setTimeout(function(){ cb("Fatto! Famiglia collegata e inviati al cloud: " + nP + " profili, " + nB + " pasti, " + nS + " impostazioni. Ora prova il login su un altro accesso."); }, 1500);
   }
@@ -10362,7 +10232,6 @@ export default function App() {
   const [settimana, setSettimana] = useState(0);
   const [activeDay, setActiveDay] = useState(0);
   const [profili, setProfili] = useState(loadLS("profili", {}));
-  const [menuOverride, setMenuOverride] = useState(loadLS("menuOverride", {}));
   const [builderScelte, setBuilderScelte] = useState(loadLS("builderScelte", {}));
   const [builderScelteProssima, setBuilderScelteProssima] = useState(loadLS("builderScelteProssima", {}));
 
@@ -10405,8 +10274,6 @@ export default function App() {
   const [regolaApro, setRegolaApro] = useState({
     Colazione:2, Spuntino:2, Pranzo:7, Merenda:3, Cena:8, Extra:0
   });
-
-  const menu = useMemo(() => ({...menuOverride}), [menuOverride]);
 
   const toggleFuori = useCallback((giorno, pid) => {
     setGiorniFuoriLS(prev => {
@@ -10521,7 +10388,6 @@ export default function App() {
   var setRicetteIGLS          = mkSetterSync("ricetteIG", setRicetteIG);
   var setPagineIGLS           = mkSetterSync("pagineIG", setPagineIG);
   var setPinLS                = mkSetter("pin", setPin);
-  var setMenuOverrideLS       = mkSetterSync("menuOverride", setMenuOverride);
   var setGiorniFuoriLS        = mkSetterSync("giorniFuori", setGiorniFuori);
 
   const [pinInput, setPinInput] = useState("");
@@ -10783,17 +10649,17 @@ export default function App() {
         <ErrorBoundary key={tab}>
         <div className="mf-fade">
         {tab==="home" && (
-          <HomeView profili={profili} menu={menu} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}
+          <HomeView profili={profili} builder={builderScelte} dispensa={dispensa} spesa={spesa} setTab={handleSetTab}
             mealPrep={mealPrep} giorniFuori={giorniFuori} piani={piani} setSpesa={setSpesaLS} toggleFuori={toggleFuori}
             medicine={medicine} setMedicine={setMedicineLS} noteGiorno={noteGiorno} setNoteGiorno={setNoteGiornoLS}/>
         )}
         {tab==="diario" && (
           <div style={{display:"flex",flexDirection:"column",gap:18}}>
-            <DiarioView menu={menu} builder={builderScelte} profili={profili}
+            <DiarioView builder={builderScelte} profili={profili}
               piani={piani} giorniFuori={giorniFuori}
               diario={diarioLog} setDiario={setDiarioLogLS}/>
             <div style={{borderTop:"1px solid #E3EAEE",paddingTop:4}}/>
-            <MenuView menu={menu} builder={builderScelte} setTab={handleSetTab}
+            <MenuView builder={builderScelte} setTab={handleSetTab}
               profili={profili} feedback={feedbackPasti} setFeedback={setFeedbackPastiLS}
               ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId} soloOggi={true}
               preferiti={preferiti} setPreferiti={setPreferitiLS}/>
@@ -10828,7 +10694,7 @@ export default function App() {
             spesa={spesa} setSpesa={setSpesaLS}/>
         )}
         {tab==="spesa" && (
-          <ProvvisteView dispensa={dispensa} setDispensa={setDispensaLS} spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} menu={menu} ospiti={ospiti}
+          <ProvvisteView dispensa={dispensa} setDispensa={setDispensaLS} spesa={spesa} setSpesa={setSpesaLS} builder={builderScelte} ospiti={ospiti}
             profili={profili} giorniFuori={giorniFuori} piani={piani}/>
         )}
         {tab==="mealprep" && (
@@ -10865,7 +10731,7 @@ export default function App() {
           <TabIdee profili={profili} dispensa={dispensa} ricetteIG={ricetteIG} setRicetteIG={setRicetteIGLS} pagine={pagineIG} setPagine={setPagineIGLS}/>
         )}
         {tab==="builder" && (
-          <TabBuilder menu={menu} setMenuOverride={setMenuOverrideLS} profili={profili}
+          <TabBuilder profili={profili}
             builderScelte={builderScelte} setBuilderScelte={setBuilderScelteLS}
             builderScelteProssima={builderScelteProssima} setBuilderScelteProssima={setBuilderScelteProssimaLS}
             mealPrep={mealPrep} dispensa={dispensa} setMealPrep={setMealPrepLS}
