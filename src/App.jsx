@@ -3116,7 +3116,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   var sMod=useState(false); var showModelli=sMod[0]; var setShowModelli=sMod[1];
   var sModN=useState(""); var modNome=sModN[0]; var setModNome=sModN[1];
   var sScanNA=useState(false); var showScanNA=sScanNA[0]; var setShowScanNA=sScanNA[1];
-  var sVistaB=useState((function(){ try{ var v=localStorage.getItem("mf_builderVista"); return v?JSON.parse(v):"scorri"; }catch(e){ return "scorri"; } })());
+  var sVistaB=useState((function(){ try{ var v=localStorage.getItem("mf_builderVista"); var pv=v?JSON.parse(v):"griglia"; return pv==="scorri"?"griglia":pv; }catch(e){ return "griglia"; } })());
   var vistaB=sVistaB[0]; var setVistaBraw=sVistaB[1];
   function setVistaB(v){ setVistaBraw(v); try{ localStorage.setItem("mf_builderVista", JSON.stringify(v)); }catch(e){} }
   var sGrpSel=useState(null); var gruppoSel=sGrpSel[0]; var setGruppoSel=sGrpSel[1];
@@ -3651,11 +3651,6 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
             <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",marginRight:"auto",letterSpacing:".04em"}}>Come vedere la settimana</span>
             <div style={{display:"flex",background:"#E2EEF5",borderRadius:10,padding:3}}>
-              <button onClick={function(){ setVistaB("scorri"); }}
-                style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
-                  background:vistaB==="scorri"?"#fff":"transparent",color:vistaB==="scorri"?"#2F6586":"#7C93A3",boxShadow:vistaB==="scorri"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
-                <i className="ti ti-arrows-horizontal" style={{fontSize:14}}/>Giorni
-              </button>
               <button onClick={function(){ setVistaB("griglia"); }}
                 style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
                   background:vistaB==="griglia"?"#fff":"transparent",color:vistaB==="griglia"?"#2F6586":"#7C93A3",boxShadow:vistaB==="griglia"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
