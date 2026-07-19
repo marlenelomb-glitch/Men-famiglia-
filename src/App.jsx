@@ -3749,6 +3749,63 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                 </div>
               ) : null}
 
+              {(function(){
+                var pianificati = [];
+                GIORNI_B.forEach(function(g){
+                  ["Pranzo","Cena"].forEach(function(m){
+                    var s = scelteAttive[g+"-"+m]; if(!s) return;
+                    var grp = null;
+                    if(s.proteina){ var itg = ingById(s.proteina); if(itg) grp = gruppoDaCat(itg.cat); }
+                    if(!grp && s.gruppoProteico) grp = s.gruppoProteico;
+                    if(!grp) return;
+                    pianificati.push({g:g, m:m, s:s, grp:grp});
+                  });
+                });
+                if(!pianificati.length) return null;
+                return (
+                  <div style={{marginBottom:10}}>
+                    <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-bulb" style={{fontSize:14,color:"#6BA6C9"}}/>Ti aiuto col menu</div>
+                    {pianificati.map(function(pf){
+                      var grr = gruppoById(pf.grp);
+                      var dishName = (pf.s.piattoUnico && pf.s.piattoUnico.nome && (""+pf.s.piattoUnico.nome).trim()) ? (""+pf.s.piattoUnico.nome).trim() : "";
+                      var protName = "";
+                      if(!dishName && pf.s.proteina){ var itp = ingById(pf.s.proteina); if(itp) protName = itp.nome; }
+                      var piattiSug = (PIATTI_PER_GRUPPO[pf.grp]||[]).slice(0,3);
+                      return (
+                        <div key={pf.g+"-"+pf.m} style={{border:"1px solid #E3EAEE",borderRadius:13,padding:"10px 12px",marginBottom:8}}>
+                          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
+                            <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"3px 9px",fontSize:11,fontWeight:800}}><i className={"ti "+(grr?grr.icona:"ti-meat")} style={{fontSize:13}}/>{grr?grr.nome:""}</span>
+                            <span style={{fontSize:11,fontWeight:700,color:"#8A949B",marginLeft:"auto"}}>{pf.g.slice(0,3)} · {pf.m}</span>
+                          </div>
+                          {dishName ? (
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <i className="ti ti-tools-kitchen-2" style={{fontSize:15,color:"#2F6586",flexShrink:0}}/>
+                              <span style={{fontSize:13,fontWeight:700,color:"#2C3338",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dishName}</span>
+                              <button onClick={function(){ setSuggPiatti({g:pf.g, m:pf.m, gruppo:pf.grp}); }}
+                                style={{border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:16,padding:"5px 11px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",flexShrink:0}}>Cambia</button>
+                            </div>
+                          ) : (
+                            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                              {piattiSug.map(function(dish){
+                                return (
+                                  <button key={dish.nome} onClick={function(){ applicaPiattoGruppo(pf.g, pf.m, dish); }}
+                                    style={{border:"1.5px solid #CADCE8",background:"#F2F6F8",color:"#2C3338",borderRadius:16,padding:"6px 11px",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{dish.nome}</button>
+                                );
+                              })}
+                              <button onClick={function(){ setSuggPiatti({g:pf.g, m:pf.m, gruppo:pf.grp}); }}
+                                style={{border:"1.5px solid #6BA6C9",background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"6px 11px",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Altri…</button>
+                            </div>
+                          )}
+                          {(!dishName && protName) ? (<div style={{fontSize:10,color:"#8A949B",marginTop:6}}>Proteina scelta: {protName}</div>) : null}
+                          <button onClick={function(){ var i2=GIORNI_B.indexOf(pf.g); cambiaGiorno(i2); cambiaPasto(pf.m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                            style={{border:"none",background:"none",color:"#8A949B",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",padding:"6px 0 0",display:"flex",alignItems:"center",gap:5}}><i className="ti ti-pencil" style={{fontSize:13}}/>Scegli tu (anche fuori dal gruppo)</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"0 4px 8px",fontWeight:600}}>Tocca una casella con un gruppo per toglierlo. Poi apri il pasto per scegliere il piatto.</div>
             </div>
             );
