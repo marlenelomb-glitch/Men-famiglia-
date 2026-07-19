@@ -3213,11 +3213,19 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   function tapCellaMacro(g, m) {
     var i = GIORNI_B.indexOf(g);
     var s = scelteAttive[g+"-"+m] || {};
-    var hasReal = (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina;
-    if(hasReal) { cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); return; }
     if(gruppoSel) { setGruppoCella(g, m, gruppoSel); return; }
-    if(s.gruppoProteico) { setSuggPiatti({g:g, m:m, gruppo:s.gruppoProteico}); return; }
+    var grpId = null;
+    if(s.proteina){ var itc = ingById(s.proteina); if(itc) grpId = gruppoDaCat(itc.cat); }
+    if(!grpId && s.gruppoProteico) grpId = s.gruppoProteico;
+    if(grpId) { setSuggPiatti({g:g, m:m, gruppo:grpId}); return; }
     cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]);
+  }
+  function togliGruppoCella(g, m) {
+    var key = g+"-"+m;
+    var s = Object.assign({}, scelteAttive[key]||{});
+    delete s.gruppoProteico; delete s.piattoUnico;
+    setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[key] = s; return n; });
+    if(onSavePasto) onSavePasto(settB, g, m, s);
   }
   function applicaPiattoGruppo(g, m, dish) {
     var key = g+"-"+m;
@@ -3711,28 +3719,22 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                       </div>
                       {["Pranzo","Cena"].map(function(m){
                         var s = scelteAttive[g+"-"+m] || {};
-                        var hasReal = (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina;
-                        var nomeReal = "";
-                        if(s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) nomeReal = (""+s.piattoUnico.nome).trim();
-                        else if(s.proteina){ var itR = ingById(s.proteina); if(itR) nomeReal = itR.nome; }
-                        var gr = s.gruppoProteico ? gruppoById(s.gruppoProteico) : null;
-                        var canPlace = !!gruppoSel && !hasReal;
+                        var grpId = null;
+                        if(s.proteina){ var itR = ingById(s.proteina); if(itR) grpId = gruppoDaCat(itR.cat); }
+                        if(!grpId && s.gruppoProteico) grpId = s.gruppoProteico;
+                        var grCell = grpId ? gruppoById(grpId) : null;
+                        var canPlace = !!gruppoSel && !grCell;
                         return (
                           <div key={m} onClick={function(){ tapCellaMacro(g, m); }}
                             style={{flex:1,minHeight:52,border:"1px solid "+(canPlace?"#6BA6C9":"#E3EAEE"),background:canPlace?"#F2F8FB":"#fff",borderRadius:12,padding:"7px 9px",cursor:"pointer",display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
                             <div style={{fontSize:8,fontWeight:800,textTransform:"uppercase",color:"#B4BEC4",letterSpacing:".04em"}}>{m}</div>
-                            {hasReal ? (
-                              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                                <i className="ti ti-tools-kitchen-2" style={{fontSize:14,color:"#2F6586"}}/>
-                                <span style={{fontSize:12,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nomeReal}</span>
-                              </div>
-                            ) : (gr ? (
-                              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"3px 9px",fontSize:11,fontWeight:800,alignSelf:"flex-start"}}><i className={"ti "+gr.icona} style={{fontSize:13}}/>{gr.nome}</span>
+                            {grCell ? (
+                              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"3px 9px",fontSize:11,fontWeight:800,alignSelf:"flex-start"}}><i className={"ti "+grCell.icona} style={{fontSize:13}}/>{grCell.nome}</span>
                             ) : (
                               <div style={{display:"flex",alignItems:"center",gap:5,color:"#B4BEC4"}}>
                                 <i className="ti ti-plus" style={{fontSize:14}}/><span style={{fontSize:11,fontWeight:700}}>{canPlace?"Metti qui":"Vuoto"}</span>
                               </div>
-                            ))}
+                            )}
                           </div>
                         );
                       })}
@@ -3964,7 +3966,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                 <div style={{display:"flex",gap:8,marginTop:6}}>
                   <button onClick={function(){ var i=GIORNI_B.indexOf(suggPiatti.g); setSuggPiatti(null); cambiaGiorno(i); cambiaPasto(suggPiatti.m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                     style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Scegli a mano</button>
-                  <button onClick={function(){ setGruppoCella(suggPiatti.g, suggPiatti.m, null); setSuggPiatti(null); }}
+                  <button onClick={function(){ togliGruppoCella(suggPiatti.g, suggPiatti.m); setSuggPiatti(null); }}
                     style={{flex:1,border:"1.5px solid #F0C9D5",background:"#FBE7EC",color:"#C2355A",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Togli gruppo</button>
                 </div>
               </div>
