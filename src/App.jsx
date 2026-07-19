@@ -3608,15 +3608,23 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
           Settimana prossima
         </button>
         <button onClick={function(){
-          if(window.confirm("Copia il menu di questa settimana nella prossima?")) {
-            var copia = Object.assign({}, scelte);
+          var sorgente = scelte || {};
+          var haContenuto = function(o){ return Object.keys(o||{}).some(function(k){ var t=o[k]; return t && (t.proteina||t.carbo||t.verdura||t.gruppoProteico||(t.piattoUnico&&t.piattoUnico.nome&&(""+t.piattoUnico.nome).trim())||(t.piu&&t.piu.length)); }); };
+          if(!haContenuto(sorgente)) { setMsgB("Questa settimana è vuota: non c'è niente da copiare."); setTimeout(function(){ setMsgB(""); }, 3000); return; }
+          var target = scelteProssima || {};
+          var msg = haContenuto(target)
+            ? "ATTENZIONE: la settimana PROSSIMA ha già un menu. Vuoi sovrascriverlo copiando QUESTA settimana? I pasti della prossima verranno persi."
+            : "Copiare il menu di QUESTA settimana nella PROSSIMA?";
+          if(window.confirm(msg)) {
+            var copia = {}; Object.keys(sorgente).forEach(function(k){ copia[k]=sorgente[k]; });
             setScelteProssima(copia);
             if(onSavePasto) Object.keys(copia).forEach(function(k){ var gp=k.split("-"); onSavePasto(1, gp[0], gp.slice(1).join("-"), copia[k]); });
+            setMsgB("Copiato: questa settimana → prossima."); setTimeout(function(){ setMsgB(""); }, 3000);
           }
-        }} title="Copia questa sett. nella prossima"
-          style={{padding:"9px 11px",borderRadius:12,border:"none",
-            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700}}>
-          Copia
+        }} title="Copia questa settimana nella prossima"
+          style={{padding:"9px 11px",borderRadius:12,border:"none",display:"flex",alignItems:"center",gap:4,
+            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-arrow-right" style={{fontSize:13}}/>Prossima
         </button>
         <button onClick={function(){setShowRicette(true);}}
           title="Ricette salvate"
