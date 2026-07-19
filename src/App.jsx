@@ -3223,7 +3223,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   function togliGruppoCella(g, m) {
     var key = g+"-"+m;
     var s = Object.assign({}, scelteAttive[key]||{});
-    delete s.gruppoProteico; delete s.piattoUnico;
+    delete s.gruppoProteico; delete s.piattoUnico; delete s.proteina;
     setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[key] = s; return n; });
     if(onSavePasto) onSavePasto(settB, g, m, s);
   }
@@ -3778,6 +3778,8 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                           <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
                             <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"3px 9px",fontSize:11,fontWeight:800}}><i className={"ti "+(grr?grr.icona:"ti-meat")} style={{fontSize:13}}/>{grr?grr.nome:""}</span>
                             <span style={{fontSize:11,fontWeight:700,color:"#8A949B",marginLeft:"auto"}}>{pf.g.slice(0,3)} · {pf.m}</span>
+                            <button onClick={function(){ togliGruppoCella(pf.g, pf.m); }} title="Togli"
+                              style={{border:"none",background:"#FBE7EC",color:"#C2355A",borderRadius:8,width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}><i className="ti ti-trash" style={{fontSize:14}}/></button>
                           </div>
                           {dishName ? (
                             <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -3967,7 +3969,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                   <button onClick={function(){ var i=GIORNI_B.indexOf(suggPiatti.g); setSuggPiatti(null); cambiaGiorno(i); cambiaPasto(suggPiatti.m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                     style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Scegli a mano</button>
                   <button onClick={function(){ togliGruppoCella(suggPiatti.g, suggPiatti.m); setSuggPiatti(null); }}
-                    style={{flex:1,border:"1.5px solid #F0C9D5",background:"#FBE7EC",color:"#C2355A",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Togli gruppo</button>
+                    style={{flex:1,border:"1.5px solid #F0C9D5",background:"#FBE7EC",color:"#C2355A",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Togli proteina</button>
                 </div>
               </div>
             </div>
