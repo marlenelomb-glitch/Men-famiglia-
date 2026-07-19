@@ -3824,6 +3824,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
           </div>
           )}
 
+          {vistaB!=="macro" && (<>
           {vistaB==="scorri" ? (
             <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"0 4px 6px",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
               <i className="ti ti-arrow-right" style={{fontSize:13}}/>Scorri di lato per gli altri giorni
@@ -3872,6 +3873,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             </button>
           ) : null}
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+          </>)}
 
           {suggPiatti && (function(){
             var grS = gruppoById(suggPiatti.gruppo);
@@ -3951,6 +3953,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             </div>
           )}
 
+          {vistaB!=="macro" && (
           <div style={{marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:3,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
             <div style={{fontSize:10,color:"#8A949B",marginBottom:9,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-hand-move" style={{fontSize:13,color:"#6BA6C9"}}/>Trascina "Pranzo" o "Cena" su un altro giorno per spostarlo</div>
@@ -4039,6 +4042,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
               })}
             </div>
           </div>
+          )}
         </div>
         );
       })()}
