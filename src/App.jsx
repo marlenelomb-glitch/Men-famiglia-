@@ -2017,6 +2017,29 @@ var PASTI_TIPO = {Colazione:"colazione",Spuntino:"spuntino",Pranzo:"pranzo",Mere
 var CARBO_CATS = {pasta:"Pasta",riso:"Riso",cereali:"Cereali",tuberi:"Patate",pane:"Pane"};
 var PROT_CATS  = {"carne bianca":"Carne bianca","carne rossa":"Carne rossa",pesce:"Pesce",uova:"Uova",legumi:"Legumi",affettati:"Affettati",latticini:"Latticini"};
 
+var GRUPPI_MACRO = [
+  {id:"pesce", nome:"Pesce", cat:"pesce", icona:"ti-fish", budget:3},
+  {id:"carne_bianca", nome:"Carne bianca", cat:"carne bianca", icona:"ti-meat", budget:3},
+  {id:"legumi", nome:"Legumi", cat:"legumi", icona:"ti-plant-2", budget:3},
+  {id:"uova", nome:"Uova", cat:"uova", icona:"ti-egg", budget:2},
+  {id:"latticini", nome:"Formaggi", cat:"latticini", icona:"ti-cheese", budget:2},
+  {id:"carne_rossa", nome:"Carne rossa", cat:"carne rossa", icona:"ti-meat", budget:1}
+];
+function gruppoDaCat(cat) {
+  if(cat === "pesce") return "pesce";
+  if(cat === "carne bianca") return "carne_bianca";
+  if(cat === "carne rossa") return "carne_rossa";
+  if(cat === "uova") return "uova";
+  if(cat === "legumi") return "legumi";
+  if(cat === "latticini") return "latticini";
+  if(cat === "affettati") return "carne_bianca";
+  return null;
+}
+function gruppoById(id) {
+  for(var i=0;i<GRUPPI_MACRO.length;i++){ if(GRUPPI_MACRO[i].id === id) return GRUPPI_MACRO[i]; }
+  return null;
+}
+
 var CARBOIDRATI = [
   {id:"spaghetti",nome:"Spaghetti",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
   {id:"rigatoni",nome:"Rigatoni",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
@@ -3037,6 +3060,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   var sVistaB=useState((function(){ try{ var v=localStorage.getItem("mf_builderVista"); return v?JSON.parse(v):"scorri"; }catch(e){ return "scorri"; } })());
   var vistaB=sVistaB[0]; var setVistaBraw=sVistaB[1];
   function setVistaB(v){ setVistaBraw(v); try{ localStorage.setItem("mf_builderVista", JSON.stringify(v)); }catch(e){} }
+  var sGrpSel=useState(null); var gruppoSel=sGrpSel[0]; var setGruppoSel=sGrpSel[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3104,6 +3128,36 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     var s = Object.assign({}, scelteAttive[keyG]||{});
     if(id===null) delete s[campo]; else s[campo]=id;
     salvaScelta(s);
+  }
+  function contaGruppiMacro() {
+    var used = {};
+    GRUPPI_MACRO.forEach(function(gr){ used[gr.id] = 0; });
+    GIORNI_B.forEach(function(g){
+      ["Pranzo","Cena"].forEach(function(m){
+        var s = scelteAttive[g+"-"+m]; if(!s) return;
+        var grp = null;
+        if(s.proteina){ var it = ingById(s.proteina); if(it) grp = gruppoDaCat(it.cat); }
+        if(!grp && s.gruppoProteico) grp = s.gruppoProteico;
+        if(grp && used[grp] !== undefined) used[grp]++;
+      });
+    });
+    return used;
+  }
+  function setGruppoCella(g, m, grpId) {
+    var key = g+"-"+m;
+    var s = Object.assign({}, scelteAttive[key]||{});
+    if(grpId === null) delete s.gruppoProteico; else s.gruppoProteico = grpId;
+    setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[key] = s; return n; });
+    if(onSavePasto) onSavePasto(settB, g, m, s);
+  }
+  function tapCellaMacro(g, m) {
+    var i = GIORNI_B.indexOf(g);
+    var s = scelteAttive[g+"-"+m] || {};
+    var hasReal = (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina;
+    if(hasReal) { cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); return; }
+    if(gruppoSel) { setGruppoCella(g, m, gruppoSel); return; }
+    if(s.gruppoProteico) { setGruppoCella(g, m, null); return; }
+    cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]);
   }
   function completaAuto() {
     var prots = PROTEINE.filter(function(p){ return !ingredienteVietato(p, famVietati); });
@@ -3538,9 +3592,103 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                   background:vistaB==="griglia"?"#fff":"transparent",color:vistaB==="griglia"?"#2F6586":"#7C93A3",boxShadow:vistaB==="griglia"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
                 <i className="ti ti-layout-grid" style={{fontSize:14}}/>Griglia
               </button>
+              <button onClick={function(){ setVistaB("macro"); }}
+                style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
+                  background:vistaB==="macro"?"#fff":"transparent",color:vistaB==="macro"?"#2F6586":"#7C93A3",boxShadow:vistaB==="macro"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
+                <i className="ti ti-chart-donut" style={{fontSize:14}}/>Macro
+              </button>
             </div>
           </div>
 
+          {vistaB==="macro" ? (function(){
+            var usedMacro = contaGruppiMacro();
+            var sforati = [];
+            GRUPPI_MACRO.forEach(function(gr){ if((usedMacro[gr.id]||0) > gr.budget) sforati.push(gr); });
+            return (
+            <div>
+              <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"12px 13px",marginBottom:10}}>
+                <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",marginBottom:3}}>Budget settimanale proteine</div>
+                <div style={{fontSize:10,color:"#8A949B",marginBottom:9}}>Tocca un gruppo, poi tocca una casella per posizionarlo.</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                  {GRUPPI_MACRO.map(function(gr){
+                    var used = usedMacro[gr.id]||0;
+                    var rem = gr.budget - used;
+                    var isSel = gruppoSel===gr.id;
+                    var done = rem===0;
+                    var over = rem<0;
+                    var bg = over?"#F6ECD9":(done?"#2F6586":(isSel?"#fff":"#E2EEF5"));
+                    var fg = over?"#8A5A12":(done?"#fff":"#2F6586");
+                    var bord = isSel?"2px solid #2F6586":(over?"1.5px solid #E8D5AE":"2px solid transparent");
+                    return (
+                      <button key={gr.id} onClick={function(){ setGruppoSel(isSel?null:gr.id); }}
+                        style={{display:"flex",alignItems:"center",gap:6,border:bord,background:bg,color:fg,borderRadius:20,padding:"6px 11px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",fontWeight:800,fontSize:12,boxShadow:isSel?"0 1px 5px rgba(20,40,55,.15)":"none"}}>
+                        <i className={"ti "+gr.icona} style={{fontSize:15}}/>
+                        <span>{gr.nome}</span>
+                        {over ? (
+                          <span style={{display:"flex",alignItems:"center",gap:3,fontSize:11}}><i className="ti ti-alert-triangle" style={{fontSize:13}}/>{used}/{gr.budget}</span>
+                        ) : (done ? (
+                          <i className="ti ti-check" style={{fontSize:15}}/>
+                        ) : (
+                          <span style={{background:"rgba(47,101,134,.15)",borderRadius:10,padding:"1px 7px",fontSize:11}}>×{rem}</span>
+                        ))}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+                {GIORNI_B.map(function(g,i){
+                  var isOggiM = settB===0 && i===oggiIdxB;
+                  return (
+                    <div key={"macro-"+g} style={{display:"flex",alignItems:"stretch",gap:6}}>
+                      <div style={{width:42,flexShrink:0,display:"flex",alignItems:"center"}}>
+                        <div style={{fontSize:12,fontWeight:800,color:isOggiM?"#2F6586":"#2C3338"}}>{g.slice(0,3)}</div>
+                      </div>
+                      {["Pranzo","Cena"].map(function(m){
+                        var s = scelteAttive[g+"-"+m] || {};
+                        var hasReal = (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina;
+                        var nomeReal = "";
+                        if(s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) nomeReal = (""+s.piattoUnico.nome).trim();
+                        else if(s.proteina){ var itR = ingById(s.proteina); if(itR) nomeReal = itR.nome; }
+                        var gr = s.gruppoProteico ? gruppoById(s.gruppoProteico) : null;
+                        var canPlace = !!gruppoSel && !hasReal;
+                        return (
+                          <div key={m} onClick={function(){ tapCellaMacro(g, m); }}
+                            style={{flex:1,minHeight:52,border:"1px solid "+(canPlace?"#6BA6C9":"#E3EAEE"),background:canPlace?"#F2F8FB":"#fff",borderRadius:12,padding:"7px 9px",cursor:"pointer",display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
+                            <div style={{fontSize:8,fontWeight:800,textTransform:"uppercase",color:"#B4BEC4",letterSpacing:".04em"}}>{m}</div>
+                            {hasReal ? (
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <i className="ti ti-tools-kitchen-2" style={{fontSize:14,color:"#2F6586"}}/>
+                                <span style={{fontSize:12,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nomeReal}</span>
+                              </div>
+                            ) : (gr ? (
+                              <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"#E2EEF5",color:"#2F6586",borderRadius:16,padding:"3px 9px",fontSize:11,fontWeight:800,alignSelf:"flex-start"}}><i className={"ti "+gr.icona} style={{fontSize:13}}/>{gr.nome}</span>
+                            ) : (
+                              <div style={{display:"flex",alignItems:"center",gap:5,color:"#B4BEC4"}}>
+                                <i className="ti ti-plus" style={{fontSize:14}}/><span style={{fontSize:11,fontWeight:700}}>{canPlace?"Metti qui":"Vuoto"}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {sforati.length>0 ? (
+                <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"9px 12px",marginBottom:10,color:"#8A5A12",display:"flex",flexDirection:"column",gap:4}}>
+                  {sforati.map(function(gr){
+                    return <div key={gr.id} style={{fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:7}}><i className="ti ti-alert-triangle" style={{fontSize:15,flexShrink:0}}/>{gr.nome}: consigliata max {gr.budget} volt{gr.budget===1?"a":"e"}/settimana</div>;
+                  })}
+                </div>
+              ) : null}
+
+              <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"0 4px 8px",fontWeight:600}}>Tocca una casella con un gruppo per toglierlo. Poi apri il pasto per scegliere il piatto.</div>
+            </div>
+            );
+          })() : (
           <div style={vistaB==="scorri"?{overflowX:"auto",WebkitOverflowScrolling:"touch",margin:"0 -2px",paddingBottom:6}:{}}>
           <div style={{display:"grid",gridTemplateColumns:vistaB==="scorri"?"20px repeat(7,98px)":"16px repeat(7,1fr)",gap:vistaB==="scorri"?7:5,alignItems:"stretch",marginBottom:8,minWidth:vistaB==="scorri"?"max-content":"auto"}}>
             {(function(){
@@ -3610,6 +3758,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             })()}
           </div>
           </div>
+          )}
 
           {vistaB==="scorri" ? (
             <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"0 4px 6px",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
@@ -3627,7 +3776,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
 
           {(function(){
             var pc={pesce:0,carne:0,legumi:0,uova:0};
-            GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){ var s=scelteAttive[g+"-"+m]; if(s&&s.proteina){ var it=ingById(s.proteina); if(it){ if(it.cat==="pesce")pc.pesce++; else if(it.cat==="legumi")pc.legumi++; else if(it.cat==="uova")pc.uova++; else pc.carne++; } } }); });
+            GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){ var s=scelteAttive[g+"-"+m]; if(!s) return; var cat=null; if(s.proteina){ var it=ingById(s.proteina); if(it) cat=it.cat; } else if(s.gruppoProteico){ var grE=gruppoById(s.gruppoProteico); if(grE) cat=grE.cat; } if(!cat) return; if(cat==="pesce")pc.pesce++; else if(cat==="legumi")pc.legumi++; else if(cat==="uova")pc.uova++; else pc.carne++; }); });
             var cells=[{n:pc.pesce,l:"Pesce"},{n:pc.carne,l:"Carne"},{n:pc.legumi,l:"Legumi"},{n:pc.uova,l:"Uova"}];
             return (
               <div style={{background:"#E2EEF5",borderRadius:12,padding:"9px 12px",marginBottom:10,color:"#2F6586",display:"flex",alignItems:"center"}}>
@@ -4122,6 +4271,10 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                   if(fStag && (picker.tipo==="verdura"||picker.tipo==="frutta") && !inStagione(o)) return false;
                   return true;
                 });
+                if(picker.tipo==="proteina" && sceltaG.gruppoProteico){
+                  var grpP2=sceltaG.gruppoProteico;
+                  lista=lista.slice().sort(function(a,b){ var ga=gruppoDaCat(a.cat)===grpP2?0:1; var gb=gruppoDaCat(b.cat)===grpP2?0:1; return ga-gb; });
+                }
                 if(!lista.length) return <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun alimento trovato.</div>;
                 return lista.map(function(o){
                   var vt=ingredienteVietato(o, famVietati);
@@ -4314,6 +4467,10 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                       if(fStag && (picker.tipo==="verdura"||picker.tipo==="frutta") && !inStagione(o)) return false;
                       return true;
                     });
+                    if(picker.tipo==="proteina" && sceltaG.gruppoProteico){
+                      var grpP=sceltaG.gruppoProteico;
+                      lista=lista.slice().sort(function(a,b){ var ga=gruppoDaCat(a.cat)===grpP?0:1; var gb=gruppoDaCat(b.cat)===grpP?0:1; return ga-gb; });
+                    }
                     if(!lista.length) return <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun alimento trovato.</div>;
                     return lista.map(function(o){
                       var vt=ingredienteVietato(o, famVietati);
