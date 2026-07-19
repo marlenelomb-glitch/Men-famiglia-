@@ -2040,6 +2040,65 @@ function gruppoById(id) {
   return null;
 }
 
+var PIATTI_PER_GRUPPO = {
+  legumi: [
+    {nome:"Insalata di ceci e patate", gruppo:"legumi", ing:["ceci","patate","olio","prezzemolo"], kcal:320, prot:12, tempo:20},
+    {nome:"Pasta e fagioli", gruppo:"legumi", ing:["pasta","fagioli","pomodoro","rosmarino"], kcal:380, prot:16, tempo:40},
+    {nome:"Zuppa di lenticchie", gruppo:"legumi", ing:["lenticchie","carote","sedano","patate"], kcal:280, prot:15, tempo:45},
+    {nome:"Hummus con verdure e pane", gruppo:"legumi", ing:["ceci","tahini","pane","carote"], kcal:350, prot:12, tempo:15},
+    {nome:"Polpette di ceci al forno", gruppo:"legumi", ing:["ceci","pangrattato","prezzemolo"], kcal:300, prot:13, tempo:35},
+    {nome:"Riso e piselli", gruppo:"legumi", ing:["riso","piselli","cipolla","parmigiano"], kcal:340, prot:11, tempo:30},
+    {nome:"Farro con ceci e pomodorini", gruppo:"legumi", ing:["farro","ceci","pomodorini","basilico"], kcal:360, prot:14, tempo:30},
+    {nome:"Vellutata di lenticchie rosse", gruppo:"legumi", ing:["lenticchie","carote","patate"], kcal:260, prot:14, tempo:35},
+    {nome:"Fagioli all'uccelletto", gruppo:"legumi", ing:["fagioli","pomodoro","salvia","aglio"], kcal:250, prot:12, tempo:30},
+    {nome:"Burger di legumi", gruppo:"legumi", ing:["fagioli","ceci","pangrattato"], kcal:320, prot:15, tempo:30}
+  ],
+  pesce: [
+    {nome:"Merluzzo al vapore con patate", gruppo:"pesce", ing:["merluzzo","patate","prezzemolo","limone"], kcal:240, prot:25, tempo:30},
+    {nome:"Salmone al forno con zucchine", gruppo:"pesce", ing:["salmone","zucchine","olio","limone"], kcal:350, prot:28, tempo:30},
+    {nome:"Orata al sale", gruppo:"pesce", ing:["orata","sale grosso","limone"], kcal:220, prot:26, tempo:40},
+    {nome:"Pasta al tonno", gruppo:"pesce", ing:["pasta","tonno","pomodoro","aglio"], kcal:400, prot:22, tempo:20},
+    {nome:"Polpette di merluzzo", gruppo:"pesce", ing:["merluzzo","pangrattato","prezzemolo"], kcal:280, prot:24, tempo:35},
+    {nome:"Sogliola alla mugnaia", gruppo:"pesce", ing:["sogliola","burro","limone","farina"], kcal:260, prot:22, tempo:20},
+    {nome:"Spaghetti alle vongole", gruppo:"pesce", ing:["spaghetti","vongole","aglio","prezzemolo"], kcal:380, prot:18, tempo:30},
+    {nome:"Pesce spada grigliato", gruppo:"pesce", ing:["pesce spada","olio","limone"], kcal:280, prot:26, tempo:15},
+    {nome:"Insalata di polpo e patate", gruppo:"pesce", ing:["polpo","patate","olio","prezzemolo"], kcal:300, prot:24, tempo:60},
+    {nome:"Filetto di branzino al limone", gruppo:"pesce", ing:["branzino","limone","olio"], kcal:230, prot:24, tempo:25}
+  ],
+  carne_bianca: [
+    {nome:"Petto di pollo grigliato con verdure", gruppo:"carne_bianca", ing:["pollo","zucchine","peperoni","olio"], kcal:300, prot:32, tempo:25},
+    {nome:"Cosce di pollo al forno con patate", gruppo:"carne_bianca", ing:["cosce di pollo","patate","rosmarino"], kcal:420, prot:30, tempo:50},
+    {nome:"Tacchino alla piastra", gruppo:"carne_bianca", ing:["tacchino","olio","limone"], kcal:220, prot:30, tempo:15},
+    {nome:"Scaloppine di pollo al limone", gruppo:"carne_bianca", ing:["pollo","farina","limone","burro"], kcal:320, prot:30, tempo:20},
+    {nome:"Spezzatino di tacchino con piselli", gruppo:"carne_bianca", ing:["tacchino","piselli","pomodoro","cipolla"], kcal:340, prot:30, tempo:45},
+    {nome:"Involtini di pollo", gruppo:"carne_bianca", ing:["pollo","prosciutto","formaggio"], kcal:360, prot:32, tempo:30},
+    {nome:"Pollo al curry con riso", gruppo:"carne_bianca", ing:["pollo","riso","curry","latte di cocco"], kcal:450, prot:28, tempo:35},
+    {nome:"Polpette di tacchino al sugo", gruppo:"carne_bianca", ing:["tacchino","pangrattato","pomodoro"], kcal:340, prot:28, tempo:40}
+  ],
+  carne_rossa: [
+    {nome:"Fettina di manzo ai ferri con insalata", gruppo:"carne_rossa", ing:["manzo","insalata","olio"], kcal:300, prot:28, tempo:15},
+    {nome:"Spezzatino di manzo con patate", gruppo:"carne_rossa", ing:["manzo","patate","pomodoro","cipolla"], kcal:420, prot:30, tempo:90},
+    {nome:"Polpette al sugo", gruppo:"carne_rossa", ing:["manzo","pangrattato","pomodoro"], kcal:380, prot:24, tempo:45},
+    {nome:"Roast beef con rucola", gruppo:"carne_rossa", ing:["manzo","rucola","olio","grana"], kcal:320, prot:28, tempo:40},
+    {nome:"Scaloppine al marsala", gruppo:"carne_rossa", ing:["manzo","farina","marsala","burro"], kcal:340, prot:26, tempo:25}
+  ],
+  uova: [
+    {nome:"Frittata di zucchine", gruppo:"uova", ing:["uova","zucchine","parmigiano"], kcal:260, prot:16, tempo:20},
+    {nome:"Uova strapazzate con pane tostato", gruppo:"uova", ing:["uova","pane","burro"], kcal:300, prot:18, tempo:10},
+    {nome:"Frittata di patate e cipolle", gruppo:"uova", ing:["uova","patate","cipolla"], kcal:320, prot:15, tempo:30},
+    {nome:"Uova sode con insalata", gruppo:"uova", ing:["uova","insalata","olio"], kcal:220, prot:14, tempo:15},
+    {nome:"Crepe salate", gruppo:"uova", ing:["uova","farina","latte","prosciutto"], kcal:340, prot:16, tempo:30},
+    {nome:"Omelette al formaggio", gruppo:"uova", ing:["uova","formaggio","burro"], kcal:320, prot:20, tempo:15}
+  ],
+  latticini: [
+    {nome:"Caprese con mozzarella e pomodoro", gruppo:"latticini", ing:["mozzarella","pomodoro","basilico","olio"], kcal:300, prot:18, tempo:10},
+    {nome:"Ricotta con verdure grigliate", gruppo:"latticini", ing:["ricotta","zucchine","melanzane","olio"], kcal:280, prot:16, tempo:25},
+    {nome:"Insalata greca con feta", gruppo:"latticini", ing:["feta","pomodoro","cetrioli","olive"], kcal:320, prot:12, tempo:15},
+    {nome:"Mozzarella in carrozza al forno", gruppo:"latticini", ing:["mozzarella","pane","uova"], kcal:380, prot:20, tempo:25},
+    {nome:"Piadina con stracchino e rucola", gruppo:"latticini", ing:["piadina","stracchino","rucola"], kcal:360, prot:14, tempo:10}
+  ]
+};
+
 var CARBOIDRATI = [
   {id:"spaghetti",nome:"Spaghetti",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
   {id:"rigatoni",nome:"Rigatoni",cat:"pasta",emoji:"?",kcal_p:350,prot_p:12,carb_p:72,phe_p:620,gsat_p:0.2,na_p:6,stagione:"tutto"},
@@ -3061,6 +3120,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   var vistaB=sVistaB[0]; var setVistaBraw=sVistaB[1];
   function setVistaB(v){ setVistaBraw(v); try{ localStorage.setItem("mf_builderVista", JSON.stringify(v)); }catch(e){} }
   var sGrpSel=useState(null); var gruppoSel=sGrpSel[0]; var setGruppoSel=sGrpSel[1];
+  var sSugg=useState(null); var suggPiatti=sSugg[0]; var setSuggPiatti=sSugg[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3156,8 +3216,17 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     var hasReal = (s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina;
     if(hasReal) { cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); return; }
     if(gruppoSel) { setGruppoCella(g, m, gruppoSel); return; }
-    if(s.gruppoProteico) { setGruppoCella(g, m, null); return; }
+    if(s.gruppoProteico) { setSuggPiatti({g:g, m:m, gruppo:s.gruppoProteico}); return; }
     cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]);
+  }
+  function applicaPiattoGruppo(g, m, dish) {
+    var key = g+"-"+m;
+    var s = Object.assign({}, scelteAttive[key]||{});
+    ["carbo","proteina","verdura","verdura2","frutta","latticino","salsa"].forEach(function(f){ delete s[f]; });
+    s.piattoUnico = {nome:dish.nome, kcal:String(dish.kcal||""), prot:String(dish.prot||""), autofill:true, riconosciuti:(dish.ing||[]).map(function(n){ return {nome:n}; })};
+    if(dish.gruppo) s.gruppoProteico = dish.gruppo;
+    setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[key] = s; return n; });
+    if(onSavePasto) onSavePasto(settB, g, m, s);
   }
   function completaAuto() {
     var prots = PROTEINE.filter(function(p){ return !ingredienteVietato(p, famVietati); });
@@ -3809,6 +3878,46 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
           ) : null}
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
 
+          {suggPiatti && (function(){
+            var grS = gruppoById(suggPiatti.gruppo);
+            var piatti = PIATTI_PER_GRUPPO[suggPiatti.gruppo] || [];
+            return (
+            <div onClick={function(){ setSuggPiatti(null); }} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+              <div onClick={function(e){ e.stopPropagation(); }} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"82vh",overflowY:"auto",padding:"10px 18px 22px"}}>
+                <div style={{width:38,height:4,background:"#E3EAEE",borderRadius:4,margin:"0 auto 10px"}}/>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <span style={{width:30,height:30,borderRadius:9,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><i className={"ti "+(grS?grS.icona:"ti-tools-kitchen-2")} style={{fontSize:17}}/></span>
+                  <div style={{fontSize:18,fontWeight:800,flex:1}}>{grS?grS.nome:"Piatti"}</div>
+                  <i className="ti ti-x" onClick={function(){ setSuggPiatti(null); }} style={{fontSize:20,color:"#8A949B",cursor:"pointer"}}/>
+                </div>
+                <div style={{fontSize:12,color:"#8A949B",marginBottom:12}}>{suggPiatti.g+" · "+suggPiatti.m+" — scegli un piatto o fanne uno tuo."}</div>
+                {piatti.map(function(dish){
+                  return (
+                    <div key={dish.nome} onClick={function(){ applicaPiattoGruppo(suggPiatti.g, suggPiatti.m, dish); setSuggPiatti(null); }}
+                      style={{display:"flex",alignItems:"center",gap:11,border:"1px solid #E3EAEE",borderRadius:13,padding:"10px 12px",marginBottom:8,cursor:"pointer"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>{dish.nome}</div>
+                        <div style={{fontSize:11,color:"#8A949B",marginTop:2,display:"flex",alignItems:"center",gap:9,flexWrap:"wrap"}}>
+                          <span>{dish.kcal} kcal</span>
+                          <span>{dish.prot}g prot</span>
+                          <span style={{display:"flex",alignItems:"center",gap:3}}><i className="ti ti-clock" style={{fontSize:12}}/>{dish.tempo} min</span>
+                        </div>
+                      </div>
+                      <i className="ti ti-plus" style={{fontSize:20,color:"#2F6586",flexShrink:0}}/>
+                    </div>
+                  );
+                })}
+                <div style={{display:"flex",gap:8,marginTop:6}}>
+                  <button onClick={function(){ var i=GIORNI_B.indexOf(suggPiatti.g); setSuggPiatti(null); cambiaGiorno(i); cambiaPasto(suggPiatti.m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
+                    style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Scegli a mano</button>
+                  <button onClick={function(){ setGruppoCella(suggPiatti.g, suggPiatti.m, null); setSuggPiatti(null); }}
+                    style={{flex:1,border:"1.5px solid #F0C9D5",background:"#FBE7EC",color:"#C2355A",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Togli gruppo</button>
+                </div>
+              </div>
+            </div>
+            );
+          })()}
+
           {showModelli && (
             <div onClick={function(){ setShowModelli(false); }} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
               <div onClick={function(e){ e.stopPropagation(); }} style={{background:"#fff",borderRadius:"22px 22px 0 0",width:"100%",maxWidth:390,maxHeight:"82vh",overflowY:"auto",padding:"10px 18px 22px"}}>
@@ -3877,7 +3986,8 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                               <div style={{fontSize:13,fontWeight:700,color:"#2C3338",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.piattoUnico.nome}</div>
                             </div>
                           ):(
-                            GRUPPI_BOARD.map(function(gr){
+                            <>
+                            {GRUPPI_BOARD.map(function(gr){
                               var id=s[gr.campo];
                               return (
                                 <div key={gr.campo} onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(gr); }}
@@ -3889,7 +3999,20 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                                   <div style={{fontSize:13,fontWeight:id?700:600,color:id?"#2C3338":"#8A949B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>{id?nomeGruppo(id):gr.label}</div>
                                 </div>
                               );
-                            })
+                            })}
+                            {(function(){
+                              if(!s.proteina) return null;
+                              var itP=ingById(s.proteina); var grpP=itP?gruppoDaCat(itP.cat):null;
+                              if(!grpP || !PIATTI_PER_GRUPPO[grpP]) return null;
+                              return (
+                                <div onClick={function(e){ e.stopPropagation(); setSuggPiatti({g:g, m:m, gruppo:grpP}); }}
+                                  style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",marginTop:1}}>
+                                  <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:"#E2EEF5",color:"#2F6586"}}><i className="ti ti-bulb"/></div>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#2F6586",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0}}>Idee piatto con {(""+itP.nome).toLowerCase()}</div>
+                                </div>
+                              );
+                            })()}
+                            </>
                           )}
                           {piuValidi(s).map(function(d,pi){
                             return (
