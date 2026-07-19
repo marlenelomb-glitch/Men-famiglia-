@@ -3847,6 +3847,12 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                   var isPass=settB===0 && i<oggiIdxB;
                   items.push(
                     <div key={m+"-"+g} style={{background:"#fff",border:"1px solid "+(settB===0&&i===oggiIdxB?"#6BA6C9":"#E3EAEE"),borderRadius:11,padding:"5px 4px",display:"flex",flexDirection:"column",gap:5,alignItems:"center",justifyContent:"flex-start",opacity:isPass?0.5:1}}>
+                      {(s.gruppoProteico && !compl && !s.proteina) ? (function(){ var grd=gruppoById(s.gruppoProteico); if(!grd) return null; return (
+                        <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("componi"); apriPicker(GRUPPI_BOARD[0]); }}
+                          style={{width:"100%",borderRadius:8,padding:"3px",display:"flex",alignItems:"center",justifyContent:"center",gap:3,background:"#E2EEF5",cursor:"pointer"}}>
+                          <i className={"ti "+grd.icona} style={{fontSize:10,color:"#2F6586"}}/><span style={{fontSize:8,fontWeight:800,color:"#2F6586",lineHeight:1.1}}>{grd.nome}</span>
+                        </div>
+                      ); })() : null}
                       {compl ? (
                         <div onClick={function(){ cambiaGiorno(i); cambiaPasto(m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                           style={{width:"100%",display:"flex",flexDirection:"column",alignItems:"center",gap:3,justifyContent:"center",cursor:"pointer"}}>
@@ -4046,6 +4052,13 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                             </div>
                           ):(
                             <>
+                            {(s.gruppoProteico && !s.proteina) ? (function(){ var grd=gruppoById(s.gruppoProteico); if(!grd) return null; return (
+                              <div onClick={function(){ setSuggPiatti({g:g, m:m, gruppo:s.gruppoProteico}); }}
+                                style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",background:"#E2EEF5",borderRadius:10,padding:"6px 9px"}}>
+                                <div style={{width:26,height:26,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,background:"#fff",color:"#2F6586"}}><i className={"ti "+grd.icona}/></div>
+                                <div style={{fontSize:12,fontWeight:800,color:"#2F6586",flex:1,minWidth:0}}>Dai Macro: {grd.nome}</div>
+                              </div>
+                            ); })() : null}
                             {GRUPPI_BOARD.map(function(gr){
                               var id=s[gr.campo];
                               return (
