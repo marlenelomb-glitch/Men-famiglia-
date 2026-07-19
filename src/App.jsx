@@ -3767,23 +3767,6 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                         </div>
                       );
                     })}
-                    {Object.keys(profili||{}).length>0 && (
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:2}}>
-                        {Object.keys(profili).map(function(pid){
-                          var pp = profili[pid]; if(!pp) return null;
-                          var stt = presenzaGiornoB(pid, g, g.slice(0,3), i<=4);
-                          var isFuori = stt==="fuori";
-                          var isMensa = stt==="mensa" || stt==="dieta";
-                          return (
-                            <button key={pid} onClick={function(){ toggleFuoriB(g, pid); }}
-                              style={{display:"flex",alignItems:"center",gap:4,border:"1.5px solid "+(isFuori?"#C2355A":(isMensa?"#E8D5AE":"#E3EAEE")),background:isFuori?"#FBE7EC":(isMensa?"#F6ECD9":"#fff"),borderRadius:20,padding:"3px 9px 3px 3px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>
-                              <span style={{width:18,height:18,borderRadius:"50%",background:pp.colore||"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,flexShrink:0,opacity:isFuori?0.5:1}}>{(pp.nome?pp.nome.slice(0,1):"?").toUpperCase()}</span>
-                              <span style={{fontSize:10,fontWeight:700,color:isFuori?"#C2355A":(isMensa?"#8A5A12":"#2C3338"),textDecoration:isFuori?"line-through":"none"}}>{(""+(pp.nome||"")).split(" ")[0]}{isMensa?" · mensa":""}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
                   </div>
                 );
               })}
