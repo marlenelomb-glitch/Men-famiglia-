@@ -3121,6 +3121,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   function setVistaB(v){ setVistaBraw(v); try{ localStorage.setItem("mf_builderVista", JSON.stringify(v)); }catch(e){} }
   var sGrpSel=useState(null); var gruppoSel=sGrpSel[0]; var setGruppoSel=sGrpSel[1];
   var sSugg=useState(null); var suggPiatti=sSugg[0]; var setSuggPiatti=sSugg[1];
+  var sNuovoP=useState(""); var nuovoPiatto=sNuovoP[0]; var setNuovoPiatto=sNuovoP[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3235,6 +3236,12 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     if(dish.gruppo) s.gruppoProteico = dish.gruppo;
     setScelteAttive(function(prev){ var n = Object.assign({}, prev||{}); n[key] = s; return n; });
     if(onSavePasto) onSavePasto(settB, g, m, s);
+  }
+  function creaPiattoCustom(g, m, nome, gruppo) {
+    var n = (""+(nome||"")).trim(); if(!n) return;
+    var r = (typeof riconosciPasto === "function") ? riconosciPasto(n) : {kcal:0, prot:0, items:[]};
+    var ing = (r && r.items) ? r.items.map(function(x){ return x.nome; }) : [];
+    applicaPiattoGruppo(g, m, {nome:n, gruppo:gruppo, ing:ing, kcal:(r&&r.kcal)||0, prot:(r&&r.prot)||0});
   }
   function completaAuto() {
     var prots = PROTEINE.filter(function(p){ return !ingredienteVietato(p, famVietati); });
@@ -3979,6 +3986,16 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                     </div>
                   );
                 })}
+                <div style={{border:"1.5px dashed #CADCE8",borderRadius:13,padding:"10px 12px",marginBottom:10,background:"#F2F6F8"}}>
+                  <div style={{fontSize:11,fontWeight:800,color:"#2F6586",marginBottom:7,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-plus" style={{fontSize:14}}/>Crea il tuo piatto</div>
+                  <div style={{display:"flex",gap:8}}>
+                    <input value={nuovoPiatto} onChange={function(e){ setNuovoPiatto(e.target.value); }} placeholder="Es. Pasta al tonno"
+                      style={{flex:1,padding:"10px 12px",borderRadius:11,border:"1.5px solid #CADCE8",fontSize:13,fontWeight:600,outline:"none",fontFamily:"'Nunito',system-ui,sans-serif",color:"#2C3338"}}/>
+                    <button onClick={function(){ if(!(""+nuovoPiatto).trim()) return; creaPiattoCustom(suggPiatti.g, suggPiatti.m, nuovoPiatto, suggPiatti.gruppo); setNuovoPiatto(""); setSuggPiatti(null); }}
+                      style={{border:"none",background:"#2F6586",color:"#fff",borderRadius:11,padding:"0 15px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>Usa</button>
+                  </div>
+                  <div style={{fontSize:9,color:"#8A949B",marginTop:6}}>Calcolo da solo kcal, proteine e ingredienti per la spesa.</div>
+                </div>
                 <div style={{display:"flex",gap:8,marginTop:6}}>
                   <button onClick={function(){ var i=GIORNI_B.indexOf(suggPiatti.g); setSuggPiatti(null); cambiaGiorno(i); cambiaPasto(suggPiatti.m); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }}
                     style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer"}}>Scegli a mano</button>
