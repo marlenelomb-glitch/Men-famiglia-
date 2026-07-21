@@ -3502,6 +3502,15 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     setMsgB("Menu di "+g+" svuotato");
     setTimeout(function(){ setMsgB(""); }, 1600);
   }
+  function cancellaSettimana() {
+    var chiavi = Object.keys(scelteAttive||{});
+    if(!chiavi.length) { setMsgB("La settimana è già vuota."); setTimeout(function(){ setMsgB(""); }, 1600); return; }
+    if(typeof window!=="undefined" && window.confirm && !window.confirm("Vuoi cancellare tutti i pasti di questa settimana?")) return;
+    setScelteAttive(function(){ return {}; });
+    if(onSavePasto) chiavi.forEach(function(k){ var gp=k.split("-"); onSavePasto(settB, gp[0], gp.slice(1).join("-"), {}); });
+    setMsgB("Settimana svuotata.");
+    setTimeout(function(){ setMsgB(""); }, 2000);
+  }
 
   function salva(dati) {
     setScelteAttive(function(prev){ var n=Object.assign({},prev||{}); n[key]=dati; return n; });
@@ -3633,10 +3642,16 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
           <i className="ti ti-arrow-right" style={{fontSize:13}}/>Prossima
         </button>
+        <button onClick={function(){ cancellaSettimana(); }}
+          title="Cancella tutti i pasti della settimana"
+          style={{padding:"9px 10px",borderRadius:12,border:"none",display:"flex",alignItems:"center",
+            background:"#FBE7EC",color:"#C2355A",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
+          <i className="ti ti-trash" style={{fontSize:15}}/>
+        </button>
         <button onClick={function(){setShowRicette(true);}}
           title="Ricette salvate"
           style={{padding:"9px 11px",borderRadius:12,border:"none",
-            background:"#FBE7EC",color:"#C2355A",fontSize:12,cursor:"pointer",fontWeight:700}}>
+            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
           Ricette
         </button>
       </div>
@@ -3661,15 +3676,6 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
         return (
         <div>
           <div style={{fontSize:20,fontWeight:800,color:"#2C3338",margin:"2px 0 8px"}}>Builder</div>
-
-          {(mealPrepScad.length>0 || dispensaScad.length>0)?(
-            <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:12,padding:"9px 12px",marginBottom:9,display:"flex",alignItems:"center",gap:9}}>
-              <i className="ti ti-clock-exclamation" style={{fontSize:18,color:"#8A5A12",flexShrink:0}}/>
-              <div style={{flex:1,minWidth:0,fontSize:11,color:"#8A5A12",fontWeight:700}}>
-                Da usare presto: {mealPrepScad.map(function(p){return p.nome;}).concat(dispensaScad.map(function(d){return d.nome;})).slice(0,3).join(", ")}{(mealPrepScad.length+dispensaScad.length)>3?"…":""}
-              </div>
-            </div>
-          ):null}
 
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
             <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",marginRight:"auto",letterSpacing:".04em"}}>Come vedere la settimana</span>
@@ -3921,39 +3927,6 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             <div style={{fontSize:10,color:"#8A949B",textAlign:"center",padding:"2px 4px 8px",fontWeight:600}}>Tocca un quadratino &rarr; scegli l'alimento o il piatto completo</div>
           )}
 
-          {(function(){
-            var pc={pesce:0,carne:0,legumi:0,uova:0};
-            GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){ var s=scelteAttive[g+"-"+m]; if(!s) return; var cat=null; if(s.proteina){ var it=ingById(s.proteina); if(it) cat=it.cat; } else if(s.gruppoProteico){ var grE=gruppoById(s.gruppoProteico); if(grE) cat=grE.cat; } if(!cat) return; if(cat==="pesce")pc.pesce++; else if(cat==="legumi")pc.legumi++; else if(cat==="uova")pc.uova++; else pc.carne++; }); });
-            var cells=[{n:pc.pesce,l:"Pesce"},{n:pc.carne,l:"Carne"},{n:pc.legumi,l:"Legumi"},{n:pc.uova,l:"Uova"}];
-            return (
-              <div style={{background:"#E2EEF5",borderRadius:12,padding:"9px 12px",marginBottom:10,color:"#2F6586",display:"flex",alignItems:"center"}}>
-                <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",marginRight:"auto"}}>Equilibrio</span>
-                {cells.map(function(c){
-                  return <div key={c.l} style={{textAlign:"center",marginLeft:13,color:c.n===0?"#C2355A":"#2F6586"}}><b style={{fontSize:14}}>{c.n}</b><span style={{fontSize:8,display:"block"}}>{c.l}</span></div>;
-                })}
-              </div>
-            );
-          })()}
-
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={function(){ completaAuto(); }}
-              style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
-                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              <i className="ti ti-wand" style={{fontSize:16}}/>Completa
-            </button>
-            <button onClick={function(){ setShowModelli(true); }}
-              style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:11,
-                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              <i className="ti ti-repeat" style={{fontSize:16}}/>Riusa un menu
-            </button>
-          </div>
-          {onApriMensa ? (
-            <button onClick={function(){ onApriMensa(); }}
-              style={{width:"100%",marginTop:8,border:"1px dashed #CADCE8",background:"#F2F6F8",color:"#2F6586",borderRadius:12,padding:"10px 12px",
-                fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
-              <i className="ti ti-school" style={{fontSize:15}}/>Imposta il menu della mensa
-            </button>
-          ) : null}
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
           </>)}
 
@@ -11010,7 +10983,7 @@ export default function App() {
       <div style={{background:"#F2F6F8",minHeight:"100vh",maxWidth:390,margin:"0 auto",position:"relative",fontFamily:"'Nunito',system-ui,sans-serif"}}>
 
       <div key={tab} className="mf-fade" style={{padding:"8px 16px 96px"}}>
-        <BannerScadenze dispensa={dispensa}/>
+        {["home","spesa"].indexOf(tab)>=0 && <BannerScadenze dispensa={dispensa}/>}
         {tab!=="home" && ["spesa","builder","diario"].indexOf(tab)<0 && (
           <button onClick={function(){ setSheetOpen(false); handleSetTab("home"); }}
             title="Torna alla Home"
