@@ -3148,6 +3148,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   var sNuovoP=useState(""); var nuovoPiatto=sNuovoP[0]; var setNuovoPiatto=sNuovoP[1];
   var sCatIdea=useState("veloci"); var catIdea=sCatIdea[0]; var setCatIdea=sCatIdea[1];
   var sAddT=useState(null); var addTarget=sAddT[0]; var setAddTarget=sAddT[1];
+  var sAvvio=useState(""); var avvio=sAvvio[0]; var setAvvio=sAvvio[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3569,6 +3570,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     if(typeof window!=="undefined" && window.confirm && !window.confirm("Vuoi cancellare tutti i pasti di questa settimana?")) return;
     setScelteAttive(function(){ return {}; });
     if(onSavePasto) chiavi.forEach(function(k){ var gp=k.split("-"); onSavePasto(settB, gp[0], gp.slice(1).join("-"), {}); });
+    setAvvio("");
     setMsgB("Settimana svuotata.");
     setTimeout(function(){ setMsgB(""); }, 2000);
   }
@@ -3617,6 +3619,16 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   }
 
   function pastoPieno(s) { return !!(s && ((s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina || s.carbo || s.verdura)); }
+  function cellaPiena(s) { return !!(s && ((s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim()) || s.proteina || s.carbo || s.verdura || s.gruppoProteico || (s.piu && s.piu.length))); }
+  function settimanaVuota() { return !Object.keys(scelteAttive||{}).some(function(k){ return cellaPiena(scelteAttive[k]); }); }
+  function nomePastoCella(g, m) {
+    var s = scelteAttive[g+"-"+m];
+    if(!s) return "";
+    var v = (typeof valoriPastoBuilder === "function") ? valoriPastoBuilder(s) : null;
+    if(v && v.nome) return v.nome;
+    if(s.gruppoProteico){ var gr = gruppoById(s.gruppoProteico); return gr ? gr.nome : ""; }
+    return "";
+  }
   function spostaPasto(gSrc, gDst, m) {
     if(gSrc===gDst) return;
     var srcKey=gSrc+"-"+m, dstKey=gDst+"-"+m;
@@ -3671,50 +3683,13 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
 
   return (
     <div style={{minHeight:"60vh"}}>
-      <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
+      <div style={{display:"flex",background:"#E2EEF5",borderRadius:13,padding:4,gap:4,marginBottom:10}}>
         <button onClick={function(){setSettB(0);setStepCorrente(1);}}
-          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
-            background:settB===0?"#2F6586":"#fff",color:settB===0?"#fff":"#555",
-            fontSize:12,fontWeight:settB===0?700:500,boxShadow:settB===0?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
-          Questa settimana
-        </button>
+          style={{flex:1,textAlign:"center",border:"none",cursor:"pointer",borderRadius:10,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,
+            background:settB===0?"#fff":"transparent",color:"#2F6586",boxShadow:settB===0?"0 1px 4px rgba(20,40,55,.12)":"none"}}>Questa settimana</button>
         <button onClick={function(){setSettB(1);setStepCorrente(1);}}
-          style={{flex:1,padding:"9px",borderRadius:12,border:"none",cursor:"pointer",
-            background:settB===1?"#2F6586":"#fff",color:settB===1?"#fff":"#555",
-            fontSize:12,fontWeight:settB===1?700:500,boxShadow:settB===1?"none":"0 1px 6px rgba(0,0,0,.07)"}}>
-          Settimana prossima
-        </button>
-        <button onClick={function(){
-          var sorgente = scelte || {};
-          var haContenuto = function(o){ return Object.keys(o||{}).some(function(k){ var t=o[k]; return t && (t.proteina||t.carbo||t.verdura||t.gruppoProteico||(t.piattoUnico&&t.piattoUnico.nome&&(""+t.piattoUnico.nome).trim())||(t.piu&&t.piu.length)); }); };
-          if(!haContenuto(sorgente)) { setMsgB("Questa settimana è vuota: non c'è niente da copiare."); setTimeout(function(){ setMsgB(""); }, 3000); return; }
-          var target = scelteProssima || {};
-          var msg = haContenuto(target)
-            ? "ATTENZIONE: la settimana PROSSIMA ha già un menu. Vuoi sovrascriverlo copiando QUESTA settimana? I pasti della prossima verranno persi."
-            : "Copiare il menu di QUESTA settimana nella PROSSIMA?";
-          if(window.confirm(msg)) {
-            var copia = {}; Object.keys(sorgente).forEach(function(k){ copia[k]=sorgente[k]; });
-            setScelteProssima(copia);
-            if(onSavePasto) Object.keys(copia).forEach(function(k){ var gp=k.split("-"); onSavePasto(1, gp[0], gp.slice(1).join("-"), copia[k]); });
-            setMsgB("Copiato: questa settimana → prossima."); setTimeout(function(){ setMsgB(""); }, 3000);
-          }
-        }} title="Copia questa settimana nella prossima"
-          style={{padding:"9px 11px",borderRadius:12,border:"none",display:"flex",alignItems:"center",gap:4,
-            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-          <i className="ti ti-arrow-right" style={{fontSize:13}}/>Prossima
-        </button>
-        <button onClick={function(){ cancellaSettimana(); }}
-          title="Cancella tutti i pasti della settimana"
-          style={{padding:"9px 10px",borderRadius:12,border:"none",display:"flex",alignItems:"center",
-            background:"#FBE7EC",color:"#C2355A",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-          <i className="ti ti-trash" style={{fontSize:15}}/>
-        </button>
-        <button onClick={function(){setShowRicette(true);}}
-          title="Ricette salvate"
-          style={{padding:"9px 11px",borderRadius:12,border:"none",
-            background:"#EBF3FA",color:"#2F6586",fontSize:12,cursor:"pointer",fontWeight:700,fontFamily:"'Nunito',system-ui,sans-serif"}}>
-          Ricette
-        </button>
+          style={{flex:1,textAlign:"center",border:"none",cursor:"pointer",borderRadius:10,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,
+            background:settB===1?"#fff":"transparent",color:"#2F6586",boxShadow:settB===1?"0 1px 4px rgba(20,40,55,.12)":"none"}}>Prossima</button>
       </div>
 
       {settB===1&&(
@@ -3736,7 +3711,67 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
         if(protCount.uova) protParts.push("uova ×"+protCount.uova);
         return (
         <div>
-          <div style={{fontSize:20,fontWeight:800,color:"#2C3338",margin:"2px 0 8px"}}>Builder</div>
+          {(avvio!=="tool" && settimanaVuota()) ? (
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{textAlign:"center",padding:"12px 6px 2px"}}>
+                <div style={{fontSize:20,fontWeight:800,color:"#2C3338",lineHeight:1.25}}>Come vuoi creare il menu di {settB===0?"questa":"la prossima"} settimana?</div>
+                <div style={{fontSize:13,color:"#8A949B",marginTop:6}}>Scegli il metodo che preferisci</div>
+              </div>
+              <div onClick={function(){ setVistaB("macro"); setAvvio("tool"); }} style={{display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:18,background:"linear-gradient(0deg,#E2EEF5,#fff)",border:"1.5px solid #6BA6C9",cursor:"pointer"}}>
+                <div style={{width:48,height:48,borderRadius:15,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}><i className="ti ti-stack-2"/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:800}}>Parti dalle proteine</div>
+                  <div style={{fontSize:12,color:"#8A949B",marginTop:2,lineHeight:1.4}}>Posiziona le proteine sulla settimana, poi scegli i piatti coi suggerimenti</div>
+                </div>
+                <span style={{fontSize:9,fontWeight:800,letterSpacing:".05em",color:"#2F6586",background:"#fff",border:"1px solid #6BA6C9",padding:"2px 8px",borderRadius:20,flexShrink:0}}>CONSIGLIATO</span>
+              </div>
+              <div onClick={function(){ setVistaB("idee"); setAvvio("tool"); }} style={{display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:18,background:"#fff",border:"1.5px solid #E3EAEE",cursor:"pointer"}}>
+                <div style={{width:48,height:48,borderRadius:15,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}><i className="ti ti-bulb"/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:800}}>Trova idee</div>
+                  <div style={{fontSize:12,color:"#8A949B",marginTop:2,lineHeight:1.4}}>Sfoglia i piatti per categorie e tieni tutto vario</div>
+                </div>
+              </div>
+              <div onClick={function(){ setVistaB("griglia"); setAvvio("tool"); }} style={{display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:18,background:"#fff",border:"1.5px solid #E3EAEE",cursor:"pointer"}}>
+                <div style={{width:48,height:48,borderRadius:15,background:"#E2EEF5",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}><i className="ti ti-pencil"/></div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:800}}>Fai da te</div>
+                  <div style={{fontSize:12,color:"#8A949B",marginTop:2,lineHeight:1.4}}>Griglia libera, componi ogni pasto come vuoi</div>
+                </div>
+              </div>
+              <div onClick={function(){ setShowModelli(true); }} style={{textAlign:"center",cursor:"pointer",color:"#2F6586",fontSize:12.5,fontWeight:700,padding:"4px 0"}}>Riparti da un menu salvato</div>
+            </div>
+          ) : (avvio!=="tool") ? (
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Builder</div>
+                <div onClick={function(){ setShowRicette(true); }} style={{cursor:"pointer",color:"#2F6586",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-book" style={{fontSize:15}}/>Ricette</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {GIORNI_B.map(function(g,i){
+                  var pr=nomePastoCella(g,"Pranzo"); var ce=nomePastoCella(g,"Cena");
+                  var isOggiW=settB===0 && i===oggiIdxB;
+                  return (
+                    <div key={"wl-"+g} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:14,background:"#fff",border:"1px solid "+(isOggiW?"#6BA6C9":"#E3EAEE")}}>
+                      <div style={{width:34,flexShrink:0,fontSize:11,fontWeight:800,color:isOggiW?"#2F6586":"#8A949B"}}>{g.slice(0,3)}</div>
+                      <div style={{flex:1,minWidth:0,display:"flex",flexDirection:"column",gap:3}}>
+                        <div onClick={function(){ cambiaGiorno(i); cambiaPasto("Pranzo"); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }} style={{fontSize:13,cursor:"pointer",display:"flex",gap:6,alignItems:"baseline",overflow:"hidden"}}>{pr?<span style={{color:"#2C3338",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pr}</span>:<span style={{color:"#B4BEC4",fontWeight:600}}>+ pranzo</span>}{pr?<small style={{color:"#8A949B",fontWeight:600,flexShrink:0}}>· pranzo</small>:null}</div>
+                        <div onClick={function(){ cambiaGiorno(i); cambiaPasto("Cena"); setSheetTab("completo"); apriPicker(GRUPPI_BOARD[0]); }} style={{fontSize:13,cursor:"pointer",display:"flex",gap:6,alignItems:"baseline",overflow:"hidden"}}>{ce?<span style={{color:"#2C3338",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ce}</span>:<span style={{color:"#B4BEC4",fontWeight:600}}>+ cena</span>}{ce?<small style={{color:"#8A949B",fontWeight:600,flexShrink:0}}>· cena</small>:null}</div>
+                      </div>
+                      {giornoHaMenu(g)?<i className="ti ti-eraser" onClick={function(){ cancellaGiorno(g); }} style={{color:"#C2355A",fontSize:16,flexShrink:0,cursor:"pointer"}}/>:<i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18,flexShrink:0}}/>}
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={function(){ setVistaB("idee"); setAvvio("tool"); }} style={{width:"100%",border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:13,padding:"12px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><i className="ti ti-bulb" style={{fontSize:16}}/>Trova altre idee</button>
+              {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{msgB}</div>}
+              <button onClick={function(){ cancellaSettimana(); }} style={{width:"100%",border:"1.5px solid #E4C6C2",background:"transparent",color:"#A8524A",borderRadius:13,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><i className="ti ti-trash" style={{fontSize:15}}/>Cancella settimana</button>
+            </div>
+          ) : (<>
+          <div style={{display:"flex",alignItems:"center",gap:10,margin:"2px 0 10px"}}>
+            <div onClick={function(){ setAvvio(""); }} style={{cursor:"pointer",color:"#2F6586",fontSize:14,fontWeight:800,display:"flex",alignItems:"center",gap:3,fontFamily:"'Nunito',system-ui,sans-serif"}}><i className="ti ti-chevron-left" style={{fontSize:18}}/>Fatto</div>
+            <div style={{fontSize:18,fontWeight:800,color:"#2C3338",marginLeft:"auto"}}>{vistaB==="macro"?"Proteine":(vistaB==="idee"?"Idee":"Componi")}</div>
+          </div>
 
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
             <span style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",marginRight:"auto",letterSpacing:".04em"}}>Come vedere la settimana</span>
@@ -4038,6 +4073,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
           ))}
 
           {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600,marginTop:8}}>{msgB}</div>}
+          </>)}
 
           {addTarget && (
             <div onClick={function(){ setAddTarget(null); }} style={{position:"fixed",inset:0,background:"rgba(20,40,55,.45)",zIndex:250,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -4158,7 +4194,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
             </div>
           )}
 
-          {vistaB!=="macro" && (
+          {(avvio==="tool" && vistaB!=="macro") && (
           <div style={{marginTop:16}}>
             <div style={{fontSize:11,fontWeight:800,color:"#8A949B",textTransform:"uppercase",letterSpacing:".04em",marginBottom:3,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrows-horizontal" style={{fontSize:14,color:"#6BA6C9"}}/>Dettaglio settimana</div>
             <div style={{fontSize:10,color:"#8A949B",marginBottom:9,display:"flex",alignItems:"center",gap:5}}><i className="ti ti-hand-move" style={{fontSize:13,color:"#6BA6C9"}}/>Trascina "Pranzo" o "Cena" su un altro giorno per spostarlo</div>
