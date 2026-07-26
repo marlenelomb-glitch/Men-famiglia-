@@ -3149,6 +3149,9 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
   var sCatIdea=useState("veloci"); var catIdea=sCatIdea[0]; var setCatIdea=sCatIdea[1];
   var sAddT=useState(null); var addTarget=sAddT[0]; var setAddTarget=sAddT[1];
   var sAvvio=useState(""); var avvio=sAvvio[0]; var setAvvio=sAvvio[1];
+  var sMStep=useState(1); var mStep=sMStep[0]; var setMStep=sMStep[1];
+  var sCas2=useState([]); var caselle2=sCas2[0]; var setCaselle2=sCas2[1];
+  var sIdx2=useState(0); var idx2=sIdx2[0]; var setIdx2=sIdx2[1];
   var scelteProssima=builderScelteProssima||{}; var setScelteProssima=setBuilderScelteProssima;
   var s12=useState(null); var showRicette=s12[0]; var setShowRicette=s12[1];
   var s13=useState([]); var ricette=s13[0]; var setRicette=s13[1];
@@ -3269,6 +3272,17 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
     var r = (typeof riconosciPasto === "function") ? riconosciPasto(n) : {kcal:0, prot:0, items:[]};
     var ing = (r && r.items) ? r.items.map(function(x){ return x.nome; }) : [];
     applicaPiattoGruppo(g, m, {nome:n, gruppo:gruppo, ing:ing, kcal:(r&&r.kcal)||0, prot:(r&&r.prot)||0});
+  }
+  function caselleDaScegliere() {
+    var out = [];
+    GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){
+      var s = scelteAttive[g+"-"+m]; if(!s) return;
+      var hasDish = s.piattoUnico && s.piattoUnico.nome && (""+s.piattoUnico.nome).trim();
+      var grp = s.gruppoProteico;
+      if(!grp && s.proteina){ var it=ingById(s.proteina); if(it) grp=gruppoDaCat(it.cat); }
+      if(grp && !hasDish) out.push({g:g, m:m, grp:grp});
+    }); });
+    return out;
   }
   function piattiUsatiSett() {
     var usati = {};
@@ -3711,13 +3725,123 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
         if(protCount.uova) protParts.push("uova ×"+protCount.uova);
         return (
         <div>
-          {(avvio!=="tool" && settimanaVuota()) ? (
+          {avvio==="macro" ? (function(){
+            var usedMacro = contaGruppiMacro();
+            var stepBar = function(n){ return (<div style={{display:"flex",gap:6,marginBottom:12}}>{[1,2,3].map(function(i){ return <div key={i} style={{flex:1,height:5,borderRadius:5,background:i<=n?"#2F6586":"#E3EAEE"}}/>; })}</div>); };
+            if(mStep===1){
+              return (
+              <div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                  <div onClick={function(){ setAvvio(""); }} style={{cursor:"pointer",color:"#2F6586",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:2,fontFamily:"'Nunito',system-ui,sans-serif"}}><i className="ti ti-chevron-left" style={{fontSize:17}}/>Esci</div>
+                  <span style={{fontSize:11,color:"#8A949B",fontWeight:600}}>Passo 1 di 3</span>
+                </div>
+                {stepBar(1)}
+                <div style={{fontSize:20,fontWeight:800,color:"#2C3338"}}>Posiziona le proteine</div>
+                <div style={{fontSize:12.5,color:"#8A949B",margin:"3px 0 12px",lineHeight:1.4}}>Tocca un gruppo, poi tocca la casella dove lo vuoi. Le quantità seguono la piramide settimanale.</div>
+                <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"12px 13px",marginBottom:10}}>
+                  <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",marginBottom:9}}>Budget settimanale</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
+                    {GRUPPI_MACRO.map(function(gr){
+                      var used=usedMacro[gr.id]||0; var rem=gr.budget-used; var isSel=gruppoSel===gr.id; var done=rem===0; var over=rem<0;
+                      var bg=over?"#F6ECD9":(done?"#2F6586":(isSel?"#fff":"#E2EEF5")); var fg=over?"#8A5A12":(done?"#fff":"#2F6586"); var bord=isSel?"2px solid #2F6586":(over?"1.5px solid #E8D5AE":"2px solid transparent");
+                      return (
+                        <button key={gr.id} onClick={function(){ setGruppoSel(isSel?null:gr.id); }}
+                          style={{display:"flex",alignItems:"center",gap:6,border:bord,background:bg,color:fg,borderRadius:20,padding:"6px 11px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",fontWeight:800,fontSize:12,boxShadow:isSel?"0 1px 5px rgba(20,40,55,.15)":"none"}}>
+                          <i className={"ti "+gr.icona} style={{fontSize:15}}/><span>{gr.nome}</span>
+                          {over?(<span style={{display:"flex",alignItems:"center",gap:3,fontSize:11}}><i className="ti ti-alert-triangle" style={{fontSize:13}}/>{used}/{gr.budget}</span>):(done?(<i className="ti ti-check" style={{fontSize:15}}/>):(<span style={{background:"rgba(47,101,134,.15)",borderRadius:10,padding:"1px 7px",fontSize:11}}>×{rem}</span>))}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:14,padding:"10px 8px",marginBottom:10}}>
+                  <div style={{display:"grid",gridTemplateColumns:"26px repeat(7,1fr)",gap:4,alignItems:"stretch"}}>
+                    <div/>
+                    {GIORNI_B.map(function(g){ return <div key={"h"+g} style={{fontSize:9,fontWeight:800,color:"#8A949B",textAlign:"center"}}>{g.slice(0,3)}</div>; })}
+                    {["Pranzo","Cena"].map(function(m){
+                      var cells=[<div key={"lab"+m} style={{fontSize:8,fontWeight:800,color:"#B4BEC4",writingMode:"vertical-rl",transform:"rotate(180deg)",display:"flex",alignItems:"center",justifyContent:"center",textTransform:"uppercase"}}>{m}</div>];
+                      GIORNI_B.forEach(function(g){
+                        var s=scelteAttive[g+"-"+m]||{}; var grpId=null; if(s.proteina){ var it=ingById(s.proteina); if(it) grpId=gruppoDaCat(it.cat); } if(!grpId&&s.gruppoProteico) grpId=s.gruppoProteico; var grC=grpId?gruppoById(grpId):null; var canPlace=!!gruppoSel&&!grC;
+                        cells.push(
+                          <div key={m+g} onClick={function(){ tapCellaMacro(g,m); }} style={{aspectRatio:"1/1.15",borderRadius:10,border:grC?"1.5px solid transparent":"1.5px dashed "+(canPlace?"#6BA6C9":"#C4D2DA"),background:grC?"#E2EEF5":(canPlace?"#F2F8FB":"#fff"),color:"#2F6586",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,cursor:"pointer",fontSize:7.5,fontWeight:800,textAlign:"center",padding:1}}>
+                            {grC?(<><i className={"ti "+grC.icona} style={{fontSize:14}}/><span style={{lineHeight:1}}>{grC.nome.length>7?grC.nome.slice(0,6)+".":grC.nome}</span></>):(<i className="ti ti-plus" style={{fontSize:13,color:"#B4BEC4"}}/>)}
+                          </div>
+                        );
+                      });
+                      return cells;
+                    })}
+                  </div>
+                </div>
+                {gruppoSel?(function(){ var gg=gruppoById(gruppoSel); return (<div style={{background:"#E2EEF5",borderRadius:12,padding:"10px 13px",marginBottom:10,color:"#2F6586",display:"flex",gap:9,alignItems:"center"}}><i className="ti ti-info-circle" style={{fontSize:18,flexShrink:0}}/><div style={{fontSize:12,lineHeight:1.4}}>{(gg?gg.nome:"Gruppo")} selezionato: tocca una casella libera per posizionarlo</div></div>); })():null}
+                <button onClick={function(){ var cas=caselleDaScegliere(); setCaselle2(cas); setIdx2(0); setMStep(cas.length?2:3); }} style={{width:"100%",border:"none",background:"#2F6586",color:"#fff",borderRadius:14,padding:"14px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer"}}>Avanti · scegli i piatti</button>
+              </div>
+              );
+            }
+            if(mStep===2){
+              var cur = caselle2[idx2];
+              if(!cur){ return (<div><button onClick={function(){ setMStep(3); }} style={{width:"100%",border:"none",background:"#2F6586",color:"#fff",borderRadius:14,padding:"14px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer"}}>Vai al riepilogo</button></div>); }
+              var grC = gruppoById(cur.grp); var piatti = PIATTI_PER_GRUPPO[cur.grp] || [];
+              return (
+              <div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                  <div onClick={function(){ if(idx2>0) setIdx2(idx2-1); else setMStep(1); }} style={{cursor:"pointer",color:"#2F6586",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:2,fontFamily:"'Nunito',system-ui,sans-serif"}}><i className="ti ti-chevron-left" style={{fontSize:17}}/>Indietro</div>
+                  <span style={{fontSize:11,color:"#8A949B",fontWeight:600}}>Passo 2 di 3 · casella {idx2+1} di {caselle2.length}</span>
+                </div>
+                {stepBar(2)}
+                <div style={{background:"#E2EEF5",borderRadius:14,padding:"12px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:38,height:38,borderRadius:12,background:"#fff",color:"#2F6586",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}><i className={"ti "+(grC?grC.icona:"ti-tools-kitchen-2")}/></div>
+                  <div><div style={{fontSize:10,fontWeight:700,color:"#2F6586",opacity:.75,textTransform:"uppercase",letterSpacing:".03em"}}>{cur.g} · {cur.m}</div><div style={{fontSize:16,fontWeight:800,color:"#2F6586"}}>{grC?grC.nome:""}</div></div>
+                </div>
+                <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",marginBottom:6}}>Suggerimenti</div>
+                {piatti.map(function(dish){
+                  return (
+                    <div key={dish.nome} onClick={function(){ applicaPiattoGruppo(cur.g, cur.m, dish); var ni=idx2+1; if(ni>=caselle2.length) setMStep(3); else setIdx2(ni); }}
+                      style={{display:"flex",alignItems:"center",gap:11,border:"1px solid #E3EAEE",borderRadius:13,padding:"11px 12px",marginBottom:8,cursor:"pointer"}}>
+                      <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:"#2C3338"}}>{dish.nome}</div><div style={{fontSize:11,color:"#8A949B",marginTop:2}}>{dish.kcal} kcal · {dish.prot}g prot · {dish.tempo} min</div></div>
+                      <i className="ti ti-plus" style={{fontSize:20,color:"#2F6586",flexShrink:0}}/>
+                    </div>
+                  );
+                })}
+                <button onClick={function(){ var nome=(typeof window!=="undefined"&&window.prompt)?window.prompt("Scrivi il piatto per "+cur.g+" "+cur.m+":"):""; if(nome&&(""+nome).trim()){ creaPiattoCustom(cur.g,cur.m,nome,cur.grp); var ni=idx2+1; if(ni>=caselle2.length) setMStep(3); else setIdx2(ni); } }}
+                  style={{width:"100%",border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:12,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:700,cursor:"pointer",marginBottom:8}}>Scrivi un piatto tuo</button>
+                <div style={{textAlign:"center"}}><span onClick={function(){ var ni=idx2+1; if(ni>=caselle2.length) setMStep(3); else setIdx2(ni); }} style={{cursor:"pointer",color:"#8A949B",fontSize:13,fontWeight:700}}>Salta questa casella</span></div>
+              </div>
+              );
+            }
+            var riepilogo = [];
+            GIORNI_B.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){ var s=scelteAttive[g+"-"+m]; if(!cellaPiena(s)) return; var dish=(s.piattoUnico&&s.piattoUnico.nome&&(""+s.piattoUnico.nome).trim()); var completo=!!(dish||s.proteina||s.carbo); riepilogo.push({g:g,m:m,nome:nomePastoCella(g,m),completo:completo}); }); });
+            var nPronti=riepilogo.filter(function(x){ return x.completo; }).length; var nDaFare=riepilogo.length-nPronti;
+            return (
+            <div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                <div onClick={function(){ var cas=caselleDaScegliere(); if(cas.length){ setCaselle2(cas); setIdx2(0); setMStep(2); } else setMStep(1); }} style={{cursor:"pointer",color:"#2F6586",fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:2,fontFamily:"'Nunito',system-ui,sans-serif"}}><i className="ti ti-chevron-left" style={{fontSize:17}}/>Indietro</div>
+                <span style={{fontSize:11,color:"#8A949B",fontWeight:600}}>Passo 3 di 3</span>
+              </div>
+              {stepBar(3)}
+              <div style={{fontSize:20,fontWeight:800,color:"#2C3338"}}>La tua settimana</div>
+              <div style={{fontSize:12.5,color:"#8A949B",margin:"3px 0 12px"}}>{nPronti} {nPronti===1?"pasto pronto":"pasti pronti"}{nDaFare>0?(" · "+nDaFare+" da completare"):""}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
+                {riepilogo.length===0?(<div style={{textAlign:"center",color:"#8A949B",fontSize:12,padding:"18px 0"}}>Nessun pasto ancora. Torna indietro e posiziona qualche proteina.</div>):riepilogo.map(function(x){
+                  return (
+                    <div key={x.g+x.m} onClick={function(){ if(!x.completo){ setCaselle2([{g:x.g,m:x.m,grp:(scelteAttive[x.g+"-"+x.m]||{}).gruppoProteico}]); setIdx2(0); setMStep(2); } }}
+                      style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:14,background:"#fff",border:"1px "+(x.completo?"solid #E3EAEE":"dashed #E8D5AE"),cursor:x.completo?"default":"pointer"}}>
+                      <div style={{width:34,flexShrink:0,fontSize:11,fontWeight:800,color:"#8A949B"}}>{x.g.slice(0,3)}</div>
+                      <div style={{flex:1,minWidth:0}}>{x.completo?(<div style={{fontSize:13,fontWeight:600,color:"#2C3338"}}>{x.nome} <small style={{color:"#8A949B"}}>· {x.m.toLowerCase()}</small></div>):(<div style={{fontSize:12,fontWeight:700,color:"#8A5A12"}}>{x.m} da completare · tocca</div>)}</div>
+                      <i className={"ti "+(x.completo?"ti-check":"ti-alert-circle")} style={{fontSize:17,color:x.completo?"#4C9A6E":"#8A5A12",flexShrink:0}}/>
+                    </div>
+                  );
+                })}
+              </div>
+              <button onClick={function(){ setAvvio(""); setMStep(1); setMsgB("Menu confermato!"); setTimeout(function(){ setMsgB(""); }, 2500); }} style={{width:"100%",border:"none",background:"#2F6586",color:"#fff",borderRadius:14,padding:"14px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><i className="ti ti-check" style={{fontSize:17}}/>Conferma menu</button>
+            </div>
+            );
+          })() : (avvio==="" && settimanaVuota()) ? (
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
               <div style={{textAlign:"center",padding:"12px 6px 2px"}}>
                 <div style={{fontSize:20,fontWeight:800,color:"#2C3338",lineHeight:1.25}}>Come vuoi creare il menu di {settB===0?"questa":"la prossima"} settimana?</div>
                 <div style={{fontSize:13,color:"#8A949B",marginTop:6}}>Scegli il metodo che preferisci</div>
               </div>
-              <div onClick={function(){ setVistaB("macro"); setAvvio("tool"); }} style={{display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:18,background:"linear-gradient(0deg,#E2EEF5,#fff)",border:"1.5px solid #6BA6C9",cursor:"pointer"}}>
+              <div onClick={function(){ setMStep(1); setGruppoSel(null); setAvvio("macro"); }} style={{display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:18,background:"linear-gradient(0deg,#E2EEF5,#fff)",border:"1.5px solid #6BA6C9",cursor:"pointer"}}>
                 <div style={{width:48,height:48,borderRadius:15,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}><i className="ti ti-stack-2"/></div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:15,fontWeight:800}}>Parti dalle proteine</div>
@@ -3741,7 +3865,7 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
               </div>
               <div onClick={function(){ setShowModelli(true); }} style={{textAlign:"center",cursor:"pointer",color:"#2F6586",fontSize:12.5,fontWeight:700,padding:"4px 0"}}>Riparti da un menu salvato</div>
             </div>
-          ) : (avvio!=="tool") ? (
+          ) : (avvio==="") ? (
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Builder</div>
@@ -3780,11 +3904,6 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                 style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
                   background:vistaB==="griglia"?"#fff":"transparent",color:vistaB==="griglia"?"#2F6586":"#7C93A3",boxShadow:vistaB==="griglia"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
                 <i className="ti ti-layout-grid" style={{fontSize:14}}/>Griglia
-              </button>
-              <button onClick={function(){ setVistaB("macro"); }}
-                style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
-                  background:vistaB==="macro"?"#fff":"transparent",color:vistaB==="macro"?"#2F6586":"#7C93A3",boxShadow:vistaB==="macro"?"0 1px 4px rgba(20,40,55,.1)":"none"}}>
-                <i className="ti ti-chart-donut" style={{fontSize:14}}/>Macro
               </button>
               <button onClick={function(){ setVistaB("idee"); }}
                 style={{border:"none",cursor:"pointer",borderRadius:8,padding:"6px 11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",gap:5,
