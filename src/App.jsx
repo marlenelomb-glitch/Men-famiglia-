@@ -3887,7 +3887,10 @@ function TabBuilder({profili, builderScelte, setBuilderScelte, builderSceltePros
                   );
                 })}
               </div>
-              <button onClick={function(){ setVistaB("idee"); setAvvio("tool"); }} style={{width:"100%",border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:13,padding:"12px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><i className="ti ti-bulb" style={{fontSize:16}}/>Trova altre idee</button>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={function(){ setMStep(1); setGruppoSel(null); setAvvio("macro"); }} style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:13,padding:"12px 8px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-stack-2" style={{fontSize:15}}/>Proteine</button>
+                <button onClick={function(){ setVistaB("idee"); setAvvio("tool"); }} style={{flex:1,border:"1.5px solid #6BA6C9",background:"#fff",color:"#2F6586",borderRadius:13,padding:"12px 8px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><i className="ti ti-bulb" style={{fontSize:15}}/>Trova idee</button>
+              </div>
               {msgB&&<div style={{fontSize:12,color:"#2F6586",textAlign:"center",fontWeight:600}}>{msgB}</div>}
               <button onClick={function(){ cancellaSettimana(); }} style={{width:"100%",border:"1.5px solid #E4C6C2",background:"transparent",color:"#A8524A",borderRadius:13,padding:"11px",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><i className="ti ti-trash" style={{fontSize:15}}/>Cancella settimana</button>
             </div>
