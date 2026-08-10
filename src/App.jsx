@@ -848,6 +848,51 @@ const PIRAMIDE_GRUPPI = [
   {id:"grassi",   l:"Olio EVO",          target:3, unit:"cucch/die",c:"#2F6586", note:"A crudo, extravergine italiano"},
 ];
 
+var KW_GRUPPI = {
+  pesce:["pesce","merluzz","salmon","tonno","orata","branzin","sogliol","spada","vongol","gamber","polpo","sgombr","alici","nasell","platess","cozze","seppi","calamar","trota","spigola","platessa","bastoncini di pesce"],
+  carne_rossa:["manzo","vitell","maial","agnell","bistecc","spezzatin","roast","hamburg","salsicc","ragù","ragu","brasato","tagliata","fettina","macinat","polpett al sugo","wurstel"],
+  carne_bianca:["pollo","tacchin","coniglio","cotolett","scaloppin","petto","fesa","prosciutt","affettat","bresaol","involtin","spiedin","mortadella","speck"],
+  legumi:["ceci","lenticch","fagiol","pisell","hummus","legumi","fave","edamame","soia"],
+  uova:["uova","uovo","frittat","omelette","strapazz","sode","crepe","crêpe"],
+  latticini:["mozzarell","formagg","ricotta","feta","stracchin","parmigian","grana","yogurt","capres","latte","burro","mascarpon","scamorza","provola","fontina","gorgonzol","stracciat","burrata","piadina con"],
+  verdura:["insalat","verdur","zucchin","melanzan","pomodor","carot","spinaci","broccol","cavol","zucca","peperon","finocch","minestron","vellutat","funghi","rucol","cetriol","fagiolin","contorn","asparag","carciof","catalogn","bietol","cicoria","radicch","verza"],
+  frutta:["frutta","mela","pera","banan","arancia","fragol","uva","kiwi","macedon","pesche","albicocc","anguria","melone","mandarin","ananas","ciliegi","prugn","fichi","clementin"],
+  cereali:["pasta","riso","pane","farro","orzo","cereali","spaghett","penne","risotto","gnocch","polenta","cous","piadin","pizza","patate","tortell","lasagn","cracker","biscott","grissin","focacc","fette biscottate"]
+};
+function gruppiDaNome(nome) {
+  var n = (""+(nome||"")).toLowerCase(); var out = {};
+  Object.keys(KW_GRUPPI).forEach(function(gk){ if(KW_GRUPPI[gk].some(function(kw){ return n.indexOf(kw) >= 0; })) out[gk] = true; });
+  return out;
+}
+function gruppiDaScelta(scelta) {
+  var out = {};
+  if(!scelta) return out;
+  var dish = scelta.piattoUnico && scelta.piattoUnico.nome && (""+scelta.piattoUnico.nome).trim();
+  if(dish) {
+    out = gruppiDaNome(dish);
+    (scelta.piattoUnico.riconosciuti||[]).forEach(function(r){ var g=gruppiDaNome(r&&r.nome); Object.keys(g).forEach(function(k){ out[k]=true; }); });
+  } else {
+    if(scelta.proteina){ var it=ingById(scelta.proteina); if(it){ var gg=gruppoDaCat(it.cat); if(gg) out[gg]=true; else { var gn=gruppiDaNome(it.nome); Object.keys(gn).forEach(function(k){ out[k]=true; }); } } }
+    if(scelta.carbo) out.cereali=true;
+    if(scelta.verdura || scelta.verdura2) out.verdura=true;
+    if(scelta.frutta) out.frutta=true;
+    if(scelta.latticino) out.latticini=true;
+  }
+  if(scelta.gruppoProteico) out[scelta.gruppoProteico]=true;
+  return out;
+}
+var GRUPPI_ANALISI = [
+  {id:"verdura",      nome:"Verdura",      icona:"ti-salad",   tipo:"pasti",  pct:0.75, proteico:false, tip:"Aggiungi un contorno di verdura o un'insalata ai pasti"},
+  {id:"frutta",       nome:"Frutta",       icona:"ti-apple",   tipo:"giorni", target:7, proteico:false, tip:"Metti la frutta come spuntino o a fine pasto, ogni giorno"},
+  {id:"cereali",      nome:"Cereali",      icona:"ti-bread",   tipo:"pasti",  pct:0.7,  proteico:false, tip:"Pasta, riso o pane a ogni pasto, meglio integrali"},
+  {id:"pesce",        nome:"Pesce",        icona:"ti-fish",    tipo:"sett",   target:3, proteico:true,  tip:"Metti il pesce 2-3 volte, anche azzurro (omega-3)"},
+  {id:"legumi",       nome:"Legumi",       icona:"ti-plant-2", tipo:"sett",   target:3, proteico:true,  tip:"Ceci, lenticchie o fagioli 3 volte a settimana"},
+  {id:"carne_bianca", nome:"Carne bianca", icona:"ti-meat",    tipo:"sett",   target:3, proteico:true,  tip:"Pollo, tacchino o coniglio 2-3 volte"},
+  {id:"uova",         nome:"Uova",         icona:"ti-egg",     tipo:"sett",   target:2, proteico:true,  tip:"Le uova un paio di volte a settimana"},
+  {id:"latticini",    nome:"Formaggi",     icona:"ti-cheese",  tipo:"sett",   target:2, proteico:true,  tip:"Formaggi freschi un paio di volte"},
+  {id:"carne_rossa",  nome:"Carne rossa",  icona:"ti-meat",    tipo:"limite", target:1, proteico:true,  tipEcc:"Riduci la carne rossa: meglio massimo 1 volta a settimana"}
+];
+
 // ── TAB IDEE E ISPIRAZIONI ────────────────────────────────────
 
 
@@ -10570,6 +10615,190 @@ function AssistenteAI(props) {
   );
 }
 
+function coloriStato(stato) {
+  if(stato==="ok") return {bg:"#E4F1E9", fg:"#3B7D57", dot:"#4C9A6E"};
+  if(stato==="medio") return {bg:"#F6ECD9", fg:"#8A5A12", dot:"#C99A3B"};
+  return {bg:"#FBE7EC", fg:"#C2355A", dot:"#C2355A"};
+}
+function AnalisiView(props) {
+  var builder = props.builder || {};
+  var diario = props.diario || {};
+  var profili = props.profili || {};
+  var s_t = useState("famiglia"); var tabA = s_t[0]; var setTabA = s_t[1];
+  var s_p = useState(""); var personaSel = s_p[0]; var setPersonaSel = s_p[1];
+  var GIORNI_A = ["Lunedi","Martedi","Mercoledi","Giovedi","Venerdi","Sabato","Domenica"];
+  var vals = Object.keys(profili).map(function(k){ return profili[k]; });
+
+  function statoGruppo(g, count, pastiPieni) {
+    var target;
+    if(g.tipo==="pasti") target = Math.max(1, Math.round(pastiPieni*g.pct));
+    else target = g.target;
+    if(g.tipo==="limite") return {target:target, stato:(count<=target?"ok":"basso"), eccesso:(count>target)};
+    var ratio = target>0 ? count/target : 1;
+    return {target:target, stato:(ratio>=1?"ok":(ratio>=0.5?"medio":"basso")), eccesso:false};
+  }
+
+  function analisiFamiglia() {
+    var conteggi = {}; GRUPPI_ANALISI.forEach(function(g){ conteggi[g.id]=0; });
+    var pastiPieni = 0;
+    GIORNI_A.forEach(function(g){ ["Pranzo","Cena"].forEach(function(m){
+      var s = builder[g+"-"+m]; if(!s) return;
+      var pres = gruppiDaScelta(s);
+      var haQualcosa = Object.keys(pres).length>0 || (s.piattoUnico&&s.piattoUnico.nome&&(""+s.piattoUnico.nome).trim()) || s.proteina || s.gruppoProteico;
+      if(!haQualcosa) return;
+      pastiPieni++;
+      Object.keys(pres).forEach(function(k){ if(conteggi[k]!=null) conteggi[k]++; });
+    }); });
+    return {conteggi:conteggi, pastiPieni:pastiPieni};
+  }
+
+  function analisiPersona(pid) {
+    var conteggi = {}; GRUPPI_ANALISI.forEach(function(g){ conteggi[g.id]=0; });
+    var giorniDati = 0;
+    for(var off=0; off>-14; off--){
+      var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+off);
+      var key = d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);
+      var rec = (diario[key]||{})[pid];
+      if(!rec || !rec.items || !rec.items.length) continue;
+      giorniDati++;
+      rec.items.forEach(function(it){ var pres=gruppiDaNome(it&&it.nome); Object.keys(pres).forEach(function(k){ if(conteggi[k]!=null) conteggi[k]++; }); });
+    }
+    return {conteggi:conteggi, giorniDati:giorniDati};
+  }
+
+  function BarraGruppo(gr, count, target, stato, eccesso) {
+    var col = coloriStato(stato);
+    var pct = target>0 ? Math.min(100, Math.round((count/target)*100)) : (count>0?100:0);
+    return (
+      <div key={gr.id} style={{display:"flex",alignItems:"center",gap:11,padding:"9px 0",borderBottom:"1px solid #EEF3F6"}}>
+        <div style={{width:34,height:34,borderRadius:11,background:col.bg,color:col.fg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}><i className={"ti "+gr.icona}/></div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontSize:13.5,fontWeight:700,color:"#2C3338"}}>{gr.nome}</span>
+            <span style={{fontSize:12,fontWeight:800,color:col.fg}}>{count}{gr.tipo==="limite"?(" / max "+target):(" / "+target)}</span>
+          </div>
+          <div style={{height:6,borderRadius:6,background:"#EEF3F6",overflow:"hidden"}}><div style={{height:"100%",width:pct+"%",background:col.dot,borderRadius:6}}/></div>
+        </div>
+      </div>
+    );
+  }
+
+  if(tabA==="famiglia") {
+    var af = analisiFamiglia();
+    var mancano = []; var ridurre = [];
+    GRUPPI_ANALISI.forEach(function(gr){
+      var c = af.conteggi[gr.id]||0; var st = statoGruppo(gr, c, af.pastiPieni);
+      if(gr.tipo==="limite"){ if(st.eccesso) ridurre.push(gr); }
+      else if(st.stato!=="ok") mancano.push(gr);
+    });
+    return (
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div>
+          <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Analisi</div>
+          <div style={{fontSize:12.5,color:"#8A949B",marginTop:2}}>Cosa mangia (e cosa manca) alla famiglia</div>
+        </div>
+        <div style={{display:"flex",background:"#E2EEF5",borderRadius:12,padding:4,gap:4}}>
+          <button onClick={function(){ setTabA("famiglia"); }} style={{flex:1,border:"none",cursor:"pointer",borderRadius:9,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,background:"#fff",color:"#2F6586",boxShadow:"0 1px 4px rgba(20,40,55,.12)"}}>Famiglia</button>
+          <button onClick={function(){ setTabA("persone"); }} style={{flex:1,border:"none",cursor:"pointer",borderRadius:9,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,background:"transparent",color:"#2F6586"}}>Persone</button>
+        </div>
+        {af.pastiPieni===0 ? (
+          <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"26px 18px",textAlign:"center",color:"#8A949B"}}>
+            <i className="ti ti-salad" style={{fontSize:30,color:"#CADCE8"}}/>
+            <div style={{fontSize:13,marginTop:8,lineHeight:1.5}}>Crea il menu della settimana nel Builder per vedere cosa mangiate e cosa manca.</div>
+          </div>
+        ) : (
+          <>
+            <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"6px 15px 10px"}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",padding:"9px 0 2px"}}>Questa settimana · {af.pastiPieni} pasti</div>
+              {GRUPPI_ANALISI.map(function(gr){ var c=af.conteggi[gr.id]||0; var st=statoGruppo(gr,c,af.pastiPieni); return BarraGruppo(gr, c, st.target, st.stato, st.eccesso); })}
+            </div>
+            {mancano.length>0 && (
+              <div style={{background:"#FBE7EC",border:"1px solid #F0C9D5",borderRadius:16,padding:"13px 15px"}}>
+                <div style={{fontSize:12,fontWeight:800,color:"#C2355A",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-alert-circle" style={{fontSize:16}}/>Cosa manca</div>
+                {mancano.map(function(gr){ return (<div key={gr.id} style={{fontSize:12.5,color:"#8A5A12",marginBottom:6,lineHeight:1.4,display:"flex",gap:7}}><i className={"ti "+gr.icona} style={{fontSize:14,color:"#C2355A",flexShrink:0,marginTop:1}}/><span><b style={{color:"#2C3338"}}>{gr.nome}:</b> {gr.tip}</span></div>); })}
+              </div>
+            )}
+            {ridurre.length>0 && (
+              <div style={{background:"#F6ECD9",border:"1px solid #E8D5AE",borderRadius:16,padding:"13px 15px"}}>
+                <div style={{fontSize:12,fontWeight:800,color:"#8A5A12",marginBottom:8,display:"flex",alignItems:"center",gap:6}}><i className="ti ti-arrow-down" style={{fontSize:16}}/>Da ridurre</div>
+                {ridurre.map(function(gr){ return (<div key={gr.id} style={{fontSize:12.5,color:"#8A5A12",marginBottom:4,lineHeight:1.4}}>{gr.tipEcc}</div>); })}
+              </div>
+            )}
+            {mancano.length===0 && ridurre.length===0 && (
+              <div style={{background:"#E4F1E9",border:"1px solid #BEE0CD",borderRadius:16,padding:"14px 15px",display:"flex",alignItems:"center",gap:9,color:"#3B7D57"}}><i className="ti ti-circle-check" style={{fontSize:20}}/><div style={{fontSize:13,fontWeight:700}}>Settimana equilibrata! Bravi.</div></div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  var persona = personaSel && profili[personaSel] ? profili[personaSel] : (vals[0]||null);
+  var ap = persona ? analisiPersona(persona.id) : {conteggi:{}, giorniDati:0};
+  var pat = persona ? (persona.patologia||"") : "";
+  var evita = []; var pochi = [];
+  if(persona && pat!=="svezzamento"){
+    GRUPPI_ANALISI.forEach(function(gr){
+      if(gr.tipo==="limite") return;
+      if(gr.proteico && pat==="ipoproteica") return;
+      var c = ap.conteggi[gr.id]||0;
+      var soglia = (gr.id==="verdura"||gr.id==="frutta"||gr.id==="cereali")?7:2;
+      if(c===0) evita.push(gr);
+      else if(c<soglia) pochi.push(gr);
+    });
+  }
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div>
+        <div style={{fontSize:21,fontWeight:800,color:"#2C3338"}}>Analisi</div>
+        <div style={{fontSize:12.5,color:"#8A949B",marginTop:2}}>Cosa evita ciascuno (dal Diario, ultimi 14 giorni)</div>
+      </div>
+      <div style={{display:"flex",background:"#E2EEF5",borderRadius:12,padding:4,gap:4}}>
+        <button onClick={function(){ setTabA("famiglia"); }} style={{flex:1,border:"none",cursor:"pointer",borderRadius:9,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,background:"transparent",color:"#2F6586"}}>Famiglia</button>
+        <button onClick={function(){ setTabA("persone"); }} style={{flex:1,border:"none",cursor:"pointer",borderRadius:9,padding:"9px 0",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:12.5,fontWeight:800,background:"#fff",color:"#2F6586",boxShadow:"0 1px 4px rgba(20,40,55,.12)"}}>Persone</button>
+      </div>
+      <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch"}}>
+        {vals.map(function(p){ var on=(persona&&persona.id===p.id); return (
+          <button key={p.id} onClick={function(){ setPersonaSel(p.id); }} style={{flexShrink:0,border:"1.5px solid "+(on?"transparent":"#E3EAEE"),background:on?(p.colore||"#2F6586"):"#fff",color:on?"#fff":"#2C3338",borderRadius:20,padding:"7px 14px",fontSize:12.5,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif"}}>{p.nome}</button>
+        ); })}
+      </div>
+      {!persona ? (
+        <div style={{textAlign:"center",color:"#8A949B",fontSize:13,padding:"24px 0"}}>Nessun profilo.</div>
+      ) : pat==="svezzamento" ? (
+        <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"22px 18px",textAlign:"center",color:"#8A949B",fontSize:13,lineHeight:1.5}}><i className="ti ti-baby-carriage" style={{fontSize:28,color:"#CADCE8",display:"block",marginBottom:8}}/>{persona.nome} è in svezzamento: l'analisi dei gruppi non si applica ancora.</div>
+      ) : ap.giorniDati===0 ? (
+        <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"24px 18px",textAlign:"center",color:"#8A949B"}}>
+          <i className="ti ti-notebook" style={{fontSize:28,color:"#CADCE8"}}/>
+          <div style={{fontSize:13,marginTop:8,lineHeight:1.5}}>Segna cosa mangia {persona.nome} nel <b>Diario</b> per qualche giorno: qui vedrai cosa mangia poco o evita.</div>
+        </div>
+      ) : (
+        <>
+          {pat==="ipoproteica" && (<div style={{background:"#E2EEF5",borderRadius:12,padding:"9px 13px",fontSize:11.5,color:"#2F6586",fontWeight:600,lineHeight:1.4}}>Dieta ipoproteica: le poche proteine sono volute, quindi non le segnalo come mancanza.</div>)}
+          {(evita.length===0 && pochi.length===0) ? (
+            <div style={{background:"#E4F1E9",border:"1px solid #BEE0CD",borderRadius:16,padding:"14px 15px",display:"flex",alignItems:"center",gap:9,color:"#3B7D57"}}><i className="ti ti-circle-check" style={{fontSize:20}}/><div style={{fontSize:13,fontWeight:700}}>{persona.nome} mangia vario. Bene così!</div></div>
+          ) : (
+            <div style={{background:"#fff",border:"1px solid #E3EAEE",borderRadius:16,padding:"6px 15px 10px"}}>
+              <div style={{fontSize:10,fontWeight:800,textTransform:"uppercase",color:"#8A949B",letterSpacing:".04em",padding:"9px 0 4px"}}>Da tenere d'occhio · {ap.giorniDati} {ap.giorniDati===1?"giorno segnato":"giorni segnati"}</div>
+              {evita.map(function(gr){ return (
+                <div key={gr.id} style={{display:"flex",alignItems:"center",gap:11,padding:"9px 0",borderBottom:"1px solid #EEF3F6"}}>
+                  <div style={{width:34,height:34,borderRadius:11,background:"#FBE7EC",color:"#C2355A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}><i className={"ti "+gr.icona}/></div>
+                  <div style={{flex:1,minWidth:0}}><div style={{fontSize:13.5,fontWeight:700,color:"#2C3338"}}>{gr.nome}</div><div style={{fontSize:11.5,color:"#C2355A",fontWeight:700}}>Mai negli ultimi 14 giorni</div></div>
+                </div>
+              ); })}
+              {pochi.map(function(gr){ var c=ap.conteggi[gr.id]||0; return (
+                <div key={gr.id} style={{display:"flex",alignItems:"center",gap:11,padding:"9px 0",borderBottom:"1px solid #EEF3F6"}}>
+                  <div style={{width:34,height:34,borderRadius:11,background:"#F6ECD9",color:"#8A5A12",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}><i className={"ti "+gr.icona}/></div>
+                  <div style={{flex:1,minWidth:0}}><div style={{fontSize:13.5,fontWeight:700,color:"#2C3338"}}>{gr.nome}</div><div style={{fontSize:11.5,color:"#8A5A12",fontWeight:700}}>Solo {c} volt{c===1?"a":"e"} · {gr.tip}</div></div>
+                </div>
+              ); })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   // ── localStorage fallback ───────────────────────────────────
   function loadLS(key, def) {
@@ -10956,6 +11185,7 @@ export default function App() {
   const TABS_ROW2 = TABS.slice(5);
   var s_sheet = useState(false); var sheetOpen = s_sheet[0]; var setSheetOpen = s_sheet[1];
   var SHEET_ITEMS = [
+    {id:"analisi",     l:"Analisi",           ic:"ti-chart-histogram",    s:"Cosa mangia e cosa manca alla famiglia"},
     {id:"famiglia",    l:"Famiglia e salute", ic:"ti-heart-rate-monitor", s:"Profili, pesi, diete, medicine, piramide"},
     {id:"ricette",     l:"Ricette",           ic:"ti-bulb",               s:"Le tue ricette e la community"},
     {id:"amici",       l:"Amici",             ic:"ti-users-group",        s:"Aggiungi amici e cene insieme"},
@@ -11309,6 +11539,9 @@ export default function App() {
               ospiti={ospiti} setOspiti={setOspitiLS} familyId={familyId} soloOggi={true}
               preferiti={preferiti} setPreferiti={setPreferitiLS}/>
           </div>
+        )}
+        {tab==="analisi" && (
+          <AnalisiView builder={builderScelte} diario={diarioLog} profili={profili}/>
         )}
         {tab==="mensa" && (
           <PianiView piani={piani} setPiani={setPianiLS} profili={profili}/>
