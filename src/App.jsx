@@ -2108,7 +2108,13 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Spaghetti alle vongole", gruppo:"pesce", ing:["spaghetti","vongole","aglio","prezzemolo"], kcal:380, prot:18, tempo:30},
     {nome:"Pesce spada grigliato", gruppo:"pesce", ing:["pesce spada","olio","limone"], kcal:280, prot:26, tempo:15},
     {nome:"Insalata di polpo e patate", gruppo:"pesce", ing:["polpo","patate","olio","prezzemolo"], kcal:300, prot:24, tempo:60},
-    {nome:"Filetto di branzino al limone", gruppo:"pesce", ing:["branzino","limone","olio"], kcal:230, prot:24, tempo:25}
+    {nome:"Filetto di branzino al limone", gruppo:"pesce", ing:["branzino","limone","olio"], kcal:230, prot:24, tempo:25},
+    {nome:"Insalata di calamari alla mediterranea", gruppo:"pesce", ing:["calamari","pomodorini","olive","sedano","olio"], kcal:240, prot:22, tempo:30},
+    {nome:"Insalata nizzarda", gruppo:"pesce", ing:["tonno","fagiolini","patate","uova","olive","pomodoro"], kcal:340, prot:20, tempo:25},
+    {nome:"Linguine alle vongole veraci con pomodorini", gruppo:"pesce", ing:["linguine","vongole","pomodorini","aglio","prezzemolo"], kcal:400, prot:18, tempo:30},
+    {nome:"Lampuga al grill", gruppo:"pesce", ing:["lampuga","olio","limone"], kcal:230, prot:24, tempo:20},
+    {nome:"Filetto di scorfano con zucca", gruppo:"pesce", ing:["scorfano","zucca","timo","olio"], kcal:250, prot:23, tempo:30},
+    {nome:"Pizza tonno e cipolla", gruppo:"pesce", ing:["farina","pomodoro","mozzarella","tonno","cipolla"], kcal:480, prot:22, tempo:25}
   ],
   carne_bianca: [
     {nome:"Petto di pollo grigliato con verdure", gruppo:"carne_bianca", ing:["pollo","zucchine","peperoni","olio"], kcal:300, prot:32, tempo:25},
@@ -2118,14 +2124,19 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Spezzatino di tacchino con piselli", gruppo:"carne_bianca", ing:["tacchino","piselli","pomodoro","cipolla"], kcal:340, prot:30, tempo:45},
     {nome:"Involtini di pollo", gruppo:"carne_bianca", ing:["pollo","prosciutto","formaggio"], kcal:360, prot:32, tempo:30},
     {nome:"Pollo al curry con riso", gruppo:"carne_bianca", ing:["pollo","riso","curry","latte di cocco"], kcal:450, prot:28, tempo:35},
-    {nome:"Polpette di tacchino al sugo", gruppo:"carne_bianca", ing:["tacchino","pangrattato","pomodoro"], kcal:340, prot:28, tempo:40}
+    {nome:"Polpette di tacchino al sugo", gruppo:"carne_bianca", ing:["tacchino","pangrattato","pomodoro"], kcal:340, prot:28, tempo:40},
+    {nome:"Paillard di vitello con rucola", gruppo:"carne_bianca", ing:["vitello","rucola","olio","limone"], kcal:250, prot:30, tempo:15}
   ],
   carne_rossa: [
     {nome:"Fettina di manzo ai ferri con insalata", gruppo:"carne_rossa", ing:["manzo","insalata","olio"], kcal:300, prot:28, tempo:15},
     {nome:"Spezzatino di manzo con patate", gruppo:"carne_rossa", ing:["manzo","patate","pomodoro","cipolla"], kcal:420, prot:30, tempo:90},
     {nome:"Polpette al sugo", gruppo:"carne_rossa", ing:["manzo","pangrattato","pomodoro"], kcal:380, prot:24, tempo:45},
     {nome:"Roast beef con rucola", gruppo:"carne_rossa", ing:["manzo","rucola","olio","grana"], kcal:320, prot:28, tempo:40},
-    {nome:"Scaloppine al marsala", gruppo:"carne_rossa", ing:["manzo","farina","marsala","burro"], kcal:340, prot:26, tempo:25}
+    {nome:"Scaloppine al marsala", gruppo:"carne_rossa", ing:["manzo","farina","marsala","burro"], kcal:340, prot:26, tempo:25},
+    {nome:"Filetto di maialino in crosta di pistacchi", gruppo:"carne_rossa", ing:["maiale","pistacchi","cipolla di tropea","olio"], kcal:380, prot:28, tempo:35},
+    {nome:"Caserecce con ragù bianco calabrese", gruppo:"carne_rossa", ing:["caserecce","carne macinata","cipolla","vino bianco"], kcal:450, prot:22, tempo:40},
+    {nome:"Lasagne all'emiliana", gruppo:"carne_rossa", ing:["pasta","ragù","besciamella","parmigiano"], kcal:520, prot:24, tempo:60},
+    {nome:"Scaloppa di carne alla moranese", gruppo:"carne_rossa", ing:["carne","pomodoro","origano","olio"], kcal:340, prot:26, tempo:25}
   ],
   uova: [
     {nome:"Frittata di zucchine", gruppo:"uova", ing:["uova","zucchine","parmigiano"], kcal:260, prot:16, tempo:20},
@@ -2133,14 +2144,17 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Frittata di patate e cipolle", gruppo:"uova", ing:["uova","patate","cipolla"], kcal:320, prot:15, tempo:30},
     {nome:"Uova sode con insalata", gruppo:"uova", ing:["uova","insalata","olio"], kcal:220, prot:14, tempo:15},
     {nome:"Crepe salate", gruppo:"uova", ing:["uova","farina","latte","prosciutto"], kcal:340, prot:16, tempo:30},
-    {nome:"Omelette al formaggio", gruppo:"uova", ing:["uova","formaggio","burro"], kcal:320, prot:20, tempo:15}
+    {nome:"Omelette al formaggio", gruppo:"uova", ing:["uova","formaggio","burro"], kcal:320, prot:20, tempo:15},
+    {nome:"Frittata di asparagi", gruppo:"uova", ing:["uova","asparagi","parmigiano"], kcal:260, prot:16, tempo:25}
   ],
   latticini: [
     {nome:"Caprese con mozzarella e pomodoro", gruppo:"latticini", ing:["mozzarella","pomodoro","basilico","olio"], kcal:300, prot:18, tempo:10},
     {nome:"Ricotta con verdure grigliate", gruppo:"latticini", ing:["ricotta","zucchine","melanzane","olio"], kcal:280, prot:16, tempo:25},
     {nome:"Insalata greca con feta", gruppo:"latticini", ing:["feta","pomodoro","cetrioli","olive"], kcal:320, prot:12, tempo:15},
     {nome:"Mozzarella in carrozza al forno", gruppo:"latticini", ing:["mozzarella","pane","uova"], kcal:380, prot:20, tempo:25},
-    {nome:"Piadina con stracchino e rucola", gruppo:"latticini", ing:["piadina","stracchino","rucola"], kcal:360, prot:14, tempo:10}
+    {nome:"Piadina con stracchino e rucola", gruppo:"latticini", ing:["piadina","stracchino","rucola"], kcal:360, prot:14, tempo:10},
+    {nome:"Treccione di mozzarella con pomodoro", gruppo:"latticini", ing:["mozzarella","pomodoro","basilico","olio"], kcal:320, prot:18, tempo:5},
+    {nome:"Pizza Margherita", gruppo:"latticini", ing:["farina","pomodoro","mozzarella","basilico"], kcal:450, prot:16, tempo:25}
   ]
 };
 
