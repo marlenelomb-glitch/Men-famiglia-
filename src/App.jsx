@@ -2097,7 +2097,8 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Vellutata di lenticchie rosse", gruppo:"legumi", ing:["lenticchie","carote","patate"], kcal:260, prot:14, tempo:35},
     {nome:"Fagioli all'uccelletto", gruppo:"legumi", ing:["fagioli","pomodoro","salvia","aglio"], kcal:250, prot:12, tempo:30},
     {nome:"Burger di legumi", gruppo:"legumi", ing:["fagioli","ceci","pangrattato"], kcal:320, prot:15, tempo:30},
-    {nome:"Hamburger vegetariano", gruppo:"legumi", ing:["legumi","pangrattato","verdure","pane"], kcal:340, prot:15, tempo:25}
+    {nome:"Hamburger vegetariano", gruppo:"legumi", ing:["legumi","pangrattato","verdure","pane"], kcal:340, prot:15, tempo:25},
+    {nome:"Riso venere con ceci, pomodorini e zucchine", gruppo:"legumi", ing:["riso venere","ceci","pomodorini","zucchine","primo sale"], kcal:400, prot:15, tempo:35}
   ],
   pesce: [
     {nome:"Merluzzo al vapore con patate", gruppo:"pesce", ing:["merluzzo","patate","prezzemolo","limone"], kcal:240, prot:25, tempo:30},
@@ -2126,7 +2127,14 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Cous cous alla marinara con verdurine", gruppo:"pesce", ing:["cous cous","frutti di mare","zucchine","carote","pomodorini"], kcal:400, prot:20, tempo:35},
     {nome:"Pappardelle con melanzane e pesce spada", gruppo:"pesce", ing:["pappardelle","pesce spada","melanzane","menta","pomodorini"], kcal:450, prot:22, tempo:30},
     {nome:"Orata alla griglia", gruppo:"pesce", ing:["orata","olio","limone","prezzemolo"], kcal:220, prot:26, tempo:25},
-    {nome:"Filetto di merluzzo gratinato", gruppo:"pesce", ing:["merluzzo","pangrattato","prezzemolo","limone","olio"], kcal:260, prot:24, tempo:25}
+    {nome:"Filetto di merluzzo gratinato", gruppo:"pesce", ing:["merluzzo","pangrattato","prezzemolo","limone","olio"], kcal:260, prot:24, tempo:25},
+    {nome:"Insalata di gamberetti con sedano e melone", gruppo:"pesce", ing:["gamberetti","sedano","melone","olio"], kcal:240, prot:20, tempo:20},
+    {nome:"Ciambotta calabrese con pesce spada", gruppo:"pesce", ing:["pesce spada","patate","peperoni","melanzane","pomodoro"], kcal:340, prot:22, tempo:40},
+    {nome:"Moscardini alla luciana", gruppo:"pesce", ing:["moscardini","pomodoro","olive","capperi","aglio"], kcal:260, prot:22, tempo:40},
+    {nome:"Linguine allo scoglio", gruppo:"pesce", ing:["linguine","frutti di mare","pomodorini","aglio","prezzemolo"], kcal:430, prot:22, tempo:30},
+    {nome:"Tonno al salmoriglio", gruppo:"pesce", ing:["tonno","olio","limone","origano","aglio"], kcal:250, prot:28, tempo:15},
+    {nome:"Ricciola in bellavista", gruppo:"pesce", ing:["ricciola","pomodorini","olive","capperi","olio"], kcal:280, prot:26, tempo:25},
+    {nome:"Baccalà alla cosentina", gruppo:"pesce", ing:["baccalà","pomodoro","patate","peperoni","uvetta"], kcal:340, prot:26, tempo:50}
   ],
   carne_bianca: [
     {nome:"Petto di pollo grigliato con verdure", gruppo:"carne_bianca", ing:["pollo","zucchine","peperoni","olio"], kcal:300, prot:32, tempo:25},
@@ -2156,7 +2164,11 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Braciola di suino al rosmarino", gruppo:"carne_rossa", ing:["maiale","rosmarino","olio","vino bianco"], kcal:360, prot:28, tempo:30},
     {nome:"Coppa di suino alla griglia", gruppo:"carne_rossa", ing:["maiale","olio","rosmarino"], kcal:340, prot:26, tempo:20},
     {nome:"Pasta alla bolognese", gruppo:"carne_rossa", ing:["pasta","carne macinata","pomodoro","carote","sedano"], kcal:480, prot:22, tempo:45},
-    {nome:"Pizza capocollo e pecorino", gruppo:"carne_rossa", ing:["farina","pomodoro","capocollo","pecorino"], kcal:520, prot:22, tempo:25}
+    {nome:"Pizza capocollo e pecorino", gruppo:"carne_rossa", ing:["farina","pomodoro","capocollo","pecorino"], kcal:520, prot:22, tempo:25},
+    {nome:"Marinata di coppa con carciofi e canestrato", gruppo:"carne_rossa", ing:["coppa","carciofi","canestrato","olio"], kcal:320, prot:20, tempo:15},
+    {nome:"Strozzapreti con funghi e pancetta croccante", gruppo:"carne_rossa", ing:["strozzapreti","funghi","pancetta","panna"], kcal:480, prot:20, tempo:30},
+    {nome:"Tagliata di manzo con rucola e grana", gruppo:"carne_rossa", ing:["manzo","rucola","grana","olio"], kcal:340, prot:30, tempo:20},
+    {nome:"Costine di suino glassate bbq", gruppo:"carne_rossa", ing:["costine di maiale","salsa bbq","spezie"], kcal:520, prot:28, tempo:60}
   ],
   uova: [
     {nome:"Frittata di zucchine", gruppo:"uova", ing:["uova","zucchine","parmigiano"], kcal:260, prot:16, tempo:20},
@@ -2178,7 +2190,9 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Pizza Margherita", gruppo:"latticini", ing:["farina","pomodoro","mozzarella","basilico"], kcal:450, prot:16, tempo:25},
     {nome:"Ravioli di ricotta e spinaci, burro e salvia", gruppo:"latticini", ing:["ravioli","ricotta","spinaci","burro","salvia"], kcal:420, prot:16, tempo:20},
     {nome:"Focaccia con stracciatella, mortadella e pistacchio", gruppo:"latticini", ing:["focaccia","stracciatella","mortadella","pistacchi"], kcal:480, prot:18, tempo:15},
-    {nome:"Gnocchi alla sorrentina", gruppo:"latticini", ing:["gnocchi","pomodoro","mozzarella","basilico"], kcal:440, prot:16, tempo:30}
+    {nome:"Gnocchi alla sorrentina", gruppo:"latticini", ing:["gnocchi","pomodoro","mozzarella","basilico"], kcal:440, prot:16, tempo:30},
+    {nome:"Pizza ai quattro formaggi", gruppo:"latticini", ing:["farina","mozzarella","gorgonzola","fontina","parmigiano"], kcal:520, prot:22, tempo:25},
+    {nome:"Risotto con gorgonzola, radicchio e noci", gruppo:"latticini", ing:["riso","gorgonzola","radicchio","noci"], kcal:450, prot:14, tempo:35}
   ]
 };
 
