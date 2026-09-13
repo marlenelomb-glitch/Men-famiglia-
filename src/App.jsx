@@ -2098,7 +2098,11 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Fagioli all'uccelletto", gruppo:"legumi", ing:["fagioli","pomodoro","salvia","aglio"], kcal:250, prot:12, tempo:30},
     {nome:"Burger di legumi", gruppo:"legumi", ing:["fagioli","ceci","pangrattato"], kcal:320, prot:15, tempo:30},
     {nome:"Hamburger vegetariano", gruppo:"legumi", ing:["legumi","pangrattato","verdure","pane"], kcal:340, prot:15, tempo:25},
-    {nome:"Riso venere con ceci, pomodorini e zucchine", gruppo:"legumi", ing:["riso venere","ceci","pomodorini","zucchine","primo sale"], kcal:400, prot:15, tempo:35}
+    {nome:"Insalata di ceci, pomodorini e cetrioli", gruppo:"legumi", ing:["ceci","pomodorini","cetrioli","cipolla","olio"], kcal:300, prot:13, tempo:10},
+    {nome:"Insalata di lenticchie, feta e menta", gruppo:"legumi", ing:["lenticchie","feta","menta","pomodorini"], kcal:320, prot:15, tempo:15},
+    {nome:"Insalata di farro, ceci e verdure grigliate", gruppo:"legumi", ing:["farro","ceci","zucchine","melanzane","olio"], kcal:360, prot:14, tempo:25},
+    {nome:"Insalata di fagioli, mais e peperoni", gruppo:"legumi", ing:["fagioli","mais","peperoni","cipolla","olio"], kcal:310, prot:13, tempo:10},
+    {nome:"Insalata di quinoa, avocado ed edamame", gruppo:"legumi", ing:["quinoa","avocado","edamame","pomodorini","lime"], kcal:380, prot:15, tempo:20}
   ],
   pesce: [
     {nome:"Merluzzo al vapore con patate", gruppo:"pesce", ing:["merluzzo","patate","prezzemolo","limone"], kcal:240, prot:25, tempo:30},
@@ -2134,7 +2138,12 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Linguine allo scoglio", gruppo:"pesce", ing:["linguine","frutti di mare","pomodorini","aglio","prezzemolo"], kcal:430, prot:22, tempo:30},
     {nome:"Tonno al salmoriglio", gruppo:"pesce", ing:["tonno","olio","limone","origano","aglio"], kcal:250, prot:28, tempo:15},
     {nome:"Ricciola in bellavista", gruppo:"pesce", ing:["ricciola","pomodorini","olive","capperi","olio"], kcal:280, prot:26, tempo:25},
-    {nome:"Baccalà alla cosentina", gruppo:"pesce", ing:["baccalà","pomodoro","patate","peperoni","uvetta"], kcal:340, prot:26, tempo:50}
+    {nome:"Baccalà alla cosentina", gruppo:"pesce", ing:["baccalà","pomodoro","patate","peperoni","uvetta"], kcal:340, prot:26, tempo:50},
+    {nome:"Insalata di tonno, fagioli e cipolla", gruppo:"pesce", ing:["tonno","fagioli cannellini","cipolla","olio","limone"], kcal:320, prot:24, tempo:10},
+    {nome:"Insalata di riso, tonno e verdure", gruppo:"pesce", ing:["riso","tonno","piselli","mais","pomodorini"], kcal:380, prot:20, tempo:20},
+    {nome:"Insalata di salmone affumicato e avocado", gruppo:"pesce", ing:["salmone affumicato","avocado","songino","limone"], kcal:340, prot:22, tempo:10},
+    {nome:"Insalata di mare", gruppo:"pesce", ing:["calamari","gamberi","cozze","sedano","limone","olio"], kcal:260, prot:24, tempo:30},
+    {nome:"Insalata di gamberi, avocado e pompelmo", gruppo:"pesce", ing:["gamberi","avocado","pompelmo","insalata"], kcal:300, prot:20, tempo:20}
   ],
   carne_bianca: [
     {nome:"Petto di pollo grigliato con verdure", gruppo:"carne_bianca", ing:["pollo","zucchine","peperoni","olio"], kcal:300, prot:32, tempo:25},
@@ -2148,7 +2157,10 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Paillard di vitello con rucola", gruppo:"carne_bianca", ing:["vitello","rucola","olio","limone"], kcal:250, prot:30, tempo:15},
     {nome:"Brasato di vitello ai funghi", gruppo:"carne_bianca", ing:["vitello","funghi","cipolla","vino"], kcal:360, prot:30, tempo:90},
     {nome:"Caesar salad con pollo e crostini", gruppo:"carne_bianca", ing:["pollo","insalata","crostini","parmigiano","salsa caesar"], kcal:380, prot:28, tempo:20},
-    {nome:"Carpaccio di tacchino con misticanza e yogurt", gruppo:"carne_bianca", ing:["tacchino","misticanza","cetrioli","yogurt"], kcal:240, prot:26, tempo:15}
+    {nome:"Carpaccio di tacchino con misticanza e yogurt", gruppo:"carne_bianca", ing:["tacchino","misticanza","cetrioli","yogurt"], kcal:240, prot:26, tempo:15},
+    {nome:"Insalata di pollo grigliato, spinaci e mais", gruppo:"carne_bianca", ing:["pollo","spinaci","mais","pomodorini","olio"], kcal:340, prot:30, tempo:20},
+    {nome:"Insalata di pollo, mela e noci", gruppo:"carne_bianca", ing:["pollo","mela","noci","insalata","yogurt"], kcal:360, prot:28, tempo:15},
+    {nome:"Insalata di tacchino, songino e pomodorini", gruppo:"carne_bianca", ing:["tacchino","songino","pomodorini","olio"], kcal:260, prot:28, tempo:15}
   ],
   carne_rossa: [
     {nome:"Fettina di manzo ai ferri con insalata", gruppo:"carne_rossa", ing:["manzo","insalata","olio"], kcal:300, prot:28, tempo:15},
@@ -2168,7 +2180,9 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Marinata di coppa con carciofi e canestrato", gruppo:"carne_rossa", ing:["coppa","carciofi","canestrato","olio"], kcal:320, prot:20, tempo:15},
     {nome:"Strozzapreti con funghi e pancetta croccante", gruppo:"carne_rossa", ing:["strozzapreti","funghi","pancetta","panna"], kcal:480, prot:20, tempo:30},
     {nome:"Tagliata di manzo con rucola e grana", gruppo:"carne_rossa", ing:["manzo","rucola","grana","olio"], kcal:340, prot:30, tempo:20},
-    {nome:"Costine di suino glassate bbq", gruppo:"carne_rossa", ing:["costine di maiale","salsa bbq","spezie"], kcal:520, prot:28, tempo:60}
+    {nome:"Costine di suino glassate bbq", gruppo:"carne_rossa", ing:["costine di maiale","salsa bbq","spezie"], kcal:520, prot:28, tempo:60},
+    {nome:"Insalata di bresaola, rucola e grana", gruppo:"carne_rossa", ing:["bresaola","rucola","grana","limone","olio"], kcal:280, prot:28, tempo:10},
+    {nome:"Insalata di roast beef, patate e senape", gruppo:"carne_rossa", ing:["roast beef","patate","senape","insalata"], kcal:340, prot:26, tempo:15}
   ],
   uova: [
     {nome:"Frittata di zucchine", gruppo:"uova", ing:["uova","zucchine","parmigiano"], kcal:260, prot:16, tempo:20},
@@ -2178,7 +2192,9 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Crepe salate", gruppo:"uova", ing:["uova","farina","latte","prosciutto"], kcal:340, prot:16, tempo:30},
     {nome:"Omelette al formaggio", gruppo:"uova", ing:["uova","formaggio","burro"], kcal:320, prot:20, tempo:15},
     {nome:"Frittata di asparagi", gruppo:"uova", ing:["uova","asparagi","parmigiano"], kcal:260, prot:16, tempo:25},
-    {nome:"Tortino di zucchine con fonduta di parmigiano", gruppo:"uova", ing:["uova","zucchine","parmigiano","panna"], kcal:300, prot:16, tempo:35}
+    {nome:"Tortino di zucchine con fonduta di parmigiano", gruppo:"uova", ing:["uova","zucchine","parmigiano","panna"], kcal:300, prot:16, tempo:35},
+    {nome:"Insalata con uova sode, patate e fagiolini", gruppo:"uova", ing:["uova","patate","fagiolini","olive","olio"], kcal:320, prot:16, tempo:25},
+    {nome:"Insalata di uova, spinaci e crostini", gruppo:"uova", ing:["uova","spinaci","crostini","parmigiano"], kcal:300, prot:16, tempo:15}
   ],
   latticini: [
     {nome:"Caprese con mozzarella e pomodoro", gruppo:"latticini", ing:["mozzarella","pomodoro","basilico","olio"], kcal:300, prot:18, tempo:10},
@@ -2192,7 +2208,12 @@ var PIATTI_PER_GRUPPO = {
     {nome:"Focaccia con stracciatella, mortadella e pistacchio", gruppo:"latticini", ing:["focaccia","stracciatella","mortadella","pistacchi"], kcal:480, prot:18, tempo:15},
     {nome:"Gnocchi alla sorrentina", gruppo:"latticini", ing:["gnocchi","pomodoro","mozzarella","basilico"], kcal:440, prot:16, tempo:30},
     {nome:"Pizza ai quattro formaggi", gruppo:"latticini", ing:["farina","mozzarella","gorgonzola","fontina","parmigiano"], kcal:520, prot:22, tempo:25},
-    {nome:"Risotto con gorgonzola, radicchio e noci", gruppo:"latticini", ing:["riso","gorgonzola","radicchio","noci"], kcal:450, prot:14, tempo:35}
+    {nome:"Risotto con gorgonzola, radicchio e noci", gruppo:"latticini", ing:["riso","gorgonzola","radicchio","noci"], kcal:450, prot:14, tempo:35},
+    {nome:"Insalata caprese di bufala con pesto", gruppo:"latticini", ing:["mozzarella di bufala","pomodoro","pesto","basilico"], kcal:340, prot:18, tempo:10},
+    {nome:"Insalata di primo sale, zucchine e menta", gruppo:"latticini", ing:["primo sale","zucchine","menta","olio"], kcal:300, prot:16, tempo:15},
+    {nome:"Insalata di burrata, pomodorini e basilico", gruppo:"latticini", ing:["burrata","pomodorini","basilico","olio"], kcal:360, prot:16, tempo:10},
+    {nome:"Insalata di feta, anguria e menta", gruppo:"latticini", ing:["feta","anguria","menta","olio"], kcal:280, prot:12, tempo:10},
+    {nome:"Panzanella con mozzarella e pomodoro", gruppo:"latticini", ing:["pane","pomodoro","mozzarella","cipolla","basilico"], kcal:340, prot:14, tempo:15}
   ]
 };
 
@@ -2212,7 +2233,7 @@ function tuttiPiattiIdee() {
 function piattoInCategoria(dish, catId, scadenzaNomi) {
   var n = (""+((dish&&dish.nome)||"")).toLowerCase();
   if(catId === "veloci") return ((dish&&dish.tempo)||99) <= 20;
-  if(catId === "insalate") return n.indexOf("insalata") >= 0 || n.indexOf("caprese") >= 0 || n.indexOf("greca") >= 0;
+  if(catId === "insalate") return n.indexOf("insalata") >= 0 || n.indexOf("caprese") >= 0 || n.indexOf("greca") >= 0 || n.indexOf("panzanella") >= 0 || n.indexOf("carpaccio") >= 0;
   if(catId === "forno") return n.indexOf("forno") >= 0 || n.indexOf("al sale") >= 0 || n.indexOf("carrozza") >= 0 || n.indexOf("gratin") >= 0;
   if(catId === "unico") return n.indexOf("pasta") >= 0 || n.indexOf("spaghetti") >= 0 || n.indexOf("riso") >= 0 || n.indexOf("risotto") >= 0 || n.indexOf("zuppa") >= 0 || n.indexOf("vellutata") >= 0 || n.indexOf("farro") >= 0 || n.indexOf("minestr") >= 0 || n.indexOf("piselli") >= 0;
   if(catId === "bimbi") return n.indexOf("polpett") >= 0 || n.indexOf("frittata") >= 0 || n.indexOf("pasta") >= 0 || n.indexOf("cotolett") >= 0 || n.indexOf("uova strap") >= 0 || n.indexOf("involtini") >= 0 || n.indexOf("crepe") >= 0 || n.indexOf("piadina") >= 0 || n.indexOf("mozzarella") >= 0;
