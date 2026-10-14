@@ -6552,6 +6552,44 @@ var PASTI_PIANO = {
 };
 function pianoSettimane(cadenza) { return cadenza === "mensile" ? [1,2,3,4] : [1]; }
 function pianoGiorni(tipo) { return tipo === "mensa" ? GIORNI7.slice(0,5) : GIORNI7; }
+
+var MENU_SCOLASTICO_2627 = {
+  1: {
+    Lun:"Risotto alla bolognese · Frittata al forno · Carote brasate · pane e frutta",
+    Mar:"Pasta e fagioli · Bocconcini di pollo · Insalata mista · pane e frutta",
+    Mer:"Pasta al tonno · Filetto di merluzzo panato al forno · Verdura gratinata · pane · yogurt",
+    Gio:"Pasta al pomodoro · Polpette di carne · Piselli · pane e frutta",
+    Ven:"Pasta al pesto di basilico · Mozzarella o formaggio fresco · Insalata mista · pane e frutta"
+  },
+  2: {
+    Lun:"Passato di verdure con riso o pasta · Filetto di pesce panato · Fagiolini lessi · pane e frutta",
+    Mar:"Pasta alla bolognese · Mozzarella o formaggio fresco · Carote a julienne · pane e frutta",
+    Mer:"Pizza margherita · Prosciutto cotto o fesa di tacchino · Insalata verde · banana",
+    Gio:"Pasta e ceci · Pollo al forno · Verdura gratinata · pane e frutta",
+    Ven:"Risotto alla milanese · Bastoncini di pesce · Purè o patate al forno · pane e frutta"
+  },
+  3: {
+    Lun:"Pasta al pomodoro · Frittata al forno · Verdura gratinata · pane e frutta",
+    Mar:"Minestrone di verdure con riso o pasta · Cotoletta di pollo al forno con patate · pane e frutta",
+    Mer:"Pasta e lenticchie · Mozzarella o formaggio fresco · Insalata mista · pane e frutta",
+    Gio:"Lasagne · Carote a julienne · pane · yogurt",
+    Ven:"Riso con verdure di stagione · Gateau di patate · pane e frutta"
+  },
+  4: {
+    Lun:"Pasta panna e prosciutto · Mozzarella o formaggio fresco · Insalata mista · pane e frutta",
+    Mar:"Pasta al pesto di basilico · Filetto di pesce panato · Fagiolini lessi · pane e frutta",
+    Mer:"Pasta al pomodoro · Lonza di maiale al forno · Carote brasate · pane e frutta",
+    Gio:"Pizza margherita · Prosciutto cotto o fesa di tacchino · Insalata verde · banana",
+    Ven:"Pasta e patate · Mozzarella o formaggio fresco · Verdura gratinata · pane e frutta"
+  }
+};
+var MENU_ESTIVO_BIMBI = {
+  Lun:"Conchigliette al pomodoro · Petto di pollo al forno · pane e frutta",
+  Mar:"Stelline e ricotta · Fesa di tacchino · pane e frutta",
+  Mer:"Farfalline con zucchine · Bocconcini di mozzarella · pane e frutta",
+  Gio:"Farfalline al pesto · Bastoncini di pesce · pane e frutta",
+  Ven:"Conchigliette al sugo · Fesa di tacchino · pane e frutta"
+};
 function settimanaPianoNum(pl, dataRef) {
   if(pl.cadenza !== "mensile" || !pl.correnteMonday || !pl.correnteNum) return 1;
   var base = lunediDi(new Date(pl.correnteMonday + "T00:00:00"));
@@ -6567,6 +6605,7 @@ function PianiView(props) {
   var sW = useState(1); var sett = sW[0]; var setSett = sW[1];
   var sG = useState("Lun"); var giorno = sG[0]; var setGiorno = sG[1];
   var sAdd = useState(false); var adding = sAdd[0]; var setAdding = sAdd[1];
+  var sImp = useState(null); var importTipo = sImp[0]; var setImportTipo = sImp[1];
 
   function salva(lista) { setPiani({lista: lista}); }
   function updatePiano(id, fn) {
@@ -6580,6 +6619,20 @@ function PianiView(props) {
     setAdding(false); setSelId(id); setSett(1); setGiorno("Lun");
   }
   function rimuoviPiano(id) { salva(piani.filter(function(p){ return p.id !== id; })); setSelId(null); }
+  function importaMenuPronto(tipo, membroId) {
+    var id = "pl_" + piani.length + "_" + Date.now();
+    var pl;
+    if(tipo === "scuola") {
+      var settS = {};
+      Object.keys(MENU_SCOLASTICO_2627).forEach(function(wk){ var gg={}; Object.keys(MENU_SCOLASTICO_2627[wk]).forEach(function(g){ gg[g]={pranzo:MENU_SCOLASTICO_2627[wk][g]}; }); settS[wk]={giorni:gg}; });
+      pl = {id:id, tipo:"mensa", membroId:(membroId||null), titolo:"Mensa scuola 2026-27", cadenza:"mensile", correnteNum:3, correnteMonday:isoDay(lunediDi(new Date())), settimane:settS};
+    } else {
+      var gg2={}; Object.keys(MENU_ESTIVO_BIMBI).forEach(function(g){ gg2[g]={pranzo:MENU_ESTIVO_BIMBI[g]}; });
+      pl = {id:id, tipo:"mensa", membroId:(membroId||null), titolo:"Menù estivo bimbi", cadenza:"settimanale", correnteNum:1, correnteMonday:isoDay(lunediDi(new Date())), settimane:{1:{giorni:gg2}}};
+    }
+    salva(piani.concat([pl]));
+    setAdding(false); setImportTipo(null); setSelId(id); setSett(tipo === "scuola" ? 3 : 1); setGiorno("Lun");
+  }
   function setCadenza(pl, cad) { updatePiano(pl.id, function(np){ np.cadenza = cad; if(cad === "mensile" && !np.correnteMonday){ np.correnteMonday = isoDay(lunediDi(new Date())); np.correnteNum = 1; } }); setSett(1); }
   function setCorrente(pl, n) { updatePiano(pl.id, function(np){ np.correnteNum = n; np.correnteMonday = isoDay(lunediDi(new Date())); }); }
   function setPasto(pl, wk, g, pastoId, val) {
@@ -6709,12 +6762,40 @@ function PianiView(props) {
       })}
 
       {adding ? (
+        importTipo ? (
         <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
-          <div className="cap">Cosa vuoi aggiungere</div>
+          <div className="cap">Di chi è questo menu?</div>
+          {Object.keys(profili).map(function(pid){
+            var p = profili[pid];
+            return (
+              <button key={pid} onClick={function(){ importaMenuPronto(importTipo, pid); }}
+                style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #E3EAEE",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+                <div style={{width:34,height:34,borderRadius:10,background:p.colore||"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800}}>{p.nome ? p.nome.slice(0,1).toUpperCase() : "?"}</div>
+                <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>{p.nome}</div></div>
+              </button>
+            );
+          })}
+          <button onClick={function(){ importaMenuPronto(importTipo, null); }} style={{border:"1.5px solid #E3EAEE",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",fontSize:14,fontWeight:700,color:"#2F6586",textAlign:"left"}}>Per tutti i bambini</button>
+          <button onClick={function(){ setImportTipo(null); }} style={{border:"none",background:"transparent",color:"#8A949B",fontSize:13,fontWeight:700,cursor:"pointer",padding:"4px 0"}}>Indietro</button>
+        </div>
+        ) : (
+        <div className="mf-card" style={{display:"flex",flexDirection:"column",gap:9}}>
+          <div className="cap">Menu già pronti</div>
+          <button onClick={function(){ setImportTipo("scuola"); }}
+            style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #6BA6C9",background:"#E2EEF5",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-school"/></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>Menu scolastico 2026-27</div><div style={{fontSize:11,color:"#2F6586",opacity:.8}}>4 settimane già pronte · oggi 3ª settimana</div></div>
+          </button>
+          <button onClick={function(){ setImportTipo("estivo"); }}
+            style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #6BA6C9",background:"#E2EEF5",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-sun"/></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>Menù estivo bimbi</div><div style={{fontSize:11,color:"#2F6586",opacity:.8}}>Settimanale, Lun–Ven</div></div>
+          </button>
+          <div className="cap" style={{marginTop:4}}>Oppure crea a mano</div>
           <button onClick={function(){ aggiungiPiano("mensa", null); }}
             style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #E3EAEE",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
             <div style={{width:34,height:34,borderRadius:10,background:"#6BA6C9",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-school"/></div>
-            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>Menu mensa</div><div style={{fontSize:11,color:"#8A949B"}}>Pranzo, Lun–Ven</div></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:700}}>Menu mensa vuoto</div><div style={{fontSize:11,color:"#8A949B"}}>Pranzo, Lun–Ven</div></div>
           </button>
           {Object.keys(profili).map(function(pid){
             var p = profili[pid];
@@ -6728,6 +6809,7 @@ function PianiView(props) {
           })}
           <button onClick={function(){ setAdding(false); }} style={{border:"none",background:"transparent",color:"#8A949B",fontSize:13,fontWeight:700,cursor:"pointer",padding:"4px 0"}}>Annulla</button>
         </div>
+        )
       ) : (
         <button onClick={function(){ setAdding(true); }}
           style={{padding:"12px",borderRadius:13,border:"1.5px dashed #6BA6C9",background:"#fff",color:"#2F6586",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>
