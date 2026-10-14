@@ -6741,8 +6741,26 @@ function PianiView(props) {
         <div style={{fontSize:13,color:"#8A949B"}}>Menu fissi: mensa o la dieta di un membro. Settimanale o mensile.</div>
       </div>
 
+      {!adding && (
+        <div className="mf-card acc" style={{display:"flex",flexDirection:"column",gap:9}}>
+          <div className="cap" style={{color:"#2F6586"}}>Menu già pronti · un tocco</div>
+          <button onClick={function(){ setImportTipo("scuola"); setAdding(true); }}
+            style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #6BA6C9",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-school"/></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>Menu scolastico 2026-27</div><div style={{fontSize:11,color:"#8A949B"}}>4 settimane già pronte · oggi 3ª settimana</div></div>
+            <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+          </button>
+          <button onClick={function(){ setImportTipo("estivo"); setAdding(true); }}
+            style={{display:"flex",alignItems:"center",gap:10,border:"1.5px solid #6BA6C9",background:"#fff",borderRadius:12,padding:"11px 12px",cursor:"pointer",fontFamily:"'Nunito',system-ui,sans-serif",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"#2F6586",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17}}><i className="ti ti-sun"/></div>
+            <div style={{flex:1}}><div style={{fontSize:14,fontWeight:800,color:"#2F6586"}}>Menù estivo bimbi</div><div style={{fontSize:11,color:"#8A949B"}}>Settimanale, Lun–Ven</div></div>
+            <i className="ti ti-chevron-right" style={{color:"#B4BEC4",fontSize:18}}/>
+          </button>
+        </div>
+      )}
+
       {piani.length === 0 && !adding && (
-        <div className="mf-card" style={{fontSize:13,color:"#8A949B"}}>Nessun piano ancora. Aggiungine uno qui sotto.</div>
+        <div style={{fontSize:12,color:"#8A949B",textAlign:"center"}}>Oppure aggiungi un menu vuoto o una dieta qui sotto.</div>
       )}
 
       {piani.map(function(pl){
